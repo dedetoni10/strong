@@ -1,0 +1,18 @@
+<svg width="300" height="150" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg">
+  <g>
+    <!-- Orange boxes representing warehouse/package -->
+    <rect x="40" y="20" width="60" height="40" rx="4" fill="#FF6B35"/>
+    <rect x="45" y="25" width="15" height="8" fill="#ffffff"/>
+    <rect x="80" y="25" width="15" height="8" fill="#ffffff"/>
+    
+    <rect x="20" y="50" width="60" height="40" rx="4" fill="#FF6B35"/>
+    <rect x="25" y="55" width="15" height="8" fill="#ffffff"/>
+    <rect x="60" y="55" width="15" height="8" fill="#ffffff"/>
+    
+    <!-- Checkmark -->
+    <path d="M90 35 L105 50 L125 30" stroke="#1a2332" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  
+  <!-- Strong text -->
+  <text x="20" y="130" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#1a2332">Strong</text>
+</svg>

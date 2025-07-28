@@ -1,0 +1,458 @@
+<!-- Orders Content Only - for AJAX requests -->
+<div class="content-header">
+    <h1><i class="fas fa-shopping-cart"></i> Pesanan Saya</h1>
+    <p>Kelola dan monitor pesanan</p>
+</div>
+
+<style>
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+
+.tab-navigation {
+    margin-bottom: 20px;
+}
+
+.nav-tabs {
+    border-bottom: 2px solid #dee2e6;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    color: #6c757d;
+    font-weight: 500;
+    padding: 12px 20px;
+    margin-right: 5px;
+    border-radius: 8px 8px 0 0;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.nav-tabs .nav-link.active {
+    background-color: #8B5CF6;
+    color: white;
+    border-bottom: 2px solid #8B5CF6;
+}
+
+.nav-tabs .nav-link:hover {
+    background-color: rgba(139, 92, 246, 0.1);
+    color: #8B5CF6;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    color: #495057;
+    font-weight: 600;
+}
+
+.pagination {
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.pagination .page-link {
+    color: #8B5CF6;
+    border-color: #8B5CF6;
+}
+
+.pagination .page-link:hover {
+    background-color: #8B5CF6;
+    border-color: #8B5CF6;
+    color: white;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #8B5CF6;
+    border-color: #8B5CF6;
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.table-container {
+    position: relative;
+}
+</style>
+
+<!-- Tab Navigation -->
+<div class="tab-navigation mb-3">
+    <div class="nav nav-tabs" id="statusTabs" role="tablist">
+        <button class="nav-link status-tab {% if status_filter == 'all' %}active{% endif %}" 
+                onclick="switchTab('all')" type="button">
+            Semua ({{ (tab_counts.perlu_dikirim + tab_counts.siap_dikirim + tab_counts.dikirim + tab_counts.selesai + tab_counts.pengembalian) }})
+        </button>
+        <button class="nav-link status-tab {% if status_filter == 'perlu_dikirim' %}active{% endif %}" 
+                onclick="switchTab('perlu_dikirim')" type="button">
+            Perlu Dikirim ({{ tab_counts.perlu_dikirim }})
+        </button>
+        <button class="nav-link status-tab {% if status_filter == 'siap_dikirim' %}active{% endif %}" 
+                onclick="switchTab('siap_dikirim')" type="button">
+            Siap Dikirim ({{ tab_counts.siap_dikirim }})
+        </button>
+        <button class="nav-link status-tab {% if status_filter == 'dikirim' %}active{% endif %}" 
+                onclick="switchTab('dikirim')" type="button">
+            Dikirim ({{ tab_counts.dikirim }})
+        </button>
+        <button class="nav-link status-tab {% if status_filter == 'selesai' %}active{% endif %}" 
+                onclick="switchTab('selesai')" type="button">
+            Selesai ({{ tab_counts.selesai }})
+        </button>
+        <button class="nav-link status-tab {% if status_filter == 'pengembalian' %}active{% endif %}" 
+                onclick="switchTab('pengembalian')" type="button">
+            Pengembalian ({{ tab_counts.pengembalian }})
+        </button>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="row mb-3">
+    <div class="col-md-6">
+        <button class="btn btn-danger me-2" onclick="deleteAllOrders()">
+            <i class="fas fa-trash"></i> Delete Semua Pesanan
+        </button>
+        <button class="btn btn-warning me-2" id="deleteSelectedBtn" onclick="deleteSelectedOrders()" style="display: none;">
+            <i class="fas fa-trash-alt"></i> Delete Selected
+        </button>
+    </div>
+    <div class="col-md-6 text-end">
+        <button class="btn btn-success" onclick="document.getElementById('uploadModal').style.display='block'">
+            <i class="fas fa-upload"></i> Upload Orders
+        </button>
+    </div>
+</div>
+
+<!-- Orders List -->
+<div class="card">
+    <div class="card-header bg-purple text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">{{ header_text }}</h5>
+        <div class="d-flex align-items-center">
+            <input type="checkbox" id="selectAllOrders" class="form-check-input me-2" onchange="toggleSelectAll()">
+            <label for="selectAllOrders" class="form-check-label text-white">Select All</label>
+        </div>
+    </div>
+    <div class="card-body table-container">
+        <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+        
+        {% if orders %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th width="50">
+                                <input type="checkbox" class="form-check-input" onchange="toggleSelectAll()">
+                            </th>
+                            <th>No Pesanan</th>
+                            <th>Customer</th>
+                            <th>Status</th>
+                            <th>Total</th>
+                            <th>Tanggal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="form-check-input order-checkbox" 
+                                       value="{{ order.id }}" onchange="updateDeleteButtonVisibility()">
+                            </td>
+                            <td>
+                                <a href="{{ url_for('order_detail', order_id=order.id) }}" target="_blank">
+                                    {{ order.order_number }}
+                                </a>
+                            </td>
+                            <td>{{ order.customer_name }}</td>
+                            <td>
+                                {% if order.status == 'perlu_dikirim' %}
+                                    <span class="badge bg-warning">Perlu Dikirim</span>
+                                {% elif order.status == 'siap_dikirim' %}
+                                    <span class="badge bg-info">Siap Dikirim</span>
+                                {% elif order.status == 'dikirim' %}
+                                    <span class="badge bg-primary">Dikirim</span>
+                                {% elif order.status == 'selesai' %}
+                                    <span class="badge bg-success">Selesai</span>
+                                {% elif order.status == 'pengembalian' %}
+                                    <span class="badge bg-danger">Pengembalian</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ order.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>Rp {{ "{:,.0f}".format(order.total_amount) }}</td>
+                            <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') if order.created_at else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if pagination.pages > 1 %}
+                <nav aria-label="Pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if pagination.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="#" onclick="switchPage({{ pagination.prev_num }})">Previous</a>
+                            </li>
+                        {% endif %}
+                        {% for page_num in pagination.iter_pages() %}
+                            {% if page_num %}
+                                <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                                    <a class="page-link" href="#" onclick="switchPage({{ page_num }})">{{ page_num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if pagination.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="#" onclick="switchPage({{ pagination.next_num }})">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Tidak ada pesanan ditemukan</h5>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div id="uploadModal" class="modal" style="display: none;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Excel Orders</h5>
+                <button type="button" class="btn-close" onclick="document.getElementById('uploadModal').style.display='none'"></button>
+            </div>
+            <div class="modal-body">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="order_files" class="form-label">Pilih file Excel:</label>
+                        <input type="file" class="form-control" id="order_files" name="order_files" 
+                               accept=".xlsx,.xls" multiple required>
+                    </div>
+                    <div class="progress mb-3" style="display: none;">
+                        <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <div id="uploadStatus"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('uploadModal').style.display='none'">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="uploadOrders()">Upload</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Global variables
+let currentStatus = '{{ status_filter }}';
+let currentPage = {{ pagination.page }};
+
+// Tab switching with AJAX
+function switchTab(status) {
+    currentStatus = status;
+    loadTabContent(status, 1);
+}
+
+// Page switching with AJAX
+function switchPage(page) {
+    currentPage = page;
+    loadTabContent(currentStatus, page);
+}
+
+// Load tab content via AJAX
+function loadTabContent(status, page) {
+    // Show loading overlay
+    document.getElementById('loadingOverlay').style.display = 'flex';
+    
+    // Update active tab
+    document.querySelectorAll('.status-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Find and activate the correct tab
+    const activeTab = document.querySelector(`[onclick="switchTab('${status}')"]`);
+    if (activeTab) {
+        activeTab.classList.add('active');
+    }
+    
+    // Make AJAX request
+    const url = `/orders/new?status=${status}&page=${page}&ajax=1`;
+    
+    fetch(url)
+        .then(response => response.text())
+        .then(html => {
+            // Update the content
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newContent = doc.querySelector('.content-header').parentElement;
+            
+            // Replace current content
+            document.querySelector('.content-header').parentElement.innerHTML = newContent.innerHTML;
+            
+            // Hide loading overlay
+            document.getElementById('loadingOverlay').style.display = 'none';
+            
+            // Update URL without page reload
+            history.pushState({}, '', `/orders/new?status=${status}&page=${page}`);
+        })
+        .catch(error => {
+            console.error('Error loading tab content:', error);
+            document.getElementById('loadingOverlay').style.display = 'none';
+            alert('Terjadi kesalahan saat memuat data');
+        });
+}
+
+// Select all functionality
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAllOrders');
+    const orderCheckboxes = document.querySelectorAll('.order-checkbox');
+    
+    orderCheckboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+    
+    updateDeleteButtonVisibility();
+}
+
+// Update delete button visibility
+function updateDeleteButtonVisibility() {
+    const selectedCheckboxes = document.querySelectorAll('.order-checkbox:checked');
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    
+    if (selectedCheckboxes.length > 0) {
+        deleteSelectedBtn.style.display = 'inline-block';
+    } else {
+        deleteSelectedBtn.style.display = 'none';
+    }
+}
+
+// Delete all orders
+function deleteAllOrders() {
+    if (confirm('Apakah Anda yakin ingin menghapus SEMUA pesanan? Tindakan ini tidak dapat dibatalkan.')) {
+        fetch('/orders/delete_all', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat menghapus pesanan');
+        });
+    }
+}
+
+// Delete selected orders
+function deleteSelectedOrders() {
+    const selectedCheckboxes = document.querySelectorAll('.order-checkbox:checked');
+    const orderIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+    
+    if (orderIds.length === 0) {
+        alert('Pilih pesanan yang ingin dihapus');
+        return;
+    }
+    
+    if (confirm(`Apakah Anda yakin ingin menghapus ${orderIds.length} pesanan yang dipilih?`)) {
+        fetch('/orders/delete_selected', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                order_ids: orderIds
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat menghapus pesanan');
+        });
+    }
+}
+
+// Upload orders functionality
+function uploadOrders() {
+    const form = document.getElementById('uploadForm');
+    const formData = new FormData(form);
+    const progressBar = document.querySelector('.progress-bar');
+    const progress = document.querySelector('.progress');
+    const uploadStatus = document.getElementById('uploadStatus');
+    
+    // Show progress bar
+    progress.style.display = 'block';
+    progressBar.style.width = '0%';
+    uploadStatus.innerHTML = '';
+    
+    fetch('/orders/import', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            progressBar.style.width = '100%';
+            uploadStatus.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+            setTimeout(() => {
+                document.getElementById('uploadModal').style.display = 'none';
+                location.reload();
+            }, 2000);
+        } else {
+            uploadStatus.innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        uploadStatus.innerHTML = `<div class="alert alert-danger">Terjadi kesalahan saat mengupload file</div>`;
+    });
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    updateDeleteButtonVisibility();
+});
+</script>

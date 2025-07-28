@@ -1,0 +1,1220 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Picking Mode - Strong Order Management{% endblock %}
+
+{% block extra_head %}
+<!-- Mobile Navigation Bar for tonidede1 -->
+{% if session.username == 'tonidede1' %}
+<style>
+    /* Modern Mobile Navigation Bar */
+    .mobile-nav {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        z-index: 1050;
+        padding: 8px 15px;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .mobile-nav-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 100%;
+    }
+    
+    .mobile-nav .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: white;
+        font-weight: 700;
+        font-size: 16px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .mobile-nav .logo i {
+        background: rgba(255,255,255,0.2);
+        padding: 6px;
+        border-radius: 8px;
+        font-size: 12px;
+    }
+    
+    .mobile-nav-buttons {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .mobile-nav-btn {
+        background: rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.2);
+        color: white !important;
+        padding: 8px 12px;
+        border-radius: 12px;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 600;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        min-width: 70px;
+        white-space: nowrap;
+    }
+    
+    .mobile-nav-btn i {
+        font-size: 12px;
+    }
+    
+    .mobile-nav-btn:hover {
+        background: rgba(255,255,255,0.25);
+        color: white !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .mobile-nav-btn.active {
+        background: rgba(255,255,255,0.3);
+        border-color: rgba(255,255,255,0.4);
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(255,255,255,0.2);
+    }
+    
+    .mobile-nav-btn.logout-btn {
+        background: rgba(255,107,107,0.2);
+        border-color: rgba(255,107,107,0.3);
+    }
+    
+    .mobile-nav-btn.logout-btn:hover {
+        background: rgba(255,107,107,0.3);
+        transform: translateY(-2px);
+    }
+    
+    /* Adjust main content for mobile nav */
+    @media (max-width: 768px) {
+        .mobile-nav {
+            display: block;
+        }
+        
+        .main-content {
+            margin-top: 55px;
+            padding: 15px;
+        }
+        
+        .sidebar {
+            display: none !important;
+        }
+        
+        body {
+            padding-left: 0 !important;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+        
+        .container-fluid {
+            padding: 0;
+        }
+        
+        /* Mobile card styling */
+        .card {
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            border-radius: 16px 16px 0 0 !important;
+            border: none;
+            padding: 20px;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        /* Hide statistics cards on mobile for clean interface */
+        .statistics-row {
+            display: none !important;
+        }
+        
+        /* Mobile layout optimizations */
+        .row .col-md-6 {
+            margin-bottom: 15px;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .mobile-nav {
+            padding: 10px 15px;
+        }
+        
+        .mobile-nav-btn {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+        
+        .mobile-nav .logo {
+            font-size: 18px;
+        }
+        
+        .mobile-nav-buttons {
+            gap: 6px;
+        }
+    }
+</style>
+{% endif %}
+
+<style>
+    /* Force black text color for all elements */
+    body, .container-fluid, .card-body, .card-header, .form-label, .form-control, .btn, p, h1, h2, h3, h4, h5, h6, span, div, td, th, label, .text-muted, .badge, .alert, .list-group-item, .navbar-text, .dropdown-item, .form-text, .card-text, .card-title, .table, .table td, .table th, .table-striped, .table-hover {
+        color: black !important;
+    }
+    
+    /* Specific overrides for picking mode */
+    .card-header h5, .card-header h6 {
+        color: black !important;
+    }
+    
+    .badge, .btn-primary, .btn-success, .btn-warning, .btn-danger, .btn-info, .btn-secondary {
+        color: black !important;
+    }
+    
+    .item-card {
+        background: white;
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        margin-bottom: 15px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        color: black !important;
+    }
+    
+    .item-card.picked {
+        border-color: #28a745;
+        background: #f8fff9;
+    }
+    
+    .item-card.picking {
+        border-color: #ffc107;
+        background: #fffbf0;
+    }
+    
+    .sku-badge {
+        background: #e9ecef;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.9em;
+        color: black !important;
+    }
+    
+    .location-badge {
+        background: #e9ecef;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.9em;
+        color: black !important;
+        border: 1px solid #dee2e6;
+    }
+    
+    .quantity-badge {
+        background: #007bff;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: bold;
+    }
+    
+    .status-icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+        margin-right: 10px;
+    }
+    
+    .status-pending {
+        background: #ffc107;
+        color: white;
+    }
+    
+    .status-picked {
+        background: #28a745;
+        color: white;
+    }
+    
+    /* Override any remaining white/light text to black */
+    .text-primary, .text-success, .text-warning, .text-danger, .text-info, .text-secondary, .text-muted {
+        color: black !important;
+    }
+    
+    .scan-section {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 15px;
+    }
+    
+    .quantity-input-section {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 12px;
+    }
+    
+    .quantity-input.valid {
+        border-color: #28a745;
+        background: #f8fff9;
+    }
+    
+    .quantity-input.invalid {
+        border-color: #dc3545;
+        background: #fff5f5;
+    }
+    
+
+    
+    .keypad-header {
+        text-align: center;
+        margin-bottom: 10px;
+        padding: 0 10px;
+    }
+    
+    .keypad-header h6 {
+        margin: 0;
+        font-size: 14px;
+        color: #495057 !important;
+        font-weight: 600;
+    }
+    
+    .keypad-display {
+        background: #f8f9fa;
+        border: 2px solid #dee2e6;
+        border-radius: 12px;
+        padding: 12px;
+        text-align: center;
+        font-size: 28px;
+        font-weight: bold;
+        margin-bottom: 12px;
+        min-height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: black !important;
+        letter-spacing: 2px;
+    }
+    
+    .keypad-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+    
+    .keypad-btn {
+        background: #f8f9fa;
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        padding: 18px 12px;
+        font-size: 20px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        color: black !important;
+        min-height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    .keypad-btn:hover, .keypad-btn:active {
+        background: #e9ecef;
+        border-color: #dee2e6;
+        transform: scale(0.95);
+    }
+    
+    .keypad-btn.special {
+        background: #fff3cd;
+        border-color: #ffeaa7;
+        color: #856404 !important;
+    }
+    
+    .keypad-btn.special:hover, .keypad-btn.special:active {
+        background: #ffeaa7;
+        border-color: #fdcb6e;
+    }
+    
+    .keypad-btn.zero {
+        grid-column: span 2;
+    }
+    
+    .keypad-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 8px;
+    }
+    
+    .keypad-actions .btn {
+        padding: 12px 8px;
+        font-weight: bold;
+        border-radius: 12px;
+        font-size: 14px;
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .keypad-actions .btn-secondary {
+        background: #6c757d;
+        border-color: #6c757d;
+    }
+    
+    .keypad-actions .btn-success {
+        background: #28a745;
+        border-color: #28a745;
+    }
+    
+    @media (max-width: 576px) {
+        .keypad-container {
+            max-width: 95%;
+            padding: 12px;
+        }
+        
+        .keypad-btn {
+            padding: 15px 8px;
+            font-size: 18px;
+            min-height: 55px;
+        }
+        
+        .keypad-display {
+            font-size: 24px;
+            padding: 10px;
+            min-height: 45px;
+        }
+        
+        .keypad-actions .btn {
+            font-size: 13px;
+            min-height: 44px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Modern Mobile Navigation Bar for tonidede1 -->
+{% if session.username == 'tonidede1' %}
+<div class="mobile-nav">
+    <div class="mobile-nav-content">
+        <div class="logo">
+            <i class="fas fa-cube"></i>
+            <span>STRONG</span>
+        </div>
+        <div class="mobile-nav-buttons">
+            <a href="{{ url_for('picking_mode') }}" class="mobile-nav-btn active">
+                <i class="fas fa-box-open"></i>
+                <span>Picking</span>
+            </a>
+            <a href="{{ url_for('logout') }}" class="mobile-nav-btn logout-btn" onclick="return confirm('Yakin ingin logout?')">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-0">Picking Mode</h1>
+        <p class="text-muted">Sistem scanning untuk proses picking order</p>
+    </div>
+</div>
+
+
+<!-- Statistics Cards -->
+<div class="row mb-4 statistics-row">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                            <i class="fas fa-shopping-cart text-primary"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ stats.picking_orders or 0 }}</h3>
+                        <p class="text-muted mb-0">Orders Picking</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                            <i class="fas fa-check-circle text-success"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ stats.completed_picking or 0 }}</h3>
+                        <p class="text-muted mb-0">Completed Today</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Picking Interface -->
+<div class="card">
+    <div class="card-header bg-purple">
+        <h5 class="mb-0" style="color: #000000; text-shadow: 1px 1px 2px rgba(255,255,255,0.8); font-weight: 600;">
+            <i class="fas fa-box-open me-2"></i>Picking Scanner
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="picking-form">
+                    <div class="form-group mb-3">
+                        <label class="form-label">Order ID / Tracking Number</label>
+                        <input type="text" id="pickingOrderInput" class="form-control modern-input" placeholder="Scan atau ketik order ID / tracking number..." autofocus>
+                    </div>
+                    
+                    <button class="btn btn-primary w-100 modern-btn" onclick="startPickingProcess()">
+                        <i class="fas fa-play me-2"></i>Mulai Picking
+                    </button>
+                </div>
+                
+                <div id="pickingResult" class="mt-4"></div>
+                
+                <!-- Picking Items Section -->
+                <div id="pickingItemsSection" class="mt-4" style="display: none;"></div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="picking-info">
+                    <h6 class="mb-3">Informasi Picking</h6>
+                    <div class="info-item">
+                        <span class="info-label">Status:</span>
+                        <span class="badge bg-success">Ready</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Mode:</span>
+                        <span class="info-value">Picking Active</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Scanner:</span>
+                        <span class="info-value">Online</span>
+                    </div>
+                </div>
+                
+                <div class="picking-tips mt-4">
+                    <h6>Tips Picking:</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success me-2"></i>Pastikan scan order ID yang benar</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Periksa lokasi produk di sistem</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Konfirmasi jumlah produk sesuai</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.modern-input {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.modern-input:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.modern-btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.modern-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.picking-info {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.info-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.info-value {
+    font-weight: 600;
+    color: #212529;
+}
+
+.picking-tips {
+    background: #e3f2fd;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #2196f3;
+}
+
+.picking-tips h6 {
+    color: #1976d2;
+    margin-bottom: 10px;
+}
+
+.picking-tips ul li {
+    margin-bottom: 5px;
+    color: #666;
+}
+</style>
+
+<script>
+function startPickingProcess() {
+    const input = document.getElementById('pickingOrderInput');
+    const value = input.value.trim();
+    
+    if (!value) {
+        showPickingResult('Silakan masukkan Order ID atau Tracking Number', 'error');
+        input.focus();
+        return;
+    }
+    
+    // Show loading state
+    const button = document.querySelector('.modern-btn');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+    button.disabled = true;
+    
+    // Call the proper scan_order API
+    fetch('/scan/order', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `barcode=${encodeURIComponent(value)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Reset button
+        button.innerHTML = originalText;
+        button.disabled = false;
+        
+        if (data.success) {
+            showPickingResult(`Order ${data.order_number} berhasil dimulai untuk ${data.customer_name}`, 'success');
+            // Load picking items directly in this page
+            setTimeout(() => {
+                loadPickingItems(data.order_id);
+            }, 1000);
+        } else {
+            const errorMessage = data.error || 'Terjadi kesalahan';
+            showPickingResult(errorMessage, 'error');
+            
+            // Auto-delete input for specific errors
+            if (errorMessage.includes('tidak ditemukan') || 
+                errorMessage.includes('not found') || 
+                errorMessage.includes('duplikat') || 
+                errorMessage.includes('duplicate') ||
+                errorMessage.includes('sudah pernah discan') ||
+                errorMessage.includes('tidak bisa di-pick') ||
+                errorMessage.includes('Status: picked') ||
+                errorMessage.includes('status picked') ||
+                errorMessage.includes('sudah dipick')) {
+                
+                // Clear input after 2 seconds
+                setTimeout(() => {
+                    input.value = '';
+                    input.focus();
+                }, 2000);
+            }
+        }
+    })
+    .catch(error => {
+        // Reset button
+        button.innerHTML = originalText;
+        button.disabled = false;
+        
+        console.error('Error:', error);
+        showPickingResult('Terjadi kesalahan saat memproses', 'error');
+        
+        // Auto-clear input for network errors too
+        setTimeout(() => {
+            input.value = '';
+            input.focus();
+        }, 2000);
+    });
+}
+
+function showPickingResult(message, type = 'success') {
+    const resultDiv = document.getElementById('pickingResult');
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    
+    resultDiv.innerHTML = `
+        <div class="alert ${alertClass}" role="alert">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+            ${message}
+        </div>
+    `;
+    
+    // Clear result after 5 seconds
+    setTimeout(() => {
+        resultDiv.innerHTML = '';
+    }, 5000);
+}
+
+function loadPickingItems(orderId) {
+    // Fetch picking items for this order
+    fetch(`/api/picking/${orderId}/items`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayPickingItems(data.order, data.items);
+            } else {
+                showPickingResult('Gagal memuat item picking', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading picking items:', error);
+            showPickingResult('Terjadi kesalahan saat memuat item picking', 'error');
+        });
+}
+
+function displayPickingItems(order, items) {
+    const itemsSection = document.getElementById('pickingItemsSection');
+    
+    // Store order_id for later use
+    currentOrderId = order.id;
+    
+    // Debug: Log items to check location data
+    console.log('Items received:', items);
+    console.log('Current order_id set to:', currentOrderId);
+    items.forEach(item => {
+        console.log(`Item ${item.sku} location:`, item.location);
+    });
+    
+    let itemsHtml = `
+        <div class="card">
+            <div class="card-header bg-purple text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>Items untuk Dipick - Order ${order.order_number}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p><strong>Customer:</strong> ${order.customer_name}</p>
+                        <p><strong>Order Date:</strong> ${order.order_date || 'N/A'}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Status:</strong> <span class="badge bg-warning">Picking</span></p>
+                        <p><strong>Total Items:</strong> ${items.length}</p>
+                    </div>
+                </div>
+                
+                <div class="progress mb-3">
+                    <div class="progress-bar bg-success" style="width: 0%" id="picking-progress"></div>
+                </div>
+                
+                <div id="items-container">
+    `;
+    
+    items.forEach((item, index) => {
+        const statusIcon = item.is_picked ? '✓' : (index + 1);
+        const statusClass = item.is_picked ? 'picked' : 'pending';
+        
+        itemsHtml += `
+            <div class="item-card ${item.is_picked ? 'picked' : ''}" data-item-id="${item.id}">
+                <div class="item-info">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="mb-1">
+                            <span class="status-icon ${item.is_picked ? 'status-picked' : 'status-pending'}">
+                                ${statusIcon}
+                            </span>
+                            ${item.product_name}
+                        </h5>
+                        <span class="quantity-badge">Qty: ${item.quantity}</span>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <span class="sku-badge">${item.sku}</span>
+                        ${item.location ? `<span class="location-badge ms-2">${item.location}</span>` : ''}
+                    </div>
+
+                    ${item.is_picked ? `
+                        <div class="alert alert-success mb-0">
+                            <i class="fas fa-check-circle"></i> Picked successfully
+                        </div>
+                    ` : `
+                        <div class="scan-section">
+                            <div class="input-group mb-2">
+                                <input type="text" 
+                                       class="form-control scan-input" 
+                                       placeholder="Masukkan kode: BLD-GLSMY-HIJ"
+                                       data-item-id="${item.id}"
+                                       data-sku="${item.sku}"
+                                       data-quantity="${item.quantity}"
+                                       id="scan-input-${item.id}">
+                                <button class="btn btn-outline-secondary" type="button" onclick="openCamera(${item.id})">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                            </div>
+                            <div class="format-help mb-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i> Hanya terima: <code>BLD-GLSMY-HIJ</code> (tanpa tanda ||)
+                                </small>
+                            </div>
+                            
+                            <div class="quantity-input-section mb-2">
+                                <label for="qty-${item.id}" class="form-label">
+                                    <i class="fas fa-check-circle text-success"></i> Jumlah yang diambil:
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" 
+                                           id="qty-${item.id}"
+                                           class="form-control quantity-input" 
+                                           min="1"
+                                           max="${item.quantity}"
+                                           data-item-id="${item.id}"
+                                           data-expected="${item.quantity}"
+                                           value="${item.quantity}"
+                                           readonly
+                                           style="background-color: #d4edda; border-color: #28a745; color: #155724; font-weight: bold;">
+                                    <span class="input-group-text bg-success text-white">/ ${item.quantity}</span>
+                                </div>
+                                <small class="text-success"><i class="fas fa-info-circle"></i> Quantity otomatis terisi sesuai order</small>
+                            </div>
+                            
+                            <button class="btn btn-success w-100" onclick="confirmPick(${item.id})" disabled>
+                                <i class="fas fa-check"></i> Konfirmasi Ambil
+                            </button>
+                        </div>
+                    `}
+                </div>
+            </div>
+        `;
+    });
+    
+    itemsHtml += `
+                </div>
+                
+                <div class="mt-3 text-center" id="complete-section" style="display: none;">
+                    <div class="alert alert-success">
+                        <h4><i class="fas fa-star"></i> Semua Item Selesai Dipick!</h4>
+                        <p class="mb-0">Order siap untuk proses packing</p>
+                        <button class="btn btn-primary mt-2" onclick="completePickingOrder(${order.id})">
+                            <i class="fas fa-truck me-2"></i>Lanjut ke Packing
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <button class="btn btn-secondary" onclick="cancelPicking()">
+                        <i class="fas fa-times me-2"></i>Batal
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    itemsSection.innerHTML = itemsHtml;
+    itemsSection.style.display = 'block';
+    
+    // Hide the picking form
+    document.querySelector('.picking-form').style.display = 'none';
+    
+    // Add event listeners for scan inputs and quantity inputs
+    setupPickingEventListeners();
+    
+    // Update progress
+    updatePickingProgress();
+}
+
+function getProductLocation(sku) {
+    // This should be fetched from database - simplified for now
+    // In production, this would be an API call
+    return 'Zone A-1-B'; // Placeholder location
+}
+
+function setupPickingEventListeners() {
+    // Add event listeners for scan inputs
+    document.querySelectorAll('.scan-input').forEach(input => {
+        // Store timeout reference to clear it if needed
+        let autoDeleteTimeout = null;
+        
+        input.addEventListener('input', function() {
+            const itemId = this.dataset.itemId;
+            const sku = this.dataset.sku;
+            const scannedCode = this.value.trim();
+            
+            // Clear any existing timeout
+            if (autoDeleteTimeout) {
+                clearTimeout(autoDeleteTimeout);
+                autoDeleteTimeout = null;
+            }
+            
+            if (scannedCode) {
+                // Validate scanned code
+                if (isValidProductCode(scannedCode, sku)) {
+                    // SUCCESS: Lock the field and show success
+                    this.classList.add('is-valid');
+                    this.classList.remove('is-invalid');
+                    this.style.borderColor = '#28a745';
+                    this.style.backgroundColor = '#d4edda';
+                    
+                    // Lock the input field when code is correct
+                    this.readOnly = true;
+                    this.style.cursor = 'not-allowed';
+                    
+                    // Add success message with unlock button
+                    const existingMsg = this.parentElement.parentElement.querySelector('.validation-message');
+                    if (existingMsg) existingMsg.remove();
+                    
+                    const successDiv = document.createElement('div');
+                    successDiv.className = 'validation-message text-success mt-1';
+                    successDiv.innerHTML = '<i class="fas fa-check-circle"></i> Kode cocok! Input terkunci.';
+                    this.parentElement.parentElement.appendChild(successDiv);
+                    
+                    // Add unlock button
+                    const unlockBtn = document.createElement('button');
+                    unlockBtn.className = 'btn btn-sm btn-outline-secondary mt-1 ms-2';
+                    unlockBtn.innerHTML = '<i class="fas fa-unlock"></i> Unlock';
+                    unlockBtn.onclick = () => {
+                        this.readOnly = false;
+                        this.style.cursor = 'text';
+                        this.focus();
+                        unlockBtn.remove();
+                        successDiv.innerHTML = '<i class="fas fa-check-circle"></i> Kode cocok!';
+                    };
+                    this.parentElement.parentElement.appendChild(unlockBtn);
+                    
+                    // NO AUTO-DELETE FOR CORRECT CODES
+                    console.log('SUCCESS: Code is valid, field locked, no auto-delete');
+                    
+                } else {
+                    // ERROR: Show error and set auto-delete
+                    this.classList.add('is-invalid');
+                    this.classList.remove('is-valid');
+                    this.style.borderColor = '#dc3545';
+                    this.style.backgroundColor = '#f8d7da';
+                    
+                    // Show error message
+                    const existingMsg = this.parentElement.parentElement.querySelector('.validation-message');
+                    if (existingMsg) existingMsg.remove();
+                    
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'validation-message text-danger mt-1';
+                    errorDiv.innerHTML = '<i class="fas fa-times-circle"></i> Kode tidak cocok! Periksa kembali input.';
+                    this.parentElement.parentElement.appendChild(errorDiv);
+                    
+                    // Auto-delete ONLY for incorrect data after 2 seconds
+                    autoDeleteTimeout = setTimeout(() => {
+                        // Only delete if field is still invalid (not locked)
+                        if (!this.readOnly && this.classList.contains('is-invalid')) {
+                            this.value = '';
+                            this.style.borderColor = '#dee2e6';
+                            this.style.backgroundColor = '#ffffff';
+                            this.classList.remove('is-valid', 'is-invalid');
+                            
+                            // Remove validation messages
+                            const messages = this.parentElement.parentElement.querySelectorAll('.validation-message');
+                            messages.forEach(msg => msg.remove());
+                            
+                            this.focus();
+                            console.log('ERROR: Auto-deleted incorrect code');
+                        }
+                    }, 2000);
+                }
+            } else {
+                // Empty input - neutral state
+                this.classList.remove('is-valid', 'is-invalid');
+                this.style.borderColor = '#dee2e6';
+                this.style.backgroundColor = '#ffffff';
+            }
+        });
+    });
+    
+    // Auto-enable confirm buttons since quantity is automatically filled
+    document.querySelectorAll('.quantity-input').forEach(input => {
+        const itemId = input.dataset.itemId;
+        const confirmBtn = document.querySelector(`button[onclick="confirmPick(${itemId})"]`);
+        
+        // Since quantity is auto-filled with correct value, enable confirm button immediately
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+        }
+    });
+}
+
+function isValidProductCode(scannedCode, expectedSku) {
+    // Direct validation - only accept the blocked text without pipes
+    return validateSkuMatch(scannedCode, expectedSku);
+}
+
+// Function to extract code from |kode| format
+function extractCodeFromPipes(input) {
+    // Check if input has |kode| format
+    const match = input.match(/\|([^|]+)\|/);
+    if (match && match[1]) {
+        return match[1].trim();
+    }
+    return null;
+}
+
+// Function to validate SKU match - only accept highlighted/blocked text
+function validateSkuMatch(scannedCode, expectedSku) {
+    // Check pipe-separated SKU format to get the middle part (blocked text)
+    if (expectedSku.includes('|')) {
+        const skuParts = expectedSku.split('|').map(part => part.trim());
+        // Only accept the middle part (index 1) - the blocked/highlighted text
+        if (skuParts.length >= 2 && skuParts[1] === scannedCode) {
+            return true;
+        }
+    }
+    
+    // Direct match with the blocked text
+    if (scannedCode === expectedSku) {
+        return true;
+    }
+    
+    return false;
+}
+
+// Global variable to store current order_id
+let currentOrderId = null;
+
+function confirmPick(itemId) {
+    const scanInput = document.getElementById(`scan-input-${itemId}`);
+    const qtyInput = document.getElementById(`qty-${itemId}`);
+    
+    if (!scanInput || !qtyInput) return;
+    
+    const scannedCode = scanInput.value.trim();
+    const quantity = parseInt(qtyInput.value);
+    
+    if (!scannedCode || !quantity) {
+        alert('Harap scan barcode dan masukkan jumlah yang benar');
+        return;
+    }
+    
+    // Validate order_id is available
+    if (!currentOrderId) {
+        alert('Order ID tidak tersedia. Silakan mulai picking dari awal.');
+        return;
+    }
+    
+    // Send to backend
+    fetch('/scan/product', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            order_id: currentOrderId,
+            item_id: itemId,
+            barcode: scannedCode,
+            quantity: quantity
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showPickingResult(`Item berhasil dipick`, 'success');
+            
+            // Mark item as picked
+            const itemCard = document.querySelector(`[data-item-id="${itemId}"]`);
+            if (itemCard) {
+                itemCard.classList.add('picked');
+                itemCard.innerHTML = `
+                    <div class="item-info">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="mb-1">
+                                <span class="status-icon status-picked">✓</span>
+                                ${data.product_name || 'Product'}
+                            </h5>
+                            <span class="quantity-badge">Qty: ${quantity}</span>
+                        </div>
+                        <div class="alert alert-success mb-0">
+                            <i class="fas fa-check-circle"></i> Picked successfully
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Update progress
+            updatePickingProgress();
+            
+            // Check if all items are picked
+            checkPickingCompletion();
+            
+        } else {
+            showPickingResult(data.error || 'Gagal pick item', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error picking item:', error);
+        showPickingResult('Terjadi kesalahan saat pick item', 'error');
+    });
+}
+
+function updatePickingProgress() {
+    const totalItems = document.querySelectorAll('.item-card').length;
+    const pickedItems = document.querySelectorAll('.item-card.picked').length;
+    const progressBar = document.getElementById('picking-progress');
+    
+    if (progressBar) {
+        const percentage = totalItems > 0 ? (pickedItems / totalItems) * 100 : 0;
+        progressBar.style.width = percentage + '%';
+        progressBar.textContent = `${pickedItems}/${totalItems} items picked`;
+    }
+}
+
+function checkPickingCompletion() {
+    const totalItems = document.querySelectorAll('.item-card').length;
+    const pickedItems = document.querySelectorAll('.item-card.picked').length;
+    
+    if (pickedItems === totalItems && totalItems > 0) {
+        const completeSection = document.getElementById('complete-section');
+        if (completeSection) {
+            completeSection.style.display = 'block';
+        }
+    }
+}
+
+function openCamera(itemId) {
+    // Simplified camera opening - uses prompt for now
+    const sku = document.getElementById(`scan-input-${itemId}`).dataset.sku;
+    const scannedCode = prompt(`Scan atau masukkan kode produk untuk SKU: ${sku}`);
+    
+    if (scannedCode) {
+        document.getElementById(`scan-input-${itemId}`).value = scannedCode;
+        document.getElementById(`scan-input-${itemId}`).dispatchEvent(new Event('input'));
+    }
+}
+
+function completePickingOrder(orderId) {
+    // Complete picking directly without confirmation popup
+    fetch(`/api/picking/${orderId || currentOrderId}/complete`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showPickingResult('Picking selesai! Order siap untuk packing. Scan tracking number baru untuk melanjutkan.', 'success');
+            // Reset form to allow next order scanning
+            setTimeout(() => {
+                resetPickingForm();
+            }, 2000);
+        } else {
+            showPickingResult(data.error || 'Gagal menyelesaikan picking', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error completing picking:', error);
+        showPickingResult('Terjadi kesalahan saat menyelesaikan picking', 'error');
+    });
+}
+
+function cancelPicking() {
+    if (confirm('Apakah Anda yakin ingin membatalkan picking?')) {
+        resetPickingForm();
+    }
+}
+
+function resetPickingForm() {
+    // Clear the picking input
+    const pickingInput = document.getElementById('pickingOrderInput');
+    if (pickingInput) {
+        pickingInput.value = '';
+    }
+    
+    // Hide the picking items section
+    const itemsSection = document.getElementById('pickingItemsSection');
+    if (itemsSection) {
+        itemsSection.style.display = 'none';
+        itemsSection.innerHTML = '';
+    }
+    
+    // Show the picking form again
+    const pickingForm = document.querySelector('.picking-form');
+    if (pickingForm) {
+        pickingForm.style.display = 'block';
+    }
+    
+    // Clear results
+    const resultDiv = document.getElementById('pickingResult');
+    if (resultDiv) {
+        resultDiv.innerHTML = '';
+    }
+    
+    // Reset current order ID
+    currentOrderId = null;
+    
+    // Focus back to input
+    if (pickingInput) {
+        pickingInput.focus();
+    }
+}
+
+// Add Enter key support
+document.addEventListener('DOMContentLoaded', function() {
+    const pickingInput = document.getElementById('pickingOrderInput');
+    if (pickingInput) {
+        pickingInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                startPickingProcess();
+            }
+        });
+    }
+});
+
+// Quantity is now automatically filled from order data
+// No manual input required
+</script>
+
+
+
+{% endblock %}

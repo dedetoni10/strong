@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}Fulfillment Center - Shopee Order Management{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="fas fa-dolly me-2"></i>Fulfillment Center</h1>
+        <p class="text-muted">Kelola proses picking, packing, dan pengiriman pesanan</p>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="row mb-4">
+    <div class="col">
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('import_orders') }}" class="btn btn-primary">
+                <i class="fas fa-file-import me-2"></i>Import Pesanan
+            </a>
+            <a href="{{ url_for('scan_center') }}" class="btn btn-success">
+                <i class="fas fa-qrcode me-2"></i>Scan Center
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Status Overview Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <div class="text-warning mb-2">
+                    <i class="fas fa-clock fa-2x"></i>
+                </div>
+                <h3 class="mb-1">{{ stats.pending }}</h3>
+                <p class="card-text">Pending</p>
+                <small class="text-muted">Menunggu Picking</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <div class="text-info mb-2">
+                    <i class="fas fa-hand-paper fa-2x"></i>
+                </div>
+                <h3 class="mb-1">{{ stats.picking }}</h3>
+                <p class="card-text">Picking</p>
+                <small class="text-muted">Sedang Diambil</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <div class="text-primary mb-2">
+                    <i class="fas fa-box fa-2x"></i>
+                </div>
+                <h3 class="mb-1">{{ stats.packing }}</h3>
+                <p class="card-text">Packing</p>
+                <small class="text-muted">Sedang Dikemas</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <div class="text-success mb-2">
+                    <i class="fas fa-truck fa-2x"></i>
+                </div>
+                <h3 class="mb-1">{{ stats.ready }}</h3>
+                <p class="card-text">Ready Pickup</p>
+                <small class="text-muted">Siap Diambil</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Orders -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list me-2"></i>Pesanan Terbaru
+                </h5>
+                <span class="badge bg-secondary">{{ stats.total }} total orders</span>
+            </div>
+            <div class="card-body">
+                {% if recent_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>No. Pesanan</th>
+                                    <th>No. Resi</th>
+                                    <th>Customer</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Tanggal</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in recent_orders %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('order_detail', order_id=order.id) }}" 
+                                               class="text-primary fw-bold text-decoration-none"
+                                               target="_blank">
+                                                <i class="fas fa-external-link-alt me-1"></i>{{ order.order_number }}
+                                            </a>
+                                        </td>
+                                        <td>{{ order.tracking_number or '-' }}</td>
+                                        <td>{{ order.customer_name }}</td>
+                                        <td>Rp {{ "{:,.0f}".format(order.total_amount) }}</td>
+                                        <td>
+                                            {% set status_colors = {
+                                                'pending': 'warning',
+                                                'picking': 'info',
+                                                'picked': 'info',
+                                                'packing': 'primary',
+                                                'packed': 'primary',
+                                                'ready_for_pickup': 'success'
+                                            } %}
+                                            <span class="badge bg-{{ status_colors.get(order.status, 'secondary') }}">
+                                                {{ order.status.replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                        <td>{{ order.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                                        <td>
+                                            {% if order.status == 'pending' %}
+                                                <button class="btn btn-sm btn-success scan-order-btn" 
+                                                        data-order="{{ order.order_number }}">
+                                                    <i class="fas fa-qrcode"></i> Start Picking
+                                                </button>
+                                            {% elif order.status == 'picking' %}
+                                                <a href="{{ url_for('picking_interface', order_id=order.id) }}" 
+                                                   class="btn btn-sm btn-info">
+                                                    <i class="fas fa-hand-paper"></i> Continue Picking
+                                                </a>
+                                            {% elif order.status == 'picked' %}
+                                                <a href="{{ url_for('packing_interface', order_id=order.id) }}" 
+                                                   class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-box"></i> Pack
+                                                </a>
+                                            {% elif order.status == 'packing' %}
+                                                <a href="{{ url_for('packing_interface', order_id=order.id) }}" 
+                                                   class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-box"></i> Continue Packing
+                                                </a>
+                                            {% elif order.status == 'packed' %}
+                                                <button class="btn btn-sm btn-success scan-ready-btn" 
+                                                        data-order="{{ order.tracking_number or order.order_number }}">
+                                                    <i class="fas fa-truck"></i> Ready Pickup
+                                                </button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <h5>Belum Ada Pesanan</h5>
+                        <p>Import pesanan dari file Excel untuk memulai.</p>
+                        <a href="{{ url_for('import_orders') }}" class="btn btn-primary">
+                            <i class="fas fa-file-import me-2"></i>Import Pesanan Sekarang
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Scan Modal -->
+<div class="modal fade" id="quickScanModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Quick Scan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="quickScanInput" class="form-label">Scan Barcode</label>
+                    <input type="text" class="form-control" id="quickScanInput" 
+                           placeholder="Scan atau ketik nomor pesanan/resi">
+                </div>
+                <div id="scanResult"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="processScanBtn">Process</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const quickScanModal = new bootstrap.Modal(document.getElementById('quickScanModal'));
+    const quickScanInput = document.getElementById('quickScanInput');
+    const processScanBtn = document.getElementById('processScanBtn');
+    const scanResult = document.getElementById('scanResult');
+    
+    // Auto-focus on scan input when modal opens
+    document.getElementById('quickScanModal').addEventListener('shown.bs.modal', function() {
+        quickScanInput.focus();
+    });
+    
+    // Handle enter key in scan input
+    quickScanInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            processScanBtn.click();
+        }
+    });
+    
+    // Handle scan order buttons
+    document.querySelectorAll('.scan-order-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const orderNumber = this.dataset.order;
+            quickScanInput.value = orderNumber;
+            quickScanModal.show();
+        });
+    });
+    
+    // Handle ready pickup buttons
+    document.querySelectorAll('.scan-ready-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const trackingNumber = this.dataset.order;
+            processReadyPickup(trackingNumber);
+        });
+    });
+    
+    // Process scan
+    processScanBtn.addEventListener('click', function() {
+        const barcode = quickScanInput.value.trim();
+        if (!barcode) {
+            showScanResult('Masukkan nomor pesanan atau resi', 'error');
+            return;
+        }
+        
+        processScanBtn.disabled = true;
+        processScanBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+        
+        fetch('/scan/order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'barcode=' + encodeURIComponent(barcode)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showScanResult(`Pesanan ${data.order_number} ditemukan untuk ${data.customer_name}`, 'success');
+                setTimeout(() => {
+                    window.location.href = `/picking/${data.order_id}`;
+                }, 1500);
+            } else {
+                showScanResult(data.error, 'error');
+            }
+        })
+        .catch(error => {
+            showScanResult('Network error', 'error');
+        })
+        .finally(() => {
+            processScanBtn.disabled = false;
+            processScanBtn.innerHTML = 'Process';
+        });
+    });
+    
+    function processReadyPickup(trackingNumber) {
+        fetch('/scan/ready_pickup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'barcode=' + encodeURIComponent(trackingNumber)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.error);
+            }
+        })
+        .catch(error => {
+            alert('Network error');
+        });
+    }
+    
+    function showScanResult(message, type) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        scanResult.innerHTML = `<div class="alert ${alertClass}">${message}</div>`;
+    }
+});
+</script>
+{% endblock %}

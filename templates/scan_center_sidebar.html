@@ -1,0 +1,742 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Scan Center - STRONG Order Management{% endblock %}
+
+{% block extra_head %}
+<style>
+.scan-wrapper {
+    display: flex;
+    height: calc(100vh - 80px);
+    background: #f8f9fa;
+}
+
+.scan-sidebar {
+    width: 250px;
+    background: #34495e;
+    color: #ecf0f1;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+}
+
+.scan-sidebar-header {
+    background: #2c3e50;
+    padding: 1rem;
+    border-bottom: 1px solid #34495e;
+}
+
+.scan-sidebar-header h4 {
+    margin: 0;
+    color: #ecf0f1;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.scan-menu {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.scan-menu-item {
+    border-bottom: 1px solid #2c3e50;
+}
+
+.scan-menu-link {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    color: #bdc3c7;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+}
+
+.scan-menu-link:hover {
+    background: #2c3e50;
+    color: #ecf0f1;
+    text-decoration: none;
+}
+
+.scan-menu-link.active {
+    background: #2980b9;
+    color: #fff;
+}
+
+.scan-menu-icon {
+    width: 20px;
+    margin-right: 12px;
+    text-align: center;
+}
+
+.scan-menu-text {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.scan-content {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+    background: #fff;
+}
+
+.scan-content-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #ecf0f1;
+}
+
+.scan-content-header h3 {
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.scan-content-header p {
+    color: #7f8c8d;
+    margin: 0;
+    font-size: 1rem;
+}
+
+.scan-form-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 2rem;
+    border: 1px solid #e9ecef;
+    margin-bottom: 2rem;
+}
+
+.scan-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.scan-form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #495057;
+    font-weight: 600;
+}
+
+.scan-input-wrapper {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.scan-input-wrapper input {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+.scan-input-wrapper input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.scan-camera-btn {
+    padding: 0.75rem 1rem;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.scan-camera-btn:hover {
+    background: #5a6268;
+}
+
+.scan-submit-btn {
+    width: 100%;
+    padding: 1rem;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.scan-submit-btn:hover {
+    background: #0056b3;
+}
+
+.scan-submit-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
+.scan-submit-btn.picking {
+    background: #007bff;
+}
+
+.scan-submit-btn.picking:hover {
+    background: #0056b3;
+}
+
+.scan-submit-btn.packing {
+    background: #fd7e14;
+}
+
+.scan-submit-btn.packing:hover {
+    background: #e8590c;
+}
+
+.scan-submit-btn.shipping {
+    background: #28a745;
+}
+
+.scan-submit-btn.shipping:hover {
+    background: #1e7e34;
+}
+
+.camera-section {
+    margin: 1rem 0;
+    display: none;
+}
+
+.camera-video {
+    width: 100%;
+    max-width: 400px;
+    height: 250px;
+    border-radius: 6px;
+    background: #000;
+    display: block;
+    margin: 0 auto;
+}
+
+.scan-result {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 6px;
+    display: none;
+}
+
+.scan-result.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.scan-result.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.audio-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    border: 1px solid #e9ecef;
+}
+
+.audio-section h5 {
+    color: #495057;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.audio-test-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.audio-test-btn {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.audio-test-btn.success {
+    background: #28a745;
+}
+
+.audio-test-btn.success:hover {
+    background: #1e7e34;
+}
+
+.audio-test-btn.error {
+    background: #dc3545;
+}
+
+.audio-test-btn.error:hover {
+    background: #c82333;
+}
+
+.section-content {
+    display: none;
+}
+
+.section-content.active {
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .scan-wrapper {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .scan-sidebar {
+        width: 100%;
+        height: auto;
+    }
+    
+    .scan-menu {
+        display: flex;
+        overflow-x: auto;
+    }
+    
+    .scan-menu-item {
+        flex: 0 0 auto;
+        border-bottom: none;
+        border-right: 1px solid #2c3e50;
+    }
+    
+    .scan-menu-link {
+        padding: 1rem;
+        min-width: 120px;
+        justify-content: center;
+    }
+    
+    .scan-content {
+        padding: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="scan-wrapper">
+    <!-- Sidebar -->
+    <div class="scan-sidebar">
+        <div class="scan-sidebar-header">
+            <h4><i class="fas fa-qrcode me-2"></i>Scan Center</h4>
+            <p style="font-size: 0.8rem; color: #95a5a6; margin-top: 0.5rem;">Pilih menu untuk mulai scanning</p>
+        </div>
+        
+        <ul class="scan-menu">
+            <li class="scan-menu-item">
+                <button class="scan-menu-link active" onclick="switchSection('picking')">
+                    <i class="fas fa-hand-paper scan-menu-icon"></i>
+                    <span class="scan-menu-text">Picking Mode</span>
+                </button>
+            </li>
+            <li class="scan-menu-item">
+                <button class="scan-menu-link" onclick="switchSection('packing')">
+                    <i class="fas fa-box scan-menu-icon"></i>
+                    <span class="scan-menu-text">Validasi Packing</span>
+                </button>
+            </li>
+            <li class="scan-menu-item">
+                <button class="scan-menu-link" onclick="switchSection('shipping')">
+                    <i class="fas fa-truck scan-menu-icon"></i>
+                    <span class="scan-menu-text">Ready Pick Up</span>
+                </button>
+            </li>
+        </ul>
+    </div>
+    
+    <!-- Content Area -->
+    <div class="scan-content">
+        <!-- Picking Section -->
+        <div class="section-content active" id="picking-section">
+            <div class="scan-content-header">
+                <h3><i class="fas fa-hand-paper me-2"></i>Picking Mode</h3>
+                <p>Scan nomor pesanan untuk memulai proses picking</p>
+            </div>
+            
+            <div class="scan-form-card">
+                <div class="scan-form-group">
+                    <label for="pickingInput">Nomor Pesanan / Tracking Number</label>
+                    <div class="scan-input-wrapper">
+                        <input type="text" id="pickingInput" placeholder="Masukkan atau scan nomor pesanan">
+                        <button class="scan-camera-btn" onclick="toggleCamera('picking')">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="camera-section" id="pickingCamera">
+                    <video class="camera-video" id="pickingVideo" autoplay playsinline></video>
+                </div>
+                
+                <button class="scan-submit-btn picking" onclick="processScan('picking')">
+                    <i class="fas fa-search me-2"></i>Proses Picking
+                </button>
+                
+                <div class="scan-result" id="pickingResult"></div>
+            </div>
+        </div>
+        
+        <!-- Packing Section -->
+        <div class="section-content" id="packing-section">
+            <div class="scan-content-header">
+                <h3><i class="fas fa-box me-2"></i>Validasi Packing</h3>
+                <p>Scan nomor pesanan untuk validasi packing</p>
+            </div>
+            
+            <div class="scan-form-card">
+                <div class="scan-form-group">
+                    <label for="packingInput">Nomor Pesanan / Tracking Number</label>
+                    <div class="scan-input-wrapper">
+                        <input type="text" id="packingInput" placeholder="Masukkan atau scan nomor pesanan">
+                        <button class="scan-camera-btn" onclick="toggleCamera('packing')">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="camera-section" id="packingCamera">
+                    <video class="camera-video" id="packingVideo" autoplay playsinline></video>
+                </div>
+                
+                <button class="scan-submit-btn packing" onclick="processScan('packing')">
+                    <i class="fas fa-check me-2"></i>Validasi Packing
+                </button>
+                
+                <div class="scan-result" id="packingResult"></div>
+            </div>
+        </div>
+        
+        <!-- Shipping Section -->
+        <div class="section-content" id="shipping-section">
+            <div class="scan-content-header">
+                <h3><i class="fas fa-truck me-2"></i>Ready Pick Up</h3>
+                <p>Scan tracking number untuk ready pick up</p>
+            </div>
+            
+            <div class="scan-form-card">
+                <div class="scan-form-group">
+                    <label for="shippingInput">Tracking Number</label>
+                    <div class="scan-input-wrapper">
+                        <input type="text" id="shippingInput" placeholder="Masukkan atau scan tracking number">
+                        <button class="scan-camera-btn" onclick="toggleCamera('shipping')">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="camera-section" id="shippingCamera">
+                    <video class="camera-video" id="shippingVideo" autoplay playsinline></video>
+                </div>
+                
+                <button class="scan-submit-btn shipping" onclick="processScan('shipping')">
+                    <i class="fas fa-shipping-fast me-2"></i>Ready Pick Up
+                </button>
+                
+                <div class="scan-result" id="shippingResult"></div>
+            </div>
+        </div>
+        
+        <!-- Audio Test Section -->
+        <div class="audio-section">
+            <h5><i class="fas fa-volume-up me-2"></i>Test Audio</h5>
+            <div class="audio-test-buttons">
+                <button class="audio-test-btn success" onclick="testSuccessAudio()">
+                    <i class="fas fa-play me-1"></i>Success
+                </button>
+                <button class="audio-test-btn error" onclick="testErrorAudio()">
+                    <i class="fas fa-play me-1"></i>Error
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script>
+// Global variables
+let currentCamera = null;
+let currentStream = null;
+let successAudio = null;
+let errorAudio = null;
+let isScanning = false;
+
+// Initialize audio
+function initAudio() {
+    successAudio = new Audio('/static/sounds/success.wav');
+    errorAudio = new Audio('/static/sounds/error.wav');
+    successAudio.volume = 1.0;
+    errorAudio.volume = 1.0;
+}
+
+// Switch section function
+function switchSection(sectionName) {
+    // Remove active class from all menu links
+    document.querySelectorAll('.scan-menu-link').forEach(link => {
+        link.classList.remove('active');
+    });
+    
+    // Add active class to clicked link
+    event.target.closest('.scan-menu-link').classList.add('active');
+    
+    // Hide all sections
+    document.querySelectorAll('.section-content').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    // Show selected section
+    document.getElementById(sectionName + '-section').classList.add('active');
+    
+    // Stop any active camera
+    stopCamera();
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initAudio();
+});
+
+// Test audio functions
+function testSuccessAudio() {
+    if (!successAudio) initAudio();
+    successAudio.currentTime = 0;
+    successAudio.play().catch(e => console.log('Audio play failed:', e));
+}
+
+function testErrorAudio() {
+    if (!errorAudio) initAudio();
+    errorAudio.currentTime = 0;
+    errorAudio.play().catch(e => console.log('Audio play failed:', e));
+}
+
+// Toggle camera function
+function toggleCamera(type) {
+    if (currentCamera === type) {
+        stopCamera();
+    } else {
+        startCamera(type);
+    }
+}
+
+// Start camera
+function startCamera(type) {
+    const container = document.getElementById(type + 'Camera');
+    const video = document.getElementById(type + 'Video');
+    
+    if (currentStream) {
+        stopCamera();
+    }
+    
+    container.style.display = 'block';
+    currentCamera = type;
+    
+    const constraints = {
+        video: {
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+            facingMode: 'environment'
+        }
+    };
+    
+    navigator.mediaDevices.getUserMedia(constraints)
+        .then(stream => {
+            currentStream = stream;
+            video.srcObject = stream;
+            video.play();
+            
+            isScanning = true;
+            scanForQR(video, type);
+        })
+        .catch(error => {
+            console.error('Camera access error:', error);
+            showResult(type, 'Kamera tidak dapat diakses. Silakan gunakan input manual.', 'error');
+            container.style.display = 'none';
+        });
+}
+
+// Stop camera
+function stopCamera() {
+    if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+        currentStream = null;
+    }
+    
+    if (currentCamera) {
+        const container = document.getElementById(currentCamera + 'Camera');
+        container.style.display = 'none';
+        currentCamera = null;
+    }
+    
+    isScanning = false;
+}
+
+// QR Code scanning
+function scanForQR(video, type) {
+    if (!isScanning || currentCamera !== type) return;
+    
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+        
+        if (code) {
+            const input = document.getElementById(type + 'Input');
+            input.value = code.data;
+            
+            showResult(type, '✓ QR Code berhasil discan!', 'success');
+            stopCamera();
+            
+            setTimeout(() => {
+                processScan(type);
+            }, 1000);
+            
+            return;
+        }
+    }
+    
+    requestAnimationFrame(() => scanForQR(video, type));
+}
+
+// Process scan
+function processScan(type) {
+    const input = document.getElementById(type + 'Input');
+    const button = document.querySelector('.scan-submit-btn.' + type);
+    const barcode = input.value.trim();
+    
+    if (!barcode) {
+        showResult(type, 'Silakan masukkan kode untuk discan', 'error');
+        return;
+    }
+    
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+    
+    let endpoint;
+    switch(type) {
+        case 'picking':
+            endpoint = '/scan/order';
+            break;
+        case 'packing':
+            endpoint = '/scan/packing_validation';
+            break;
+        case 'shipping':
+            endpoint = '/scan/ready_pickup';
+            break;
+        default:
+            endpoint = '/scan/order';
+    }
+    
+    fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'barcode=' + encodeURIComponent(barcode),
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showResult(type, '✓ ' + data.message, 'success');
+            
+            if (successAudio) {
+                successAudio.currentTime = 0;
+                successAudio.play().catch(e => console.log('Audio play failed:', e));
+            }
+            
+            if (data.redirect) {
+                setTimeout(() => {
+                    window.location.href = data.redirect;
+                }, 1500);
+            } else if (type === 'picking' && data.order_id) {
+                setTimeout(() => {
+                    window.location.href = `/picking/${data.order_id}`;
+                }, 1500);
+            } else {
+                input.value = '';
+                input.focus();
+            }
+        } else {
+            showResult(type, '❌ ' + data.error, 'error');
+            
+            if (errorAudio) {
+                errorAudio.currentTime = 0;
+                errorAudio.play().catch(e => console.log('Audio play failed:', e));
+            }
+            
+            input.value = '';
+            input.focus();
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        showResult(type, '❌ Terjadi kesalahan jaringan', 'error');
+        
+        if (errorAudio) {
+            errorAudio.currentTime = 0;
+            errorAudio.play().catch(e => console.log('Audio play failed:', e));
+        }
+    })
+    .finally(() => {
+        button.disabled = false;
+        switch(type) {
+            case 'picking':
+                button.innerHTML = '<i class="fas fa-search me-2"></i>Proses Picking';
+                break;
+            case 'packing':
+                button.innerHTML = '<i class="fas fa-check me-2"></i>Validasi Packing';
+                break;
+            case 'shipping':
+                button.innerHTML = '<i class="fas fa-shipping-fast me-2"></i>Ready Pick Up';
+                break;
+        }
+    });
+}
+
+// Show result
+function showResult(type, message, alertType) {
+    const resultDiv = document.getElementById(type + 'Result');
+    resultDiv.className = 'scan-result ' + alertType;
+    resultDiv.innerHTML = message;
+    resultDiv.style.display = 'block';
+    
+    setTimeout(() => {
+        resultDiv.style.display = 'none';
+    }, 5000);
+}
+
+// Handle enter key
+document.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        const activeElement = document.activeElement;
+        if (activeElement && activeElement.tagName === 'INPUT') {
+            const inputId = activeElement.id;
+            if (inputId === 'pickingInput') {
+                processScan('picking');
+            } else if (inputId === 'packingInput') {
+                processScan('packing');
+            } else if (inputId === 'shippingInput') {
+                processScan('shipping');
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

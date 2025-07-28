@@ -1,0 +1,354 @@
+<!-- Scan Center Content Only - for AJAX requests -->
+<div class="content-header">
+    <h1><i class="fas fa-qrcode"></i> Scan Center</h1>
+    <p>Sistem scanning untuk picking, packing, dan ready pickup</p>
+</div>
+
+<style>
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+
+.content-header {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.content-header h1 {
+    margin: 0;
+    color: #333;
+    font-size: 1.5rem;
+}
+
+.content-header p {
+    margin: 5px 0 0 0;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+</style>
+
+<div class="scan-center-container">
+    <div class="scan-center-header">
+        <h2>SCAN CENTER</h2>
+        <button id="toggleMenu" class="dropdown-toggle" onclick="toggleScanMenu()">
+            <i class="fas fa-chevron-down" id="menuIcon"></i>
+        </button>
+    </div>
+    
+    <div id="scanMenu" class="scan-menu" style="display: none;">
+        <div class="scan-menu-item" onclick="switchScanMode('picking')">
+            <i class="fas fa-box-open"></i>
+            <span>Picking</span>
+        </div>
+        <div class="scan-menu-item" onclick="switchScanMode('packing')">
+            <i class="fas fa-box"></i>
+            <span>Validasi Packing</span>
+        </div>
+        <div class="scan-menu-item" onclick="switchScanMode('pickup')">
+            <i class="fas fa-truck"></i>
+            <span>Ready Pick Up</span>
+        </div>
+    </div>
+    
+    <!-- Main Scan Interface -->
+    <div class="card mb-4">
+        <div class="card-header bg-purple">
+            <h5 class="mb-0 text-white"><i class="fas fa-qrcode me-2"></i>SCAN CENTER</h5>
+        </div>
+        <div class="card-body">
+            <div id="scanInterface">
+                {% if mode %}
+                    <!-- Auto-load mode based on URL parameter -->
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            loadScanInterface('{{ mode }}');
+                        });
+                    </script>
+                {% else %}
+                    <div class="text-center py-4">
+                        <div class="simple-icon mb-3">
+                            <i class="fas fa-hand-pointer"></i>
+                        </div>
+                        <h5 class="text-muted">Pilih Mode Scanning</h5>
+                        <p class="text-muted small mb-0">Silakan pilih mode scanning dari menu sidebar</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.scan-center-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.scan-center-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    cursor: pointer;
+}
+
+.scan-center-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.dropdown-toggle {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.dropdown-toggle.active {
+    transform: rotate(180deg);
+}
+
+.scan-menu {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.scan-menu-item {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.scan-menu-item:last-child {
+    border-bottom: none;
+}
+
+.scan-menu-item:hover {
+    background-color: #f8f9fa;
+}
+
+.scan-menu-item i {
+    margin-right: 10px;
+    color: #667eea;
+    font-size: 1.2rem;
+}
+
+.scan-interface {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.scan-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.scan-card-header {
+    background: linear-gradient(135deg, #6f42c1, #8b5cf6);
+    color: white;
+    padding: 15px 20px;
+}
+
+.scan-card-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+.scan-card-body {
+    padding: 20px;
+}
+</style>
+
+<script>
+let currentScanMode = '{{ default_mode }}';
+const userRole = '{{ user_role }}';
+
+function toggleScanMenu() {
+    const menu = document.getElementById('scanMenu');
+    const icon = document.getElementById('menuIcon');
+    const toggle = document.getElementById('toggleMenu');
+    
+    if (menu.style.display === 'none') {
+        menu.style.display = 'block';
+        icon.classList.add('fa-chevron-up');
+        icon.classList.remove('fa-chevron-down');
+        toggle.classList.add('active');
+    } else {
+        menu.style.display = 'none';
+        icon.classList.add('fa-chevron-down');
+        icon.classList.remove('fa-chevron-up');
+        toggle.classList.remove('active');
+    }
+}
+
+function switchScanMode(mode) {
+    currentScanMode = mode;
+    
+    // Hide menu after selection
+    document.getElementById('scanMenu').style.display = 'none';
+    document.getElementById('menuIcon').classList.add('fa-chevron-down');
+    document.getElementById('menuIcon').classList.remove('fa-chevron-up');
+    document.getElementById('toggleMenu').classList.remove('active');
+    
+    // Load scan interface for selected mode
+    loadScanInterface(mode);
+}
+
+function loadScanInterface(mode) {
+    const interface = document.getElementById('scanInterface');
+    const title = document.getElementById('scanModeTitle');
+    
+    // Show loading state
+    interface.style.opacity = '0.5';
+    
+    let modeTitle = '';
+    let modeContent = '';
+    
+    switch(mode) {
+        case 'picking':
+            modeTitle = 'Mode Picking';
+            modeContent = `
+                <div class="scan-input-group">
+                    <label>Scan Order ID atau Tracking Number:</label>
+                    <input type="text" id="pickingInput" class="form-control" placeholder="Scan atau ketik disini..." autofocus>
+                    <button class="btn btn-primary mt-2" onclick="processPicking()">Proses Picking</button>
+                </div>
+            `;
+            break;
+        case 'packing':
+            modeTitle = 'Mode Validasi Packing';
+            modeContent = `
+                <div class="scan-input-group">
+                    <label>Scan Order ID atau Tracking Number:</label>
+                    <input type="text" id="packingInput" class="form-control" placeholder="Scan atau ketik disini..." autofocus>
+                    <button class="btn btn-primary mt-2" onclick="processValidation()">Validasi Packing</button>
+                </div>
+            `;
+            break;
+        case 'pickup':
+            modeTitle = 'Mode Ready Pick Up';
+            modeContent = `
+                <div class="scan-input-group">
+                    <label>Scan Tracking Number:</label>
+                    <input type="text" id="pickupInput" class="form-control" placeholder="Scan resi disini..." autofocus>
+                    <button class="btn btn-success mt-2" onclick="processReadyPickup()">Ready Pick Up</button>
+                </div>
+                <div id="scanResult" class="mt-3"></div>
+                <div id="scanHistory" class="mt-3"></div>
+            `;
+            break;
+    }
+    
+    title.textContent = modeTitle;
+    interface.innerHTML = `
+        <div class="scan-card">
+            <div class="scan-card-header">
+                <h3>${modeTitle}</h3>
+            </div>
+            <div class="scan-card-body">
+                ${modeContent}
+            </div>
+        </div>
+    `;
+    
+    interface.style.opacity = '1';
+}
+
+function processPicking() {
+    const input = document.getElementById('pickingInput');
+    const value = input.value.trim();
+    
+    if (!value) {
+        alert('Silakan masukkan Order ID atau Tracking Number');
+        return;
+    }
+    
+    // Process picking logic here
+    window.location.href = `/scan_picking_api?barcode=${encodeURIComponent(value)}`;
+}
+
+function processValidation() {
+    const input = document.getElementById('packingInput');
+    const value = input.value.trim();
+    
+    if (!value) {
+        alert('Silakan masukkan Order ID atau Tracking Number');
+        return;
+    }
+    
+    // Process validation logic here
+    window.location.href = `/scan_packing_validation?barcode=${encodeURIComponent(value)}`;
+}
+
+function processReadyPickup() {
+    const input = document.getElementById('pickupInput');
+    const value = input.value.trim();
+    
+    if (!value) {
+        alert('Silakan masukkan Tracking Number');
+        return;
+    }
+    
+    // Process ready pickup logic here
+    fetch('/scan_ready_pickup', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `barcode=${encodeURIComponent(value)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        showResult(data.message, data.success);
+        if (data.success) {
+            input.value = '';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showResult('Terjadi kesalahan saat memproses', false);
+    });
+}
+
+function showResult(message, success) {
+    const resultDiv = document.getElementById('scanResult');
+    if (!resultDiv) return;
+    
+    resultDiv.innerHTML = `
+        <div class="alert alert-${success ? 'success' : 'danger'}" role="alert">
+            ${message}
+        </div>
+    `;
+    
+    // Clear result after 3 seconds
+    setTimeout(() => {
+        resultDiv.innerHTML = '';
+    }, 3000);
+}
+
+// Initialize with default mode if user has specific role
+if (userRole === 'picker') {
+    switchScanMode('picking');
+} else if (userRole === 'packer') {
+    switchScanMode('packing');
+}
+</script>

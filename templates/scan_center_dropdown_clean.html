@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan Center - STRONG Order Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Modern Glassmorphism Background */
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .page-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Modern Sidebar */
+        .sidebar {
+            width: 250px;
+            background: rgba(44, 62, 80, 0.9);
+            backdrop-filter: blur(15px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .sidebar-header {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(74, 109, 167, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-header:hover {
+            background: rgba(90, 125, 183, 0.9);
+        }
+
+        .sidebar-header h4 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 700;
+            flex: 1;
+            text-align: center;
+        }
+
+        .sidebar-header i:last-child {
+            margin-left: 0.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header i:last-child.rotated {
+            transform: rotate(90deg);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .sidebar-menu.open {
+            max-height: 500px;
+        }
+
+        .sidebar-menu li {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-menu .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .sidebar-menu .menu-item:hover {
+            background: rgba(52, 73, 94, 0.7);
+            color: white;
+        }
+
+        .sidebar-menu .menu-item.active {
+            background: rgba(231, 76, 60, 0.8);
+            color: white;
+        }
+
+        .sidebar-menu .menu-item i {
+            width: 24px;
+            margin-right: 1rem;
+            font-size: 1.2rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .content-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+
+        .content-header h2 {
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .content-header p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        /* Modern Scan Interface */
+        .scan-interface {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(15px);
+            display: none;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .scan-interface.active {
+            display: block !important;
+        }
+
+        .scan-interface h3 {
+            color: white;
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .scan-interface h3 i {
+            margin-right: 0.5rem;
+            color: #4CAF50;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            color: white;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .form-control {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 1rem;
+        }
+
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.5);
+            color: white;
+            box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            border-radius: 10px;
+            padding: 12px 24px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            flex: 1;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(45deg, #45a049, #3d8b40);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #6c757d, #5a6268);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(45deg, #5a6268, #495057);
+            transform: translateY(-2px);
+        }
+
+        /* Result Display */
+        .result-display {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 1rem;
+            color: white;
+            min-height: 60px;
+            margin-top: 1rem;
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        /* Scan History */
+        .scan-history {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            backdrop-filter: blur(10px);
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .scan-history h4 {
+            color: white;
+            margin-bottom: 1rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+        #scanHistoryList {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+                height: auto;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            
+            .scan-interface {
+                padding: 1.5rem;
+            }
+            
+            .content-header h2 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header" onclick="toggleScanMenu()">
+                <i class="fas fa-qrcode"></i>
+                <h4>SCAN CENTER</h4>
+                <i class="fas fa-chevron-right" id="chevron"></i>
+            </div>
+            <ul class="sidebar-menu" id="scanMenu">
+                <li>
+                    <a href="#" class="menu-item" onclick="showScanInterface('picking')">
+                        <i class="fas fa-hand-paper"></i>
+                        <span>Picking Mode</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="menu-item" onclick="showScanInterface('packing')">
+                        <i class="fas fa-box"></i>
+                        <span>Validasi Packing</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="menu-item" onclick="showScanInterface('shipping')">
+                        <i class="fas fa-shipping-fast"></i>
+                        <span>Ready Pick Up</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="content-header">
+                <h2>Scan Center</h2>
+                <p>Pilih menu di sidebar untuk mulai scanning</p>
+            </div>
+
+            <!-- Picking Interface -->
+            <div id="picking-interface" class="scan-interface">
+                <h3><i class="fas fa-hand-paper"></i> Picking Mode</h3>
+                <form>
+                    <div class="form-group">
+                        <label for="pickingInput">Scan atau masukkan kode tracking</label>
+                        <input type="text" id="pickingInput" class="form-control" placeholder="Masukkan atau scan tracking number">
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary" onclick="openCamera('picking')">
+                            <i class="fas fa-camera"></i> Camera
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="processPicking()">
+                            <i class="fas fa-check"></i> Proses Picking
+                        </button>
+                    </div>
+                </form>
+                <div id="pickingResult" class="result-display"></div>
+            </div>
+
+            <!-- Packing Interface -->
+            <div id="packing-interface" class="scan-interface">
+                <h3><i class="fas fa-box"></i> Validasi Packing</h3>
+                <form>
+                    <div class="form-group">
+                        <label for="packingInput">Scan atau masukkan kode tracking</label>
+                        <input type="text" id="packingInput" class="form-control" placeholder="Masukkan atau scan tracking number">
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary" onclick="openCamera('packing')">
+                            <i class="fas fa-camera"></i> Camera
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="validatePacking()">
+                            <i class="fas fa-check-circle"></i> Validasi Packing
+                        </button>
+                    </div>
+                </form>
+                <div id="packingResult" class="result-display"></div>
+            </div>
+
+            <!-- Shipping Interface -->
+            <div id="shipping-interface" class="scan-interface">
+                <h3><i class="fas fa-shipping-fast"></i> Ready Pick Up</h3>
+                <form>
+                    <div class="form-group">
+                        <label for="shippingInput">Scan atau masukkan kode tracking</label>
+                        <input type="text" id="shippingInput" class="form-control" placeholder="Masukkan atau scan tracking number">
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-secondary" onclick="openCamera('shipping')">
+                            <i class="fas fa-camera"></i> Camera
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="readyPickUp()">
+                            <i class="fas fa-truck"></i> Ready Pick Up
+                        </button>
+                    </div>
+                </form>
+                <div id="shippingResult" class="result-display"></div>
+                
+                <!-- Scan History untuk Ready Pick Up -->
+                <div class="scan-history">
+                    <h4><i class="fas fa-history"></i> Scan History</h4>
+                    <div id="scanHistoryList">
+                        <p style="text-align: center; color: rgba(255,255,255,0.6);">History scan akan muncul di sini...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toggle sidebar dropdown
+        function toggleScanMenu() {
+            const menu = document.getElementById('scanMenu');
+            const chevron = document.getElementById('chevron');
+            
+            menu.classList.toggle('open');
+            chevron.classList.toggle('rotated');
+        }
+
+        // Show scan interface
+        function showScanInterface(mode) {
+            // Hide all interfaces
+            document.querySelectorAll('.scan-interface').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Remove active class from all menu items
+            document.querySelectorAll('.menu-item').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Show selected interface
+            const targetInterface = document.getElementById(mode + '-interface');
+            if (targetInterface) {
+                targetInterface.classList.add('active');
+            }
+            
+            // Add active class to clicked menu item
+            event.target.closest('.menu-item').classList.add('active');
+        }
+
+        // Camera function
+        function openCamera(mode) {
+            alert('Camera functionality untuk ' + mode + ' mode');
+        }
+
+        // Process functions
+        function processPicking() {
+            const input = document.getElementById('pickingInput').value;
+            const result = document.getElementById('pickingResult');
+            
+            if (input) {
+                result.innerHTML = '<i class="fas fa-check text-success"></i> Processing: ' + input;
+                // Add actual processing logic here
+            } else {
+                result.innerHTML = '<i class="fas fa-exclamation-triangle text-warning"></i> Masukkan tracking number';
+            }
+        }
+
+        function validatePacking() {
+            const input = document.getElementById('packingInput').value;
+            const result = document.getElementById('packingResult');
+            
+            if (input) {
+                result.innerHTML = '<i class="fas fa-check text-success"></i> Validating: ' + input;
+                // Add actual validation logic here
+            } else {
+                result.innerHTML = '<i class="fas fa-exclamation-triangle text-warning"></i> Masukkan tracking number';
+            }
+        }
+
+        function readyPickUp() {
+            const input = document.getElementById('shippingInput').value;
+            const result = document.getElementById('shippingResult');
+            
+            if (input) {
+                result.innerHTML = '<i class="fas fa-truck text-success"></i> Ready for pickup: ' + input;
+                // Add to scan history
+                addToScanHistory(input);
+                // Clear input
+                document.getElementById('shippingInput').value = '';
+            } else {
+                result.innerHTML = '<i class="fas fa-exclamation-triangle text-warning"></i> Masukkan tracking number';
+            }
+        }
+
+        function addToScanHistory(trackingNumber) {
+            const historyList = document.getElementById('scanHistoryList');
+            const now = new Date().toLocaleString('id-ID');
+            
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            historyItem.innerHTML = `
+                <strong>${trackingNumber}</strong><br>
+                <small>Scanned at: ${now}</small>
+            `;
+            
+            // Add to top of list
+            if (historyList.firstChild && historyList.firstChild.tagName === 'P') {
+                historyList.removeChild(historyList.firstChild);
+            }
+            
+            historyList.insertBefore(historyItem, historyList.firstChild);
+            
+            // Keep only last 10 items
+            const items = historyList.querySelectorAll('.history-item');
+            if (items.length > 10) {
+                historyList.removeChild(items[items.length - 1]);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing...');
+            // Auto-open first menu item
+            toggleScanMenu();
+        });
+    </script>
+</body>
+</html>

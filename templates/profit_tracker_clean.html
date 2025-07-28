@@ -1,0 +1,432 @@
+{% extends "base_sidebar.html" %}
+
+{% block content %}
+<div class="content-header">
+    <h1><i class="fas fa-calculator"></i> Keuangan</h1>
+    <p>Ringkasan profit harian per toko</p>
+</div>
+
+<!-- Statistics Cards -->
+<div class="stats-cards">
+    <div class="stat-card">
+        <div class="icon blue">
+            <i class="fas fa-coins"></i>
+        </div>
+        <h3>Rp {{ "{:,.0f}".format(profit_stats.total_revenue) }}</h3>
+        <p>Omzet Hari Ini</p>
+    </div>
+    <div class="stat-card">
+        <div class="icon green">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <h3>Rp {{ "{:,.0f}".format(profit_stats.total_profit) }}</h3>
+        <p>Profit Hari Ini</p>
+    </div>
+    <div class="stat-card">
+        <div class="icon orange">
+            <i class="fas fa-percentage"></i>
+        </div>
+        <h3>{{ "{:.1f}".format(profit_stats.margin_percentage) }}%</h3>
+        <p>Margin</p>
+    </div>
+    <div class="stat-card">
+        <div class="icon cyan">
+            <i class="fas fa-shopping-cart"></i>
+        </div>
+        <h3>{{ profit_stats.total_orders }}</h3>
+        <p>Total Order</p>
+    </div>
+</div>
+
+<!-- Settings -->
+<div class="content-card">
+    <div class="content-card-header">
+        <h5><i class="fas fa-cog"></i> Pengaturan Biaya</h5>
+    </div>
+    <div class="content-card-body">
+        <form method="POST" action="{{ url_for('profit_tracker_settings') }}">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="admin_fee" class="form-label">Admin Fee (%)</label>
+                        <div class="input-group">
+                            <select class="form-select" id="admin_fee" name="admin_fee_percentage">
+                                <option value="0" {% if current_settings.admin_fee_percentage == 0 %}selected{% endif %}>0%</option>
+                                <option value="8" {% if current_settings.admin_fee_percentage == 8 %}selected{% endif %}>8%</option>
+                                <option value="11" {% if current_settings.admin_fee_percentage == 11 %}selected{% endif %}>11%</option>
+                                <option value="15" {% if current_settings.admin_fee_percentage == 15 %}selected{% endif %}>15%</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="fee_per_order" class="form-label">Biaya per Order (Rp)</label>
+                        <input type="number" class="form-control" id="fee_per_order" name="fee_per_order" value="{{ current_settings.fee_per_order }}" step="1" min="0">
+                    </div>
+                    
+                    <!-- Role Information untuk Edit Limits -->
+                    {% if session.user_role != 'admin' %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-1"></i>
+                        <strong>Non-Admin User:</strong> Maksimal 3x edit per toko. Hubungi admin jika perlu edit lebih.
+                    </div>
+                    {% else %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-crown me-1"></i>
+                        <strong>Admin User:</strong> Unlimited edit access untuk semua biaya iklan.
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="insurance_fee" class="form-label">Asuransi per Order (Rp)</label>
+                        <input type="number" class="form-control" id="insurance_fee" name="insurance_fee" value="{{ current_settings.insurance_fee }}" step="1" min="0">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="store_id" class="form-label">
+                            <i class="fas fa-store text-info me-1"></i>
+                            Pilih Toko untuk Biaya Iklan
+                        </label>
+                        <select class="form-select" id="store_id" name="store_id" required>
+                            <option value="">-- Pilih Toko --</option>
+                            {% for store in stores %}
+                            <option value="{{ store.id }}">{{ store.store_name }} ({{ store.sku_code }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="cost_date" class="form-label">
+                            <i class="fas fa-calendar text-primary me-1"></i>
+                            Tanggal untuk Biaya Iklan
+                        </label>
+                        <input type="date" class="form-control" id="cost_date" name="cost_date" required>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Pilih tanggal kemarin untuk input biaya iklan retroaktif
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="advertising_cost" class="form-label">
+                            <i class="fas fa-bullhorn text-warning me-1"></i>
+                            Biaya Iklan (Rp)
+                        </label>
+                        <input type="number" class="form-control" id="advertising_cost" name="advertising_cost" value="0" step="1" min="0" required>
+                        <div class="form-text">
+                            <i class="fas fa-lightbulb me-1"></i>
+                            Input biaya iklan untuk tanggal yang dipilih di atas
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Simpan Pengaturan
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- History Biaya Iklan dengan Edit Tracking -->
+<div class="content-card">
+    <div class="content-card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5><i class="fas fa-history text-info"></i> History Biaya Iklan</h5>
+            <div>
+                <button id="selectAllHistoryBtn" class="btn btn-sm btn-outline-primary me-2" onclick="selectAllHistory()">
+                    <i class="fas fa-check-square"></i> Select All
+                </button>
+                <button id="deleteSelectedHistoryBtn" class="btn btn-sm btn-danger" onclick="deleteSelectedHistory()" style="display: none;">
+                    <i class="fas fa-trash"></i> Delete Selected
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="content-card-body">
+        {% if advertising_history %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th style="width: 5%">
+                            <input type="checkbox" id="selectAllHistory" onchange="toggleAllHistory(this)">
+                        </th>
+                        <th style="width: 12%">Tanggal</th>
+                        <th style="width: 18%">Toko</th>
+                        <th style="width: 12%">Platform</th>
+                        <th style="width: 10%">Biaya (Rp)</th>
+                        <th style="width: 10%">Dibuat Oleh</th>
+                        <th style="width: 12%">Edit Status</th>
+                        <th style="width: 12%">Terakhir Edit</th>
+                        <th style="width: 9%">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cost in advertising_history %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="history-checkbox" value="{{ cost.id }}" onchange="updateDeleteButtonVisibility()">
+                        </td>
+                        <td>{{ cost.expense_date.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            <span class="badge bg-info">{{ cost.store.store_name }}</span>
+                            ({{ cost.store.sku_code }})
+                        </td>
+                        <td>
+                            <span class="badge bg-warning">{{ cost.platform.title() }}</span>
+                        </td>
+                        <td>{{ "{:,.0f}".format(cost.daily_cost) }}</td>
+                        <td>{{ cost.created_by }}</td>
+                        <td>
+                            {% if session.user_role == 'admin' %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-crown"></i> Unlimited
+                                </span>
+                            {% else %}
+                                {% if cost.edit_count >= 3 %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-ban"></i> 3/3 (Max)
+                                    </span>
+                                {% elif cost.edit_count > 0 %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-edit"></i> {{ cost.edit_count }}/3
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check"></i> 0/3 (Fresh)
+                                    </span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if cost.edited_by %}
+                                {{ cost.edited_by }}<br>
+                                <small class="text-muted">{{ cost.updated_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                            {% else %}
+                                <span class="text-muted">Belum diedit</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if session.user_role == 'admin' or cost.edit_count < 3 %}
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        onclick="editAdvertisingCost('{{ cost.id }}', '{{ cost.store_id }}', '{{ cost.expense_date }}', '{{ cost.daily_cost }}')">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                            {% else %}
+                                <button class="btn btn-sm btn-outline-secondary" disabled>
+                                    <i class="fas fa-ban"></i> Max Edit
+                                </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted">
+            <i class="fas fa-inbox fa-3x mb-3"></i>
+            <p>Belum ada history biaya iklan</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function editAdvertisingCost(costId, storeId, expenseDate, currentCost) {
+    // Auto-fill form dengan data existing
+    document.getElementById('store_id').value = storeId;
+    document.getElementById('cost_date').value = expenseDate;
+    document.getElementById('advertising_cost').value = currentCost;
+    
+    // Scroll ke form
+    document.getElementById('store_id').scrollIntoView({ behavior: 'smooth' });
+    
+    // Highlight form dengan animation
+    const form = document.querySelector('form');
+    form.style.transition = 'all 0.3s ease';
+    form.style.backgroundColor = '#fff3cd';
+    
+    setTimeout(() => {
+        form.style.backgroundColor = '';
+    }, 2000);
+    
+    // Fokus ke input biaya iklan
+    setTimeout(() => {
+        document.getElementById('advertising_cost').focus();
+        document.getElementById('advertising_cost').select();
+    }, 500);
+}
+
+// Checkbox functionality for bulk delete history
+function toggleAllHistory(selectAllCheckbox) {
+    const historyCheckboxes = document.querySelectorAll('.history-checkbox');
+    historyCheckboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+    updateDeleteButtonVisibility();
+}
+
+function selectAllHistory() {
+    const selectAllCheckbox = document.getElementById('selectAllHistory');
+    selectAllCheckbox.checked = !selectAllCheckbox.checked;
+    toggleAllHistory(selectAllCheckbox);
+}
+
+function updateDeleteButtonVisibility() {
+    const checkedBoxes = document.querySelectorAll('.history-checkbox:checked');
+    const deleteButton = document.getElementById('deleteSelectedHistoryBtn');
+    
+    if (checkedBoxes.length > 0) {
+        deleteButton.style.display = 'inline-block';
+        deleteButton.innerHTML = `<i class="fas fa-trash"></i> Delete Selected (${checkedBoxes.length})`;
+    } else {
+        deleteButton.style.display = 'none';
+    }
+}
+
+function deleteSelectedHistory() {
+    const checkedBoxes = document.querySelectorAll('.history-checkbox:checked');
+    if (checkedBoxes.length === 0) {
+        alert('Pilih history yang ingin dihapus');
+        return;
+    }
+    
+    const historyIds = Array.from(checkedBoxes).map(cb => cb.value);
+    
+    if (confirm(`Yakin hapus ${historyIds.length} history biaya iklan? Tindakan ini tidak dapat dibatalkan.`)) {
+        // Send AJAX request to delete selected history
+        fetch('/delete_advertising_history', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                history_ids: historyIds
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`${data.deleted_count} history berhasil dihapus`);
+                location.reload(); // Refresh page to show updated history
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat menghapus history');
+        });
+    }
+}
+</script>
+
+<!-- Store Summary -->
+<div class="content-card">
+    <div class="content-card-header">
+        <h5><i class="fas fa-store"></i> Ringkasan Per Toko</h5>
+    </div>
+    <div class="content-card-body">
+        <div class="row">
+            {% for store_data in store_profits %}
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h6 class="card-title">{{ store_data.store_name }}</h6>
+                        <p class="mb-1"><small class="text-muted">Omzet:</small> <strong>Rp {{ "{:,.0f}".format(store_data.revenue) }}</strong></p>
+                        <p class="mb-1"><small class="text-muted">Profit:</small> <strong>Rp {{ "{:,.0f}".format(store_data.profit) }}</strong></p>
+                        <p class="mb-1"><small class="text-muted">Margin:</small> <strong>{{ "{:.1f}".format(store_data.margin) }}%</strong></p>
+                        <p class="mb-0"><small class="text-muted">Orders:</small> <strong>{{ store_data.orders }}</strong></p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Store Management -->
+<div class="content-card">
+    <div class="content-card-header">
+        <h5><i class="fas fa-store"></i> Manajemen Toko</h5>
+    </div>
+    <div class="content-card-body">
+        <!-- Add New Store Form -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <form method="POST" action="{{ url_for('add_store') }}" class="row g-3">
+                    <div class="col-md-6">
+                        <label for="store_name" class="form-label">
+                            <i class="fas fa-store text-primary me-1"></i>
+                            Nama Toko
+                        </label>
+                        <input type="text" class="form-control" id="store_name" name="store_name" placeholder="Contoh: ELEKTRONIK JAYA BARU" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="sku_code" class="form-label">
+                            <i class="fas fa-tag text-success me-1"></i>
+                            Kode SKU
+                        </label>
+                        <input type="text" class="form-control" id="sku_code" name="sku_code" placeholder="Contoh: EJB" style="text-transform: uppercase;" required>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-plus me-1"></i>
+                            Tambah
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Existing Stores Table -->
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 5%">No</th>
+                        <th style="width: 15%">Kode</th>
+                        <th style="width: 40%">Nama Toko</th>
+                        <th style="width: 15%">Status</th>
+                        <th style="width: 15%">Tanggal</th>
+                        <th style="width: 10%">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for store in stores %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            <span class="badge bg-primary">{{ store.sku_code }}</span>
+                        </td>
+                        <td>
+                            <strong>{{ store.store_name }}</strong>
+                            {% if store.description %}
+                            <br><small class="text-muted">{{ store.description }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if store.is_active %}
+                            <span class="badge bg-success">Aktif</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Nonaktif</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ store.created_at.strftime('%d/%m/%Y') if store.created_at else '-' }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="editStore({{ store.id }}, '{{ store.store_name }}', '{{ store.sku_code }}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

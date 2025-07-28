@@ -1,0 +1,610 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Scan Retur + Foto{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="fas fa-camera-retro"></i> Scan Retur + Foto</h1>
+            <p>Proses pengembalian dengan dokumentasi foto otomatis</p>
+        </div>
+        <!-- Mobile-only Logout Button -->
+        <div class="d-block d-md-none">
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="stats-cards">
+    <div class="stat-card">
+        <div class="stat-icon bg-warning">
+            <i class="fas fa-undo"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ stats.retur_hari_ini }}</h3>
+            <p>Retur Hari Ini</p>
+        </div>
+    </div>
+    
+    <div class="stat-card d-none d-md-block">
+        <div class="stat-icon bg-danger">
+            <i class="fas fa-exchange-alt"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ stats.total_retur }}</h3>
+            <p>Total Retur</p>
+        </div>
+    </div>
+    
+    <div class="stat-card d-none d-md-block">
+        <div class="stat-icon bg-info">
+            <i class="fas fa-box"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ stats.siap_retur }}</h3>
+            <p>Siap Retur</p>
+        </div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon bg-success">
+            <i class="fas fa-camera"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ stats.dengan_foto }}</h3>
+            <p>Dengan Foto</p>
+        </div>
+    </div>
+    
+    <div class="stat-card d-none d-md-block">
+        <div class="stat-icon bg-danger">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ stats.barang_rusak }}</h3>
+            <p>Barang Rusak</p>
+        </div>
+    </div>
+    
+    <div class="stat-card d-none d-md-block">
+        <div class="stat-icon bg-primary">
+            <i class="fas fa-recycle"></i>
+        </div>
+        <div class="stat-content">
+            <h3>{{ stats.jual_kembali }}</h3>
+            <p>Jual Kembali</p>
+        </div>
+    </div>
+</div>
+
+<!-- Main Scan Interface -->
+<div class="card">
+    <div class="card-header bg-gradient-primary text-white">
+        <h5 class="mb-0"><i class="fas fa-qrcode"></i> Scan Retur dengan Dokumentasi Foto</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <!-- Scan Input -->
+                <div class="scan-input-section mb-4">
+                    <div class="input-group">
+                        <input type="text" class="form-control form-control-lg" id="returInput" 
+                               placeholder="Scan atau ketik nomor pesanan/resi..." autofocus
+                               style="border: 2px solid #ced4da; border-radius: 0.375rem 0 0 0.375rem; box-shadow: 0 0 0 0.1rem rgba(13, 110, 253, 0.25);">
+                        <button class="btn btn-primary btn-lg" type="button" onclick="processReturScan()">
+                            <i class="fas fa-search"></i> Proses Retur
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Jenis Retur Checkbox -->
+                <div class="mb-4" id="jenisReturSection" style="display: none;">
+                    <h6 class="fw-bold mb-3">
+                        <i class="fas fa-tags"></i> Pilih jenis retur
+                    </h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-check form-check-lg">
+                                <input class="form-check-input" type="checkbox" id="jualKembali" name="jenisRetur" value="jual_kembali" onchange="handleJenisReturChange(this)">
+                                <label class="form-check-label fw-bold" for="jualKembali">
+                                    <i class="fas fa-recycle text-primary"></i> Jual Kembali
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check form-check-lg">
+                                <input class="form-check-input" type="checkbox" id="barangRusak" name="jenisRetur" value="barang_rusak" onchange="handleJenisReturChange(this)">
+                                <label class="form-check-label fw-bold" for="barangRusak">
+                                    <i class="fas fa-exclamation-triangle text-danger"></i> Barang Rusak
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Status Message -->
+                <div id="statusMessage" class="alert alert-info" style="display: none;">
+                    <i class="fas fa-info-circle"></i> <span id="statusText">Siap untuk scan...</span>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <!-- Camera Preview Area -->
+                <div id="cameraSection" style="display: none;">
+                    <h6 class="fw-bold mb-3">
+                        <i class="fas fa-camera"></i> Dokumentasi Foto Retur
+                    </h6>
+                    <div class="camera-container text-center">
+                        <video id="cameraVideo" autoplay playsinline muted class="camera-preview"></video>
+                        <canvas id="photoCanvas" style="display: none;"></canvas>
+                        <div id="photoPreview" style="display: none;">
+                            <img id="capturedImage" class="photo-preview">
+                            <div class="photo-controls mt-2">
+                                <button class="btn btn-success me-2" onclick="confirmPhoto()">
+                                    <i class="fas fa-check"></i> Gunakan Foto
+                                </button>
+                                <button class="btn btn-secondary" onclick="retakePhoto()">
+                                    <i class="fas fa-redo"></i> Foto Ulang
+                                </button>
+                            </div>
+                        </div>
+                        <div class="camera-controls mt-3" id="cameraControls">
+                            <button class="btn btn-warning btn-lg" onclick="capturePhoto()">
+                                <i class="fas fa-camera"></i> Ambil Foto
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Order Info Display -->
+                <div id="orderInfo" style="display: none;" class="order-info-card">
+                    <h6 class="fw-bold mb-3">
+                        <i class="fas fa-box"></i> Informasi Pesanan
+                    </h6>
+                    <div class="order-details">
+                        <p><strong>Nomor Pesanan:</strong> <span id="orderNumber">-</span></p>
+                        <p><strong>Tracking Number:</strong> <span id="trackingNumber">-</span></p>
+                        <p><strong>Customer:</strong> <span id="customerName">-</span></p>
+                        <p><strong>Status:</strong> <span id="orderStatus" class="badge">-</span></p>
+                        <p><strong>Total:</strong> <span id="orderTotal">-</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Returns History -->
+<div class="card mt-4">
+    <div class="card-header bg-gradient-secondary text-white">
+        <h5 class="mb-0"><i class="fas fa-history"></i> Riwayat Retur Terbaru</h5>
+    </div>
+    <div class="card-body">
+        {% if recent_returns %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nomor Pesanan</th>
+                        <th>Customer</th>
+                        <th>Waktu Retur</th>
+                        <th>Jenis</th>
+                        <th>Foto</th>
+                        <th>User</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in recent_returns %}
+                    <tr>
+                        <td>{{ order.order_number }}</td>
+                        <td>{{ order.customer_name }}</td>
+                        <td>{{ order.retur_processed_at.strftime('%d/%m/%Y %H:%M') if order.retur_processed_at else '-' }}</td>
+                        <td>
+                            {% if order.jenis_retur %}
+                                {% if order.jenis_retur == 'barang_rusak' %}
+                                <span class="badge bg-danger"><i class="fas fa-exclamation-triangle"></i> Barang Rusak</span>
+                                {% elif order.jenis_retur == 'jual_kembali' %}
+                                <span class="badge bg-primary"><i class="fas fa-recycle"></i> Jual Kembali</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ order.jenis_retur.replace('_', ' ').title() }}</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if order.return_photo_base64 %}
+                            <a href="{{ url_for('view_foto', order_id=order.id) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i> Lihat Foto
+                            </a>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">{{ order.retur_user or 'Admin' }}</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted">
+            <i class="fas fa-inbox fa-3x mb-3"></i>
+            <p>Belum ada riwayat retur</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    font-size: 24px;
+    color: white;
+}
+
+.stat-content h3 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0;
+    color: #333;
+}
+
+.stat-content p {
+    margin: 0;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #6f42c1, #8b5cf6) !important;
+}
+
+.bg-gradient-secondary {
+    background: linear-gradient(135deg, #6c757d, #495057) !important;
+}
+
+.camera-container {
+    position: relative;
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    border: 2px dashed #dee2e6;
+}
+
+.camera-preview {
+    width: 100%;
+    max-width: 300px;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #6f42c1;
+}
+
+.photo-preview {
+    width: 100%;
+    max-width: 300px;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #28a745;
+}
+
+.order-info-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    border-left: 4px solid #6f42c1;
+}
+
+.order-details p {
+    margin-bottom: 8px;
+}
+
+.scan-input-section .form-control:focus {
+    border-color: #6f42c1;
+    box-shadow: 0 0 0 0.2rem rgba(111, 66, 193, 0.25);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #6f42c1, #8b5cf6);
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #5a359a, #7c3aed);
+}
+
+.form-check-lg {
+    font-size: 1.1rem;
+}
+
+.form-check-input {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-top: 0.125rem;
+}
+
+.form-check-label {
+    margin-left: 0.5rem;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.form-check-input:checked {
+    background-color: #6f42c1;
+    border-color: #6f42c1;
+}
+</style>
+
+<script>
+let currentOrderData = null;
+let photoCapture = null;
+let cameraStream = null;
+
+// Handle exclusive checkbox selection for jenis retur
+function handleJenisReturChange(clickedCheckbox) {
+    const checkboxes = document.querySelectorAll('input[name="jenisRetur"]');
+    
+    // If this checkbox is being checked, uncheck all others
+    if (clickedCheckbox.checked) {
+        checkboxes.forEach(checkbox => {
+            if (checkbox !== clickedCheckbox) {
+                checkbox.checked = false;
+            }
+        });
+    }
+}
+
+// Get selected jenis retur
+function getSelectedJenisRetur() {
+    const checkboxes = document.querySelectorAll('input[name="jenisRetur"]:checked');
+    return checkboxes.length > 0 ? checkboxes[0].value : '';
+}
+
+// Process return scan
+function processReturScan() {
+    const input = document.getElementById('returInput');
+    const orderInput = input.value.trim();
+    
+    if (!orderInput) {
+        showStatus('error', 'Harap masukkan nomor pesanan atau tracking number');
+        return;
+    }
+    
+    // Show processing status
+    showStatus('info', 'Memproses scan...');
+    
+    // Send scan request
+    fetch('/scan_retur_foto/process', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            order_input: orderInput
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentOrderData = data.order_data;
+            showOrderInfo(data.order_data);
+            
+            if (data.require_photo) {
+                showStatus('success', 'Pesanan valid! Silakan pilih jenis retur dan ambil foto dokumentasi retur');
+                
+                // Show jenis retur checkboxes
+                document.getElementById('jenisReturSection').style.display = 'block';
+                
+                startCamera();
+            }
+        } else {
+            showStatus('error', data.message);
+            // Auto-clear error and reset after 2 seconds
+            setTimeout(() => {
+                input.value = '';
+                input.focus();
+                showStatus('info', 'Siap untuk scan...');
+            }, 2000);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showStatus('error', 'Terjadi kesalahan saat memproses scan');
+    });
+}
+
+// Show order information
+function showOrderInfo(orderData) {
+    document.getElementById('orderNumber').textContent = orderData.order_number;
+    document.getElementById('trackingNumber').textContent = orderData.tracking_number || '-';
+    document.getElementById('customerName').textContent = orderData.customer_name;
+    document.getElementById('orderStatus').textContent = orderData.status;
+    document.getElementById('orderTotal').textContent = 'Rp ' + orderData.total_amount.toLocaleString('id-ID');
+    
+    document.getElementById('orderInfo').style.display = 'block';
+}
+
+// Start camera for photo capture
+function startCamera() {
+    navigator.mediaDevices.getUserMedia({ 
+        video: { 
+            facingMode: 'environment',
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+        } 
+    })
+    .then(stream => {
+        cameraStream = stream;
+        const video = document.getElementById('cameraVideo');
+        video.srcObject = stream;
+        document.getElementById('cameraSection').style.display = 'block';
+    })
+    .catch(error => {
+        console.error('Camera error:', error);
+        showStatus('error', 'Tidak dapat mengakses kamera. Pastikan izin kamera telah diberikan.');
+    });
+}
+
+// Capture photo from camera
+function capturePhoto() {
+    const video = document.getElementById('cameraVideo');
+    const canvas = document.getElementById('photoCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Set canvas size to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Draw video frame to canvas
+    ctx.drawImage(video, 0, 0);
+    
+    // Convert to image and show preview
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    document.getElementById('capturedImage').src = imageData;
+    document.getElementById('photoPreview').style.display = 'block';
+    document.getElementById('cameraControls').style.display = 'none';
+    
+    // Store photo data
+    photoCapture = imageData;
+}
+
+// Retake photo
+function retakePhoto() {
+    document.getElementById('photoPreview').style.display = 'none';
+    document.getElementById('cameraControls').style.display = 'block';
+    photoCapture = null;
+}
+
+// Confirm and save photo
+function confirmPhoto() {
+    if (!photoCapture || !currentOrderData) {
+        showStatus('error', 'Data tidak lengkap untuk menyimpan retur');
+        return;
+    }
+    
+    // Check if jenis retur is selected
+    const jenisRetur = getSelectedJenisRetur();
+    if (!jenisRetur) {
+        showStatus('error', 'Silakan pilih jenis retur terlebih dahulu');
+        return;
+    }
+    
+    showStatus('info', 'Menyimpan retur dengan foto...');
+    
+    // Save return with photo
+    fetch('/scan_retur_foto/save_with_photo', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            order_id: currentOrderData.id,
+            photo_data: photoCapture,
+            jenis_retur: jenisRetur
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus('success', data.message);
+            
+            // Play success sound
+            const audio = new Audio('/static/sounds/success.wav');
+            audio.play().catch(e => console.log('Audio play failed:', e));
+            
+            // Reset interface after success
+            setTimeout(() => {
+                resetInterface();
+            }, 3000);
+        } else {
+            showStatus('error', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showStatus('error', 'Terjadi kesalahan saat menyimpan retur');
+    });
+}
+
+// Reset interface to initial state
+function resetInterface() {
+    // Stop camera
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+    }
+    
+    // Reset form and UI
+    document.getElementById('returInput').value = '';
+    
+    // Reset checkboxes
+    document.querySelectorAll('input[name="jenisRetur"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    document.getElementById('jenisReturSection').style.display = 'none';
+    document.getElementById('cameraSection').style.display = 'none';
+    document.getElementById('orderInfo').style.display = 'none';
+    document.getElementById('photoPreview').style.display = 'none';
+    document.getElementById('cameraControls').style.display = 'block';
+    
+    // Reset variables
+    currentOrderData = null;
+    photoCapture = null;
+    
+    // Focus on input
+    document.getElementById('returInput').focus();
+    showStatus('info', 'Siap untuk scan berikutnya...');
+}
+
+// Show status message
+function showStatus(type, message) {
+    const statusDiv = document.getElementById('statusMessage');
+    const statusText = document.getElementById('statusText');
+    
+    statusText.textContent = message;
+    statusDiv.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'}`;
+    statusDiv.style.display = 'block';
+}
+
+// Enter key support
+document.getElementById('returInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        processReturScan();
+    }
+});
+
+// Auto-focus on input when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('returInput').focus();
+});
+</script>
+{% endblock %}

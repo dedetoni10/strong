@@ -1,0 +1,429 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Ready Pickup Mode - Strong Order Management{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-0">Ready Pick Up</h1>
+        <p class="text-muted">Sistem scanning untuk ready pick up order</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                            <i class="fas fa-truck text-warning"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ stats.ready_pickup_orders or 0 }}</h3>
+                        <p class="text-muted mb-0">Ready Pickup</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                            <i class="fas fa-check-circle text-success"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ stats.scanned_today or 0 }}</h3>
+                        <p class="text-muted mb-0">Scanned Today</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Ready Pickup Interface -->
+<div class="card">
+    <div class="card-header bg-warning">
+        <h5 class="mb-0" style="color: #000000; text-shadow: 1px 1px 2px rgba(255,255,255,0.8); font-weight: 600;">
+            <i class="fas fa-truck me-2"></i>Ready Pickup Scanner
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="pickup-form">
+                    <div class="form-group mb-3">
+                        <label class="form-label">Tracking Number</label>
+                        <input type="text" id="pickupInput" class="form-control modern-input" placeholder="Scan atau ketik tracking number..." autofocus>
+                    </div>
+                    
+                    <button class="btn btn-warning w-100 modern-btn" onclick="processReadyPickup()">
+                        <i class="fas fa-truck me-2"></i>Ready Pick Up
+                    </button>
+                </div>
+                
+                <div id="pickupResult" class="mt-4"></div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="pickup-info">
+                    <h6 class="mb-3">Informasi Ready Pickup</h6>
+                    <div class="info-item">
+                        <span class="info-label">Status:</span>
+                        <span class="badge bg-success">Ready</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Mode:</span>
+                        <span class="info-value">Ready Pickup</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Scanner:</span>
+                        <span class="info-value">Online</span>
+                    </div>
+                    
+                    <!-- Audio Test Buttons -->
+                    <div class="mt-4 pt-3 border-top">
+                        <h6 class="mb-3">Test Audio</h6>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-success btn-sm" onclick="testSuccessSound()">
+                                <i class="fas fa-check me-2"></i>Test Suara Berhasil
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="testErrorSound()">
+                                <i class="fas fa-times me-2"></i>Test Suara Gagal
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pickup-tips mt-4">
+                    <h6>Tips Ready Pickup:</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success me-2"></i>Scan tracking number dengan benar</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Pastikan order sudah dipacking</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Siapkan untuk pengiriman</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Scan History -->
+<div class="card mt-4">
+    <div class="card-header bg-purple text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-history me-2"></i>Recent Scan History
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Time</th>
+                        <th>Tracking Number</th>
+                        <th>Status</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody id="scanHistoryBody">
+                    {% for scan in recent_scans %}
+                    <tr>
+                        <td>{{ scan.scanned_at.strftime('%H:%M:%S') }}</td>
+                        <td>{{ scan.barcode }}</td>
+                        <td>
+                            {% if scan.success %}
+                            <span class="badge bg-success">Success</span>
+                            {% else %}
+                            <span class="badge bg-danger">Failed</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ scan.message }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+
+.modern-input {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.modern-input:focus {
+    border-color: #fd7e14;
+    box-shadow: 0 0 0 0.2rem rgba(253, 126, 20, 0.25);
+}
+
+.modern-btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.modern-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.pickup-info {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.info-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.info-value {
+    font-weight: 600;
+    color: #212529;
+}
+
+.pickup-tips {
+    background: #fff3cd;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #fd7e14;
+}
+
+.pickup-tips h6 {
+    color: #b45309;
+    margin-bottom: 10px;
+}
+
+.pickup-tips ul li {
+    margin-bottom: 5px;
+    color: #666;
+}
+</style>
+
+<script>
+function processReadyPickup() {
+    const input = document.getElementById('pickupInput');
+    const value = input.value.trim();
+    
+    if (!value) {
+        showPickupResult('Silakan masukkan Tracking Number', 'error');
+        input.focus();
+        return;
+    }
+    
+    // Show loading state
+    const button = document.querySelector('.modern-btn');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+    button.disabled = true;
+    
+    // Process ready pickup
+    fetch('/scan/ready_pickup', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `barcode=${encodeURIComponent(value)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Reset button
+        button.innerHTML = originalText;
+        button.disabled = false;
+        
+        if (data.success) {
+            showPickupResult(data.message, 'success');
+            input.value = '';
+            // Play success sound if available
+            playSuccessSound();
+            
+            // Auto-redirect to Validasi Packing after successful scan
+            setTimeout(() => {
+                console.log('Ready Pick Up berhasil - redirect ke Validasi Packing');
+                window.location.href = '/packing-mode';
+            }, 1500); // 1.5 second delay after success message
+        } else {
+            showPickupResult(data.error || data.message, 'error');
+            // Play error sound if available
+            playErrorSound();
+            // NO redirect on error - stay on current page
+        }
+    })
+    .catch(error => {
+        // Reset button
+        button.innerHTML = originalText;
+        button.disabled = false;
+        
+        console.error('Error:', error);
+        showPickupResult('Terjadi kesalahan saat memproses', 'error');
+    });
+}
+
+function showPickupResult(message, type = 'success') {
+    const resultDiv = document.getElementById('pickupResult');
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    
+    resultDiv.innerHTML = `
+        <div class="alert ${alertClass}" role="alert">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+            ${message}
+        </div>
+    `;
+    
+    // Clear result after 3 seconds
+    setTimeout(() => {
+        resultDiv.innerHTML = '';
+    }, 3000);
+}
+
+function playSuccessSound() {
+    try {
+        if (successAudio) {
+            successAudio.currentTime = 0; // Reset to beginning
+            successAudio.play().catch(e => {
+                console.log('Success audio play failed:', e);
+                // Fallback: create new audio instance
+                try {
+                    const fallbackAudio = new Audio('/static/sounds/success.wav');
+                    fallbackAudio.play().catch(err => console.log('Fallback audio failed:', err));
+                } catch (fallbackErr) {
+                    console.log('Fallback audio creation failed:', fallbackErr);
+                }
+            });
+        } else {
+            console.log('Success audio not initialized');
+        }
+    } catch (e) {
+        console.log('Success audio not available:', e);
+    }
+}
+
+function playErrorSound() {
+    try {
+        if (errorAudio) {
+            errorAudio.currentTime = 0; // Reset to beginning
+            errorAudio.play().catch(e => {
+                console.log('Error audio play failed:', e);
+                // Fallback: create new audio instance
+                try {
+                    const fallbackAudio = new Audio('/static/sounds/error.wav');
+                    fallbackAudio.play().catch(err => console.log('Fallback audio failed:', err));
+                } catch (fallbackErr) {
+                    console.log('Fallback audio creation failed:', fallbackErr);
+                }
+            });
+        } else {
+            console.log('Error audio not initialized');
+        }
+    } catch (e) {
+        console.log('Error audio not available:', e);
+    }
+}
+
+// Test audio functions
+function testSuccessSound() {
+    try {
+        const audio = new Audio('/static/sounds/success.wav');
+        audio.play().catch(e => console.log('Success audio play failed:', e));
+        console.log('Playing success sound...');
+    } catch (e) {
+        console.log('Success audio not available:', e);
+    }
+}
+
+function testErrorSound() {
+    try {
+        const audio = new Audio('/static/sounds/error.wav');
+        audio.play().catch(e => console.log('Error audio play failed:', e));
+        console.log('Playing error sound...');
+    } catch (e) {
+        console.log('Error audio not available:', e);
+    }
+}
+
+// Pre-load audio files for better performance
+let successAudio = null;
+let errorAudio = null;
+
+// Initialize audio system
+function initAudioSystem() {
+    try {
+        successAudio = new Audio('/static/sounds/success.wav');
+        errorAudio = new Audio('/static/sounds/error.wav');
+        
+        // Preload the audio files
+        successAudio.preload = 'auto';
+        errorAudio.preload = 'auto';
+        
+        // Load audio files
+        successAudio.load();
+        errorAudio.load();
+        
+        console.log('Audio system initialized');
+    } catch (e) {
+        console.log('Audio system initialization failed:', e);
+    }
+}
+
+// Add Enter key support and initialize audio
+document.addEventListener('DOMContentLoaded', function() {
+    const pickupInput = document.getElementById('pickupInput');
+    if (pickupInput) {
+        pickupInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                processReadyPickup();
+            }
+        });
+    }
+    
+    // Initialize audio system on page load
+    initAudioSystem();
+    
+    // Enable audio on first user interaction
+    document.addEventListener('click', function enableAudio() {
+        if (successAudio) {
+            successAudio.play().then(() => {
+                successAudio.pause();
+                successAudio.currentTime = 0;
+            }).catch(e => {});
+        }
+        if (errorAudio) {
+            errorAudio.play().then(() => {
+                errorAudio.pause();
+                errorAudio.currentTime = 0;
+            }).catch(e => {});
+        }
+        // Remove this event listener after first click
+        document.removeEventListener('click', enableAudio);
+        console.log('Audio enabled after user interaction');
+    }, { once: true });
+});
+</script>
+{% endblock %}

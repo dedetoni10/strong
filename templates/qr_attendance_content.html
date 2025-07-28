@@ -1,0 +1,524 @@
+<!-- Force container reset dan width untuk AJAX content -->
+<style>
+/* Reset container dan force proper width */
+.main-content {
+    width: calc(100vw - 250px) !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
+}
+
+/* Reset dan force stats-cards layout */
+.stats-cards {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+    gap: 20px !important;
+    margin: 0 0 20px 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Force each stat-card proper width */
+.stat-card {
+    background: white !important;
+    padding: 20px !important;
+    border-radius: 8px !important;
+    text-align: center !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    min-width: 200px !important;
+    box-sizing: border-box !important;
+}
+
+/* Content header reset */
+.content-header {
+    background-color: white !important;
+    padding: 20px !important;
+    border-radius: 8px !important;
+    margin: 0 0 20px 0 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.content-header h1 {
+    margin: 0 !important;
+    color: #6f42c1 !important;
+    font-size: 1.5rem !important;
+}
+
+.content-header p {
+    margin: 5px 0 0 0 !important;
+    color: #6c757d !important;
+    font-size: 0.9rem !important;
+}
+</style>
+
+<div class="content-header">
+    <h1><i class="fas fa-qrcode me-2"></i>Absensi QR Code</h1>
+    <p>Scan QR code karyawan dengan barcode scanner + foto selfie webcam</p>
+</div>
+
+<!-- Statistics Cards -->
+<div class="stats-cards">
+    <div class="stat-card">
+        <div class="stat-icon" style="background-color: #28a745;">
+            <i class="fas fa-calendar-check text-white"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ attendance_today }}</h3>
+            <p>Absen Hari Ini</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background-color: #007bff;">
+            <i class="fas fa-qrcode text-white"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ qr_scans_today }}</h3>
+            <p>QR Scan Hari Ini</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background-color: #ffc107;">
+            <i class="fas fa-camera text-white"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ photos_taken }}</h3>
+            <p>Foto Tersimpan</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background-color: #17a2b8;">
+            <i class="fas fa-clock text-white"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ active_employees }}</h3>
+            <p>Karyawan Aktif</p>
+        </div>
+    </div>
+</div>
+
+<!-- QR Scanner Section -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-qrcode me-2"></i>Scanner QR Code Karyawan
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="qrInput" class="form-label">Scan QR Code dengan Barcode Scanner:</label>
+                    <input type="text" 
+                           class="form-control form-control-lg" 
+                           id="qrInput" 
+                           placeholder="Contoh: 18|QR18_AHM|2025-07-23"
+                           autocomplete="off"
+                           autofocus
+                           onchange="processQRCode()"
+                           onkeyup="if(event.key === 'Enter') processQRCode()">
+                    <small class="text-muted">Format: ID|TOKEN|EXPIRY atau scan langsung dengan barcode scanner</small>
+                </div>
+                
+                <div id="employeeInfo" class="alert alert-success" style="display: none;">
+                    <h6><i class="fas fa-user me-2"></i>Informasi Karyawan</h6>
+                    <div id="employeeDetails"></div>
+                </div>
+                
+                <!-- Early Leave Reason (only show if early leave) -->
+                <div id="earlyLeaveSection" class="alert alert-warning" style="display: none;">
+                    <h6><i class="fas fa-exclamation-triangle me-2"></i>Pulang Cepat - Perlu Alasan</h6>
+                    <div class="mb-3">
+                        <label for="earlyLeaveReason" class="form-label">Alasan Pulang Cepat:</label>
+                        <select class="form-select" id="earlyLeaveReason" required>
+                            <option value="">Pilih alasan...</option>
+                            <option value="sakit">Sakit</option>
+                            <option value="keluarga_darurat">Keluarga Darurat</option>
+                            <option value="keperluan_mendadak">Keperluan Mendadak</option>
+                            <option value="izin_khusus">Izin Khusus</option>
+                        </select>
+                        <div class="form-text text-warning">
+                            <i class="fas fa-info-circle me-1"></i>Memerlukan approval atasan
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="scanResult" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-camera me-2"></i>Webcam Selfie
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <div id="webcamContainer" style="display: none;">
+                    <video id="webcam" width="280" height="210" autoplay style="border-radius: 8px; border: 2px solid #ddd;"></video>
+                    <canvas id="canvas" width="280" height="210" style="display: none;"></canvas>
+                    <div class="mt-3">
+                        <button class="btn btn-success" id="captureBtn" onclick="capturePhoto()">
+                            <i class="fas fa-camera me-2"></i>Ambil Foto
+                        </button>
+                        <button class="btn btn-secondary ms-2" id="retakeBtn" onclick="retakePhoto()" style="display: none;">
+                            <i class="fas fa-redo me-2"></i>Foto Ulang
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="webcamPlaceholder">
+                    <div class="text-muted">
+                        <i class="fas fa-camera fa-3x mb-3"></i>
+                        <p>Webcam akan aktif setelah QR code valid discan</p>
+                    </div>
+                </div>
+                
+                <div id="photoPreview" style="display: none;">
+                    <img id="capturedPhoto" src="" alt="Captured" style="max-width: 100%; border-radius: 8px; border: 2px solid #28a745;">
+                    <div class="mt-3">
+                        <button class="btn btn-primary" id="submitBtn" onclick="submitAttendance()">
+                            <i class="fas fa-check me-2"></i>Konfirmasi Absensi
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Today's QR Attendance -->
+<div class="card">
+    <div class="card-header bg-purple text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>Absensi QR Hari Ini
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-purple">
+                    <tr>
+                        <th>No</th>
+                        <th>Nama</th>
+                        <th>Cabang</th>
+                        <th>Waktu Masuk</th>
+                        <th>Waktu Keluar</th>
+                        <th>Metode</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attendance in today_attendances %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if attendance.check_in_photo %}
+                                <img src="data:image/jpeg;base64,{{ attendance.check_in_photo }}" 
+                                     class="rounded-circle me-2" 
+                                     width="32" height="32" 
+                                     alt="Photo">
+                                {% else %}
+                                <div class="rounded-circle bg-secondary me-2 d-flex align-items-center justify-content-center" 
+                                     style="width: 32px; height: 32px;">
+                                    <i class="fas fa-user text-white" style="font-size: 14px;"></i>
+                                </div>
+                                {% endif %}
+                                <span class="fw-bold">{{ attendance.employee.full_name }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ attendance.employee.branch_location }}</span>
+                        </td>
+                        <td>
+                            {% if attendance.check_in_time %}
+                                <span class="text-success">{{ attendance.check_in_time.strftime('%H:%M:%S') }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if attendance.check_out_time %}
+                                <span class="text-warning">{{ attendance.check_out_time.strftime('%H:%M:%S') }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-primary">QR + Selfie</span>
+                        </td>
+                        <td>
+                            {% if attendance.status == 'present' %}
+                                <span class="badge bg-success">Hadir</span>
+                            {% elif attendance.status == 'late' %}
+                                <span class="badge bg-warning">Terlambat</span>
+                            {% elif attendance.status == 'absent' %}
+                                <span class="badge bg-danger">Tidak Hadir</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ attendance.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-info" onclick="viewPhotos({{ attendance.id }})">
+                                <i class="fas fa-images"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentEmployeeId = null;
+let webcamStream = null;
+let currentAttendanceType = 'masuk'; // masuk, keluar, lembur_malam, lembur_minggu
+
+// Auto-focus on QR input field for barcode scanner
+document.addEventListener('DOMContentLoaded', function() {
+    const qrInput = document.getElementById('qrInput');
+    qrInput.focus();
+    
+    // Auto-process QR code when scanner inputs data
+    qrInput.addEventListener('input', function() {
+        const qrData = this.value.trim();
+        if (qrData.length > 10) { // Minimum QR code length
+            processQRCode(qrData);
+        }
+    });
+    
+    // Re-focus after any click to ensure scanner input works
+    document.addEventListener('click', function() {
+        setTimeout(() => qrInput.focus(), 100);
+    });
+});
+
+function processQRCode(qrData) {
+    console.log('Processing QR Code:', qrData);
+    
+    // Show loading
+    document.getElementById('scanResult').innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin me-2"></i>Memvalidasi QR Code...</div>';
+    
+    // Validate QR code with server
+    fetch('/validate_qr_code', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            qr_data: qrData
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show employee info
+            currentEmployeeId = data.employee.id;
+            showEmployeeInfo(data.employee);
+            
+            // Clear QR input
+            document.getElementById('qrInput').value = '';
+            
+            // Start webcam
+            startWebcam();
+            
+            document.getElementById('scanResult').innerHTML = 
+                '<div class="alert alert-success"><i class="fas fa-check me-2"></i>QR Code valid! Silakan ambil foto selfie.</div>';
+        } else {
+            document.getElementById('scanResult').innerHTML = 
+                '<div class="alert alert-danger"><i class="fas fa-times me-2"></i>QR Code tidak valid: ' + data.message + '</div>';
+            
+            // Clear input and refocus
+            document.getElementById('qrInput').value = '';
+            document.getElementById('qrInput').focus();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('scanResult').innerHTML = 
+            '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>Terjadi kesalahan validasi QR Code</div>';
+        
+        document.getElementById('qrInput').value = '';
+        document.getElementById('qrInput').focus();
+    });
+}
+
+function showEmployeeInfo(employee) {
+    const employeeInfo = document.getElementById('employeeInfo');
+    const employeeDetails = document.getElementById('employeeDetails');
+    
+    // Determine attendance type based on time
+    const now = new Date();
+    const hour = now.getHours();
+    const isWeekend = now.getDay() === 0; // Sunday = 0
+    
+    let attendanceType = 'masuk';
+    let typeLabel = 'Absensi Masuk';
+    let typeColor = 'success';
+    
+    if (isWeekend) {
+        attendanceType = 'lembur_minggu';
+        typeLabel = 'Lembur Hari Minggu';
+        typeColor = 'info';
+    } else if (hour >= 19) {
+        attendanceType = 'lembur_malam';
+        typeLabel = 'Lembur Malam';
+        typeColor = 'info';
+    } else if (hour >= 12) {
+        attendanceType = 'keluar';
+        typeLabel = 'Absensi Keluar';
+        typeColor = 'warning';
+    }
+    
+    currentAttendanceType = attendanceType;
+    
+    employeeDetails.innerHTML = `
+        <div class="row">
+            <div class="col-6"><strong>Nama:</strong> ${employee.full_name}</div>
+            <div class="col-6"><strong>Posisi:</strong> ${employee.position}</div>
+            <div class="col-6"><strong>Cabang:</strong> ${employee.branch_location}</div>
+            <div class="col-6"><strong>Status:</strong> <span class="badge bg-${typeColor}">${typeLabel}</span></div>
+        </div>
+    `;
+    
+    employeeInfo.style.display = 'block';
+    
+    // Start webcam after employee detected
+    startWebcam();
+}
+
+function startWebcam() {
+    const webcamContainer = document.getElementById('webcamContainer');
+    const webcamPlaceholder = document.getElementById('webcamPlaceholder');
+    const video = document.getElementById('webcam');
+    
+    webcamPlaceholder.style.display = 'none';
+    webcamContainer.style.display = 'block';
+    
+    navigator.mediaDevices.getUserMedia({ 
+        video: { 
+            width: 280, 
+            height: 210,
+            facingMode: 'user' // Front camera for selfie
+        } 
+    })
+    .then(stream => {
+        webcamStream = stream;
+        video.srcObject = stream;
+    })
+    .catch(error => {
+        console.error('Error accessing webcam:', error);
+        alert('Tidak dapat mengakses webcam. Pastikan webcam tersambung dan izin telah diberikan.');
+    });
+}
+
+function capturePhoto() {
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    const capturedPhoto = document.getElementById('capturedPhoto');
+    
+    // Draw video frame to canvas
+    context.drawImage(video, 0, 0, 280, 210);
+    
+    // Convert to base64
+    const photoData = canvas.toDataURL('image/jpeg', 0.8);
+    
+    // Show preview
+    capturedPhoto.src = photoData;
+    document.getElementById('photoPreview').style.display = 'block';
+    document.getElementById('webcamContainer').style.display = 'none';
+    
+    // Stop webcam
+    if (webcamStream) {
+        webcamStream.getTracks().forEach(track => track.stop());
+    }
+}
+
+function retakePhoto() {
+    document.getElementById('photoPreview').style.display = 'none';
+    startWebcam();
+}
+
+function submitAttendance() {
+    if (!currentEmployeeId) {
+        alert('Data karyawan tidak ditemukan');
+        return;
+    }
+    
+    const photoData = document.getElementById('capturedPhoto').src;
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Show loading
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Menyimpan...';
+    submitBtn.disabled = true;
+    
+    // Submit attendance
+    fetch(`/qr_attendance/${currentEmployeeId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            photo: photoData,
+            attendance_type: currentAttendanceType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            document.getElementById('scanResult').innerHTML = 
+                '<div class="alert alert-success"><i class="fas fa-check me-2"></i>' + data.message + '</div>';
+            
+            // Reset form
+            resetForm();
+            
+            // Refresh page after 2 seconds
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        } else {
+            alert('Gagal menyimpan absensi: ' + data.message);
+            submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Konfirmasi Absensi';
+            submitBtn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat menyimpan absensi');
+        submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Konfirmasi Absensi';
+        submitBtn.disabled = false;
+    });
+}
+
+function resetForm() {
+    currentEmployeeId = null;
+    currentAttendanceType = 'masuk';
+    
+    // Hide all dynamic elements
+    document.getElementById('employeeInfo').style.display = 'none';
+    document.getElementById('photoPreview').style.display = 'none';
+    document.getElementById('webcamContainer').style.display = 'none';
+    document.getElementById('webcamPlaceholder').style.display = 'block';
+    
+    // Reset buttons
+    document.getElementById('submitBtn').innerHTML = '<i class="fas fa-check me-2"></i>Konfirmasi Absensi';
+    document.getElementById('submitBtn').disabled = false;
+    
+    // Focus back to QR input
+    document.getElementById('qrInput').value = '';
+    document.getElementById('qrInput').focus();
+}
+
+function viewPhotos(attendanceId) {
+    window.open(`/attendance/photos/${attendanceId}`, '_blank');
+}
+</script>

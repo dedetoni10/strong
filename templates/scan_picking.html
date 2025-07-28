@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+
+{% block title %}Picking Mode - STRONG Order Management{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Picking Mode Specific Styling */
+.picking-header {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border-radius: 20px;
+    padding: 3rem 2rem;
+    margin-bottom: 3rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0, 123, 255, 0.3);
+}
+
+.picking-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
+    background-size: 50px 50px;
+    animation: float 20s infinite linear;
+}
+
+@keyframes float {
+    0% { transform: translateY(0px); }
+    100% { transform: translateY(-50px); }
+}
+
+.picking-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(15px);
+    border: 2px solid rgba(0, 123, 255, 0.2);
+    border-radius: 20px;
+    transition: all 0.4s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.picking-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 60px rgba(0, 123, 255, 0.4);
+    border-color: rgba(0, 123, 255, 0.5);
+}
+
+.scan-input-picking {
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    padding: 1.5rem;
+    color: white;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.scan-input-picking:focus {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: #007bff;
+    box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.2);
+    outline: none;
+}
+
+.scan-input-picking::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.scan-button-picking {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border: none;
+    border-radius: 15px;
+    padding: 1.5rem 3rem;
+    color: white;
+    font-weight: 700;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 20px rgba(0, 123, 255, 0.3);
+}
+
+.scan-button-picking:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0, 123, 255, 0.5);
+}
+
+.camera-btn-picking {
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 15px;
+    padding: 1.5rem;
+    color: white;
+    transition: all 0.3s ease;
+    font-size: 1.5rem;
+}
+
+.camera-btn-picking:hover {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+    transform: scale(1.05);
+}
+
+.back-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 0.8rem 1.5rem;
+    color: white;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.status-badge {
+    background: rgba(0, 123, 255, 0.2);
+    color: #87ceeb;
+    border: 1px solid rgba(0, 123, 255, 0.3);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Back Navigation -->
+<div class="mb-3">
+    <a href="{{ url_for('scan_center') }}" class="back-btn">
+        <i class="fas fa-arrow-left"></i>
+        <span>Kembali ke Scan Center</span>
+    </a>
+</div>
+
+<!-- Picking Header -->
+<div class="picking-header text-white text-center">
+    <div class="position-relative">
+        <h1 class="display-4 fw-bold mb-2">
+            <i class="fas fa-hand-paper me-3"></i>Mode Picking
+        </h1>
+        <p class="lead mb-3">Scan pesanan untuk memulai proses picking dan verifikasi produk</p>
+        <div class="status-badge">
+            <i class="fas fa-user me-2"></i>Staff Picking & Verifikasi
+        </div>
+    </div>
+</div>
+
+<!-- Main Picking Interface -->
+<div class="row justify-content-center mb-5">
+    <div class="col-lg-8 col-md-10">
+        <div class="picking-card">
+            <div class="p-5 text-center">
+                <div class="mb-5">
+                    <div class="mx-auto mb-4" style="width: 100px; height: 100px; background: linear-gradient(135deg, #007bff, #0056b3); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0, 123, 255, 0.4);">
+                        <i class="fas fa-qrcode fa-3x text-white"></i>
+                    </div>
+                    <h3 class="text-white mb-3">Scan Nomor Pesanan</h3>
+                    <p class="text-light">Masukkan atau scan nomor pesanan/resi untuk memulai proses picking</p>
+                </div>
+                
+                <form id="scanOrderForm">
+                    <div class="mb-4">
+                        <div class="d-flex gap-3 justify-content-center align-items-end">
+                            <div style="flex: 1; max-width: 500px;">
+                                <input type="text" class="scan-input-picking" id="orderBarcode" 
+                                       placeholder="Masukkan nomor pesanan atau resi" autofocus>
+                            </div>
+                            <button class="camera-btn-picking" type="button" onclick="openOrderCameraScanner()">
+                                <i class="fas fa-camera"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="scan-button-picking">
+                        <i class="fas fa-search me-2"></i>Cari Pesanan
+                    </button>
+                </form>
+                
+                <div id="orderScanResult" class="mt-4"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Instructions Section -->
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="picking-card">
+            <div class="p-4">
+                <h5 class="text-white mb-4 text-center">
+                    <i class="fas fa-info-circle me-2"></i>Cara Menggunakan Mode Picking
+                </h5>
+                
+                <div class="row g-4">
+                    <div class="col-md-4 text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-qrcode fa-2x text-info"></i>
+                        </div>
+                        <h6 class="text-white">1. Scan Pesanan</h6>
+                        <small class="text-muted">Scan atau input nomor pesanan/resi untuk memulai</small>
+                    </div>
+                    
+                    <div class="col-md-4 text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-hand-paper fa-2x text-primary"></i>
+                        </div>
+                        <h6 class="text-white">2. Picking Produk</h6>
+                        <small class="text-muted">Ambil produk sesuai daftar yang ditampilkan</small>
+                    </div>
+                    
+                    <div class="col-md-4 text-center">
+                        <div class="mb-3">
+                            <i class="fas fa-check-circle fa-2x text-success"></i>
+                        </div>
+                        <h6 class="text-white">3. Verifikasi</h6>
+                        <small class="text-muted">Scan barcode produk untuk verifikasi</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Camera Scanner Modal -->
+<div class="modal fade" id="orderCameraModal" tabindex="-1" aria-labelledby="orderCameraModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title" id="orderCameraModalLabel">
+                    <i class="fas fa-qrcode me-2"></i>Scan QR Code
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="position-relative mb-3">
+                    <video id="orderCameraVideo" 
+                           style="width: 100%; height: 280px; object-fit: cover; border: 2px solid #007bff; border-radius: 8px; background: #000;"></video>
+                    
+                    <div class="position-absolute top-50 start-50 translate-middle" 
+                         style="width: 200px; height: 200px; border: 2px solid #28a745; border-radius: 8px; background: transparent;">
+                        <div class="position-absolute" style="top: -2px; left: -2px; width: 30px; height: 30px; border-left: 4px solid #28a745; border-top: 4px solid #28a745;"></div>
+                        <div class="position-absolute" style="top: -2px; right: -2px; width: 30px; height: 30px; border-right: 4px solid #28a745; border-top: 4px solid #28a745;"></div>
+                        <div class="position-absolute" style="bottom: -2px; left: -2px; width: 30px; height: 30px; border-left: 4px solid #28a745; border-bottom: 4px solid #28a745;"></div>
+                        <div class="position-absolute" style="bottom: -2px; right: -2px; width: 30px; height: 30px; border-right: 4px solid #28a745; border-bottom: 4px solid #28a745;"></div>
+                    </div>
+                </div>
+                
+                <div class="text-center mb-3">
+                    <div class="alert alert-info py-2" id="orderScanStatus">
+                        <i class="fas fa-info-circle me-2"></i>Memulai kamera...
+                    </div>
+                    <div class="alert alert-success py-2" id="orderScanResult" style="display: none;">
+                        <strong>Hasil Scan:</strong> <span id="orderScannedCode"></span>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <small class="text-muted">Scanner akan otomatis menggunakan hasil scan</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- ZXing Barcode Scanner Library -->
+<script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
+
+<script>
+// Global variables for barcode scanner
+let orderCameraStream = null;
+let orderScannedData = null;
+let codeReader = null;
+
+// Function to open barcode scanner
+function openOrderCameraScanner() {
+    const modal = new bootstrap.Modal(document.getElementById('orderCameraModal'));
+    const video = document.getElementById('orderCameraVideo');
+    const statusDiv = document.getElementById('orderScanStatus');
+    const resultDiv = document.getElementById('orderScanResult');
+    const scannedCodeSpan = document.getElementById('orderScannedCode');
+    
+    resultDiv.style.display = 'none';
+    statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Memulai scanner barcode...';
+    
+    modal.show();
+    
+    codeReader = new ZXing.BrowserMultiFormatReader();
+    
+    codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+        if (result) {
+            const scannedCode = result.getText();
+            orderScannedData = scannedCode;
+            scannedCodeSpan.textContent = scannedCode;
+            resultDiv.style.display = 'block';
+            statusDiv.innerHTML = '<i class="fas fa-check-circle me-2"></i>Berhasil scan! Menggunakan kode: ' + scannedCode;
+            
+            if (navigator.vibrate) {
+                navigator.vibrate(200);
+            }
+            
+            document.getElementById('orderBarcode').value = scannedCode;
+            
+            setTimeout(() => {
+                modal.hide();
+                const form = document.getElementById('scanOrderForm');
+                if (form) {
+                    form.dispatchEvent(new Event('submit'));
+                }
+            }, 1000);
+        }
+        
+        if (err && !(err instanceof ZXing.NotFoundException)) {
+            console.error('Barcode scan error:', err);
+            statusDiv.innerHTML = '<i class="fas fa-camera me-2"></i>Arahkan kamera ke barcode pada resi atau nomor pesanan';
+        } else if (!result) {
+            statusDiv.innerHTML = '<i class="fas fa-camera me-2"></i>Arahkan kamera ke barcode pada resi atau nomor pesanan';
+        }
+    })
+    .catch(error => {
+        console.error('Camera error:', error);
+        statusDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Tidak dapat mengakses kamera. Pastikan izin kamera diaktifkan.';
+    });
+    
+    document.getElementById('orderCameraModal').addEventListener('hidden.bs.modal', function() {
+        if (codeReader) {
+            codeReader.reset();
+            codeReader = null;
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const orderForm = document.getElementById('scanOrderForm');
+    const orderBarcodeInput = document.getElementById('orderBarcode');
+    
+    if (orderForm) {
+        orderForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const barcode = orderBarcodeInput.value.trim();
+            
+            if (!barcode) {
+                alert('Silakan masukkan nomor pesanan atau resi');
+                return;
+            }
+            
+            window.location.href = `/scan-order?barcode=${encodeURIComponent(barcode)}`;
+        });
+    }
+    
+    if (orderBarcodeInput) {
+        orderBarcodeInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                orderForm.dispatchEvent(new Event('submit'));
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

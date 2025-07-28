@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="id" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - STRONG Order Management</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern.css') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        
+        .modern-login-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .modern-login-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 0.8; }
+        }
+        
+        .modern-login-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+            position: relative;
+            overflow: hidden;
+            animation: slideInUp 0.8s ease-out;
+        }
+        
+        .modern-login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary-gradient);
+        }
+        
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modern-login-form {
+            padding: 3rem;
+            position: relative;
+        }
+        
+        .modern-logo {
+            max-width: 280px;
+            height: auto;
+            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.3));
+            animation: logoFloat 3s ease-in-out infinite;
+        }
+        
+        @keyframes logoFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .modern-title {
+            background: linear-gradient(45deg, #ffffff, #f8f9fa);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modern-subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .modern-form-group {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+        
+        .modern-form-label {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        
+        .modern-form-control {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .modern-form-control:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .modern-form-control::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .modern-btn-login {
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 12px;
+            padding: 1rem 2rem;
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .modern-btn-login::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .modern-btn-login:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modern-btn-login:hover::before {
+            left: 100%;
+        }
+        
+        .modern-features-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            padding: 3rem;
+            border-radius: 0 24px 24px 0;
+            position: relative;
+        }
+        
+        .modern-features-title {
+            color: white;
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .modern-features-title i {
+            background: var(--accent-gradient);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-right: 0.8rem;
+        }
+        
+        .modern-feature-list {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 2rem;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .modern-feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.2rem;
+            padding: 0.8rem;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .modern-feature-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+        
+        .modern-feature-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .modern-feature-icon {
+            background: var(--accent-gradient);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-right: 1rem;
+            font-size: 1.2rem;
+            width: 24px;
+        }
+        
+        .modern-security-badge {
+            margin-top: 2rem;
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .modern-security-badge i {
+            color: #4facfe;
+            margin-right: 0.5rem;
+        }
+        
+        .modern-demo-info {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+        
+        .modern-demo-info small {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .modern-demo-info strong {
+            color: #4facfe;
+        }
+        
+        .modern-alert {
+            background: rgba(248, 215, 218, 0.2);
+            border: 1px solid rgba(248, 215, 218, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        @media (max-width: 768px) {
+            .modern-login-form {
+                padding: 2rem;
+            }
+            
+            .modern-features-section {
+                display: none;
+            }
+            
+            .modern-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="modern-login-container d-flex align-items-center justify-content-center">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-10 col-lg-8">
+                    <div class="modern-login-card">
+                        <div class="row g-0">
+                            <!-- Left Side - Login Form -->
+                            <div class="col-md-6">
+                                <div class="modern-login-form">
+                                    <div class="text-center mb-4">
+                                        <img src="{{ url_for('static', filename='images/strong_logo.png') }}" alt="Strong Logo" class="modern-logo mb-3">
+                                        <h1 class="modern-title">STRONG</h1>
+                                        <p class="modern-subtitle">Sistem Manajemen Pesanan Terpadu</p>
+                                    </div>
+
+                                    {% with messages = get_flashed_messages(with_categories=true) %}
+                                        {% if messages %}
+                                            {% for category, message in messages %}
+                                                <div class="modern-alert alert-dismissible fade show" role="alert">
+                                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                                    {{ message }}
+                                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                                </div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endwith %}
+
+                                    <form method="POST" action="{{ url_for('login') }}">
+                                        <div class="modern-form-group">
+                                            <label for="username" class="modern-form-label">
+                                                <i class="fas fa-user me-2"></i>Username
+                                            </label>
+                                            <input type="text" class="modern-form-control" id="username" name="username" 
+                                                   placeholder="Masukkan username" required>
+                                        </div>
+                                        <div class="modern-form-group">
+                                            <label for="password" class="modern-form-label">
+                                                <i class="fas fa-lock me-2"></i>Password
+                                            </label>
+                                            <input type="password" class="modern-form-control" id="password" name="password" 
+                                                   placeholder="Masukkan password" required>
+                                        </div>
+                                        <div class="d-grid mb-3">
+                                            <button type="submit" class="modern-btn-login btn-lg">
+                                                <i class="fas fa-sign-in-alt me-2"></i>Masuk ke Sistem
+                                            </button>
+                                        </div>
+                                    </form>
+
+
+                                </div>
+                            </div>
+
+                            <!-- Right Side - Features -->
+                            <div class="col-md-6 d-none d-md-block">
+                                <div class="modern-features-section h-100 d-flex flex-column justify-content-center">
+                                    <h4 class="modern-features-title">
+                                        <i class="fas fa-rocket"></i>
+                                        Fitur Unggulan
+                                    </h4>
+                                    
+                                    <div class="modern-feature-list">
+                                        <div class="modern-feature-item">
+                                            <i class="fas fa-sync modern-feature-icon"></i>
+                                            <span>Sinkronisasi Otomatis Shopee</span>
+                                        </div>
+                                        <div class="modern-feature-item">
+                                            <i class="fas fa-qrcode modern-feature-icon"></i>
+                                            <span>Barcode Scanning Mobile</span>
+                                        </div>
+                                        <div class="modern-feature-item">
+                                            <i class="fas fa-boxes modern-feature-icon"></i>
+                                            <span>Manajemen Inventory Real-time</span>
+                                        </div>
+                                        <div class="modern-feature-item">
+                                            <i class="fas fa-shipping-fast modern-feature-icon"></i>
+                                            <span>Workflow Picking & Packing</span>
+                                        </div>
+                                        <div class="modern-feature-item">
+                                            <i class="fas fa-chart-line modern-feature-icon"></i>
+                                            <span>Analytics & Reporting</span>
+                                        </div>
+                                        <div class="modern-feature-item">
+                                            <i class="fas fa-mobile-alt modern-feature-icon"></i>
+                                            <span>PWA - Install as App</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="modern-security-badge">
+                                        <small>
+                                            <i class="fas fa-shield-alt"></i>
+                                            Sistem Keamanan Terjamin
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

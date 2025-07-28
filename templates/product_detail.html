@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Detail Produk - {{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-white">
+                    <i class="fas fa-cube me-2"></i>
+                    Detail Produk
+                </h2>
+                <button onclick="window.print()" class="btn btn-outline-light">
+                    <i class="fas fa-print me-2"></i>Print
+                </button>
+            </div>
+            
+            <!-- Product Information Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Informasi Produk
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            {% if product.image_url %}
+                                <img src="{{ product.image_url }}" alt="{{ product.name }}" 
+                                     class="img-fluid rounded border" style="max-width: 200px;">
+                            {% else %}
+                                <div class="bg-light rounded d-flex align-items-center justify-content-center" 
+                                     style="width: 200px; height: 200px;">
+                                    <i class="fas fa-image fa-3x text-muted"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-9">
+                            <table class="table table-striped">
+                                <tbody>
+                                    <tr>
+                                        <th width="150">Nama Produk</th>
+                                        <td>{{ product.name }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>SKU</th>
+                                        <td><code>{{ product.sku }}</code></td>
+                                    </tr>
+                                    <tr>
+                                        <th>Kategori</th>
+                                        <td>
+                                            {% if product.category %}
+                                                <span class="badge bg-primary">{{ product.category }}</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Warna</th>
+                                        <td>
+                                            {% if product.colour %}
+                                                <span class="badge bg-info">{{ product.colour }}</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Berat</th>
+                                        <td>
+                                            {% if product.weight %}
+                                                <strong>{{ product.weight }}g</strong>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Dimensi</th>
+                                        <td>
+                                            {% if product.length and product.width and product.height %}
+                                                <strong>{{ product.length }}×{{ product.width }}×{{ product.height }}cm</strong>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Lokasi</th>
+                                        <td>
+                                            {% if product.zone or product.rack or product.bin %}
+                                                <strong>{{ product.zone or '-' }}-{{ product.rack or '-' }}-{{ product.bin or '-' }}</strong>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Jumlah</th>
+                                        <td>
+                                            <span class="badge bg-success fs-6">{{ product.quantity }}</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Harga</th>
+                                        <td>
+                                            <strong class="text-success">Rp {{ "{:,.0f}".format(product.price) }}</strong>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Stok Minimum</th>
+                                        <td>{{ product.minimum_stock }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Status</th>
+                                        <td>
+                                            {% if product.quantity <= product.minimum_stock %}
+                                                <span class="badge bg-warning">Stok Rendah</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Stok Tersedia</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% if product.description %}
+                                    <tr>
+                                        <th>Deskripsi</th>
+                                        <td>{{ product.description }}</td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order History Card -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        Riwayat Pesanan (10 Terakhir)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if related_orders %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>No. Pesanan</th>
+                                        <th>Tanggal</th>
+                                        <th>Customer</th>
+                                        <th>Quantity</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order_item, order in related_orders %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('order_detail', order_id=order.id) }}" 
+                                               target="_blank" class="text-decoration-none">
+                                                {{ order.order_number }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            {% if order.order_date %}
+                                                {{ order.order_date.strftime('%d/%m/%Y') }}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ order.customer_name }}</td>
+                                        <td>
+                                            <span class="badge bg-info">{{ order_item.quantity }}</span>
+                                        </td>
+                                        <td>
+                                            {% if order.status == 'pending' %}
+                                                <span class="badge bg-warning">Pending</span>
+                                            {% elif order.status == 'perlu_dikirim' %}
+                                                <span class="badge bg-primary">Perlu Dikirim</span>
+                                            {% elif order.status == 'siap_dikirim' %}
+                                                <span class="badge bg-success">Siap Dikirim</span>
+                                            {% elif order.status == 'dikirim' %}
+                                                <span class="badge bg-info">Dikirim</span>
+                                            {% elif order.status == 'selesai' %}
+                                                <span class="badge bg-success">Selesai</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ order.status }}</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Belum ada riwayat pesanan untuk produk ini</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    .btn, .navbar, .sidebar {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa !important;
+        color: #000 !important;
+    }
+    
+    .badge {
+        border: 1px solid #000 !important;
+    }
+}
+</style>
+{% endblock %}

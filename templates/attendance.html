@@ -1,0 +1,397 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Absensi{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1><i class="fas fa-clock me-2"></i>Absensi</h1>
+    <p>Sistem absensi foto untuk karyawan</p>
+</div>
+
+<!-- Statistics Cards -->
+<div class="stats-cards">
+    <div class="stat-card">
+        <div class="stat-icon" style="background-color: #28a745;">
+            <i class="fas fa-calendar-check text-white"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ attendance_today }}</h3>
+            <p>Hadir Hari Ini</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background-color: #007bff;">
+            <i class="fas fa-clock text-white"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ on_time_today }}</h3>
+            <p>Tepat Waktu</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background-color: #ffc107;">
+            <i class="fas fa-clock text-white"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ late_today }}</h3>
+            <p>Terlambat</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background-color: #17a2b8;">
+            <i class="fas fa-moon text-white"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ overtime_active }}</h3>
+            <p>Lembur Aktif</p>
+        </div>
+    </div>
+</div>
+
+<!-- Attendance Controls -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-camera me-2"></i>Absensi Masuk
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <button class="btn btn-success btn-lg" onclick="startAttendance('masuk')" id="checkinBtn">
+                    <i class="fas fa-camera me-2"></i>Foto Absensi Masuk
+                </button>
+                <div class="mt-3">
+                    <small class="text-muted">Jam kerja: 08:00 - 17:00</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-camera me-2"></i>Absensi Keluar
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <button class="btn btn-warning btn-lg" onclick="startAttendance('keluar')" id="checkoutBtn">
+                    <i class="fas fa-camera me-2"></i>Foto Absensi Keluar
+                </button>
+                <div class="mt-3">
+                    <small class="text-muted">Minimal 8 jam kerja</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Overtime Options -->
+<div class="card mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-clock me-2"></i>Absensi Lembur
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <button class="btn btn-info btn-lg w-100 mb-2" onclick="startAttendance('lembur_malam')">
+                    <i class="fas fa-moon me-2"></i>Lembur Malam (19:00-22:00)
+                </button>
+            </div>
+            <div class="col-md-6">
+                <button class="btn btn-info btn-lg w-100 mb-2" onclick="startAttendance('lembur_minggu')">
+                    <i class="fas fa-calendar-day me-2"></i>Lembur Hari Minggu
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Today's Attendance -->
+<div class="card">
+    <div class="card-header bg-purple text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>Absensi Hari Ini
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-purple">
+                    <tr>
+                        <th>No</th>
+                        <th>Nama</th>
+                        <th>Foto</th>
+                        <th>Jam Masuk</th>
+                        <th>Jam Keluar</th>
+                        <th>Lembur</th>
+                        <th>Status</th>
+                        <th>Total Jam</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attendance in today_attendance %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            <strong>{{ attendance.employee.name }}</strong>
+                            <br><small class="text-muted">{{ attendance.employee.position }}</small>
+                        </td>
+                        <td>
+                            {% if attendance.photo_base64 %}
+                            <img src="data:image/jpeg;base64,{{ attendance.photo_base64 }}" 
+                                 class="rounded" width="40" height="40" alt="Foto Absensi"
+                                 onclick="showPhotoModal('{{ attendance.photo_base64 }}', '{{ attendance.employee.name }}')">
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if attendance.check_in_time %}
+                                <span class="badge {% if attendance.is_late %}bg-warning{% else %}bg-success{% endif %}">
+                                    {{ attendance.check_in_time.strftime('%H:%M') }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if attendance.check_out_time %}
+                                <span class="badge bg-info">
+                                    {{ attendance.check_out_time.strftime('%H:%M') }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if attendance.overtime_type %}
+                                <span class="badge bg-warning">{{ attendance.overtime_type }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if attendance.check_out_time %}
+                                <span class="badge bg-success">Selesai</span>
+                            {% elif attendance.check_in_time %}
+                                <span class="badge bg-primary">Aktif</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Belum Masuk</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if attendance.total_hours %}
+                                <strong>{{ "%.1f"|format(attendance.total_hours) }} jam</strong>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="fas fa-calendar fa-3x mb-3"></i>
+                                <h5>Belum ada absensi hari ini</h5>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Camera Modal -->
+<div class="modal fade" id="cameraModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-camera me-2"></i>Ambil Foto Absensi
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div id="cameraContainer">
+                    <video id="video" width="400" height="300" autoplay></video>
+                    <canvas id="canvas" width="400" height="300" style="display: none;"></canvas>
+                </div>
+                <div class="mt-3">
+                    <button class="btn btn-success btn-lg me-2" onclick="capturePhoto()">
+                        <i class="fas fa-camera me-1"></i>Ambil Foto
+                    </button>
+                    <button class="btn btn-secondary" onclick="retakePhoto()" id="retakeBtn" style="display: none;">
+                        <i class="fas fa-redo me-1"></i>Foto Ulang
+                    </button>
+                </div>
+                <div id="photoPreview" style="display: none;">
+                    <h6 class="mt-3">Preview Foto:</h6>
+                    <img id="previewImage" class="rounded" style="max-width: 300px;">
+                    <div class="mt-3">
+                        <button class="btn btn-primary btn-lg" onclick="submitAttendance()">
+                            <i class="fas fa-check me-1"></i>Konfirmasi Absensi
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Photo View Modal -->
+<div class="modal fade" id="photoViewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="photoViewTitle">Foto Absensi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="photoViewImage" class="img-fluid rounded">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentAttendanceType = '';
+let videoStream = null;
+
+// Start attendance process
+function startAttendance(type) {
+    currentAttendanceType = type;
+    
+    // Show camera modal
+    const modal = new bootstrap.Modal(document.getElementById('cameraModal'));
+    modal.show();
+    
+    // Start camera
+    startCamera();
+}
+
+// Start camera
+async function startCamera() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: 'user',
+                width: { ideal: 400 },
+                height: { ideal: 300 }
+            } 
+        });
+        
+        const video = document.getElementById('video');
+        video.srcObject = stream;
+        videoStream = stream;
+        
+        // Show camera interface
+        document.getElementById('video').style.display = 'block';
+        document.getElementById('canvas').style.display = 'none';
+        document.getElementById('photoPreview').style.display = 'none';
+        document.getElementById('retakeBtn').style.display = 'none';
+        
+    } catch (error) {
+        console.error('Error accessing camera:', error);
+        alert('Tidak dapat mengakses kamera. Pastikan izin kamera telah diberikan.');
+    }
+}
+
+// Capture photo
+function capturePhoto() {
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    
+    // Draw video frame to canvas
+    context.drawImage(video, 0, 0, 400, 300);
+    
+    // Get photo data
+    const photoData = canvas.toDataURL('image/jpeg');
+    
+    // Show preview
+    document.getElementById('previewImage').src = photoData;
+    document.getElementById('photoPreview').style.display = 'block';
+    document.getElementById('retakeBtn').style.display = 'inline-block';
+    
+    // Hide video
+    document.getElementById('video').style.display = 'none';
+}
+
+// Retake photo
+function retakePhoto() {
+    // Show video again
+    document.getElementById('video').style.display = 'block';
+    document.getElementById('photoPreview').style.display = 'none';
+    document.getElementById('retakeBtn').style.display = 'none';
+}
+
+// Submit attendance
+function submitAttendance() {
+    const canvas = document.getElementById('canvas');
+    const photoData = canvas.toDataURL('image/jpeg');
+    
+    // Extract base64 data (remove data:image/jpeg;base64, prefix)
+    const base64Data = photoData.split(',')[1];
+    
+    fetch('/attendance/submit', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            type: currentAttendanceType,
+            photo_base64: base64Data
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Absensi berhasil dicatat!');
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('cameraModal'));
+            modal.hide();
+            
+            // Stop camera
+            stopCamera();
+            
+            // Reload page to show updated data
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat menyimpan absensi');
+    });
+}
+
+// Stop camera
+function stopCamera() {
+    if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        videoStream = null;
+    }
+}
+
+// Show photo modal
+function showPhotoModal(photoBase64, employeeName) {
+    document.getElementById('photoViewTitle').textContent = `Foto Absensi - ${employeeName}`;
+    document.getElementById('photoViewImage').src = `data:image/jpeg;base64,${photoBase64}`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('photoViewModal'));
+    modal.show();
+}
+
+// Clean up when modal is closed
+document.getElementById('cameraModal').addEventListener('hidden.bs.modal', function () {
+    stopCamera();
+});
+</script>
+{% endblock %}

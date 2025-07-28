@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Import Orders - STRONG Order Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-upload me-2"></i>Import Excel Orders
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- File Upload Section -->
+                    <div id="uploadSection">
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="fas fa-file-excel me-2"></i>Select Excel Files
+                            </label>
+                            <input type="file" class="form-control" id="fileInput" 
+                                   accept=".xlsx,.xls" multiple>
+                            <div class="form-text">
+                                Supported formats: .xlsx, .xls | Maximum file size: 50MB
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-success" id="startImport">
+                                <i class="fas fa-play me-2"></i>Start Import
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="window.location.href='{{ url_for('orders') }}'">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Orders
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Progress Section -->
+                    <div id="progressSection" style="display: none;">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Overall Progress</span>
+                                <span id="progressText">0%</span>
+                            </div>
+                            <div class="progress mb-3" style="height: 30px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     id="progressBar" role="progressbar" style="width: 0%">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Current File Info -->
+                        <div class="alert alert-info" id="currentFileInfo">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <span id="currentFileName">Preparing import...</span>
+                        </div>
+
+                        <!-- Import Status -->
+                        <div class="row" id="importStats">
+                            <div class="col-md-3">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body text-center">
+                                        <h5 id="totalFiles">0</h5>
+                                        <small>Total Files</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body text-center">
+                                        <h5 id="importedOrders">0</h5>
+                                        <small>Orders Imported</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-warning text-white">
+                                    <div class="card-body text-center">
+                                        <h5 id="skippedOrders">0</h5>
+                                        <small>Duplicates Skipped</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-danger text-white">
+                                    <div class="card-body text-center">
+                                        <h5 id="errorOrders">0</h5>
+                                        <small>Errors</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Processing Log -->
+                        <div class="mt-4">
+                            <h5>Processing Log</h5>
+                            <div class="log-container" style="height: 300px; overflow-y: auto; background: #1a1a1a; padding: 15px; border-radius: 5px;">
+                                <div id="processingLog" style="font-family: monospace; font-size: 12px; color: #00ff00;">
+                                    <div class="log-entry">System ready for import...</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cancel Button -->
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-danger" id="cancelImport">
+                                <i class="fas fa-stop me-2"></i>Cancel Import
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Results Section -->
+                    <div id="resultsSection" style="display: none;">
+                        <div class="alert alert-success">
+                            <h5><i class="fas fa-check-circle me-2"></i>Import Complete!</h5>
+                            <div id="finalResults"></div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-primary" onclick="window.location.href='{{ url_for('orders') }}'">
+                                <i class="fas fa-eye me-2"></i>View Orders
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="location.reload()">
+                                <i class="fas fa-redo me-2"></i>Import More Files
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let importCancelled = false;
+let currentImportId = null;
+
+document.getElementById('startImport').addEventListener('click', function() {
+    const fileInput = document.getElementById('fileInput');
+    const files = fileInput.files;
+    
+    if (files.length === 0) {
+        alert('Please select at least one Excel file');
+        return;
+    }
+    
+    startImport(files);
+});
+
+function startImport(files) {
+    // Hide upload section, show progress
+    document.getElementById('uploadSection').style.display = 'none';
+    document.getElementById('progressSection').style.display = 'block';
+    
+    // Update stats
+    document.getElementById('totalFiles').textContent = files.length;
+    
+    // Process files one by one
+    processFiles(files, 0);
+}
+
+async function processFiles(files, index) {
+    if (index >= files.length || importCancelled) {
+        showResults();
+        return;
+    }
+    
+    const file = files[index];
+    const formData = new FormData();
+    formData.append('order_files', file);
+    
+    // Update current file info
+    document.getElementById('currentFileName').textContent = `Processing: ${file.name}`;
+    addLogEntry(`Starting import of ${file.name}`);
+    
+    try {
+        const response = await fetch('/orders/import', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const responseText = await response.text();
+        let result;
+        
+        try {
+            result = JSON.parse(responseText);
+        } catch (parseError) {
+            throw new Error(`Invalid JSON response: ${responseText}`);
+        }
+        
+        if (result.success) {
+            addLogEntry(`✓ Successfully imported ${result.imported_count} orders from ${file.name}`, 'success');
+            updateStats(result.imported_count, result.skipped_count || 0, 0);
+        } else {
+            addLogEntry(`✗ Error importing ${file.name}: ${result.message}`, 'error');
+            if (result.error_details) {
+                addLogEntry(`Debug details: ${result.error_details}`, 'error');
+            }
+            updateStats(0, 0, 1);
+        }
+        
+    } catch (error) {
+        addLogEntry(`✗ Network error processing ${file.name}: ${error.message}`, 'error');
+        updateStats(0, 0, 1);
+    }
+    
+    // Update progress
+    const progress = ((index + 1) / files.length) * 100;
+    document.getElementById('progressBar').style.width = progress + '%';
+    document.getElementById('progressText').textContent = Math.round(progress) + '%';
+    
+    // Process next file
+    setTimeout(() => {
+        processFiles(files, index + 1);
+    }, 1000);
+}
+
+function updateStats(imported, skipped, errors) {
+    const currentImported = parseInt(document.getElementById('importedOrders').textContent);
+    const currentSkipped = parseInt(document.getElementById('skippedOrders').textContent);
+    const currentErrors = parseInt(document.getElementById('errorOrders').textContent);
+    
+    document.getElementById('importedOrders').textContent = currentImported + imported;
+    document.getElementById('skippedOrders').textContent = currentSkipped + skipped;
+    document.getElementById('errorOrders').textContent = currentErrors + errors;
+}
+
+function addLogEntry(message, type = 'info') {
+    const log = document.getElementById('processingLog');
+    const timestamp = new Date().toLocaleTimeString();
+    const colorClass = type === 'success' ? '#00ff00' : type === 'error' ? '#ff0000' : '#00ff00';
+    
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.style.color = colorClass;
+    entry.innerHTML = `[${timestamp}] ${message}`;
+    
+    log.appendChild(entry);
+    log.scrollTop = log.scrollHeight;
+}
+
+function showResults() {
+    document.getElementById('progressSection').style.display = 'none';
+    document.getElementById('resultsSection').style.display = 'block';
+    
+    const imported = document.getElementById('importedOrders').textContent;
+    const skipped = document.getElementById('skippedOrders').textContent;
+    const errors = document.getElementById('errorOrders').textContent;
+    
+    document.getElementById('finalResults').innerHTML = `
+        <p><strong>Import Summary:</strong></p>
+        <ul>
+            <li>Orders Imported: ${imported}</li>
+            <li>Duplicates Skipped: ${skipped}</li>
+            <li>Errors: ${errors}</li>
+        </ul>
+    `;
+}
+
+document.getElementById('cancelImport').addEventListener('click', function() {
+    importCancelled = true;
+    addLogEntry('Import cancelled by user', 'error');
+    showResults();
+});
+</script>
+{% endblock %}

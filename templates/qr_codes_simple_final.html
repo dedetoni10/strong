@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mass Print QR Codes</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: white;
+        }
+        .qr-container {
+            width: 100%;
+            margin: 20px 0;
+        }
+        .qr-item { 
+            border: 2px solid #007bff; 
+            padding: 20px; 
+            margin: 20px 0;
+            background: #f8f9fa;
+            text-align: center;
+            width: 300px;
+            display: block;
+            float: left;
+            margin-right: 20px;
+        }
+        .qr-item img { 
+            width: 200px; 
+            height: 200px; 
+            display: block;
+            margin: 15px auto;
+            border: 1px solid #ddd;
+        }
+        .clear { clear: both; }
+        .print-info {
+            background: #e9ecef;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mass Print QR Codes</h1>
+    
+    <div class="print-info">
+        <h2>Total QR Codes: {{ qr_codes|length }}</h2>
+        <button onclick="window.print()" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Print All</button>
+    </div>
+    
+    <div class="qr-container">
+        {% for qr_data in qr_codes %}
+        <div class="qr-item">
+            <h3>QR Code #{{ loop.index }}</h3>
+            <h4>{{ qr_data.name }}</h4>
+            <img src="data:image/png;base64,{{ qr_data.qr_code }}" alt="QR Code">
+            <p><strong>SKU:</strong> {{ qr_data.sku }}</p>
+        </div>
+        {% endfor %}
+        <div class="clear"></div>
+    </div>
+    
+    <div class="print-info">
+        <p>Generated {{ qr_codes|length }} QR codes successfully!</p>
+        <a href="/produk-saya">Back to Products</a>
+    </div>
+</body>
+</html>

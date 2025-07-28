@@ -1,0 +1,479 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Management - Strong Order Management{% endblock %}
+
+{% block content %}
+    <style>
+        .modern-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .modern-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .stats-card {
+            border: none;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .stats-card:hover::before {
+            opacity: 1;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+        }
+        
+        .modern-dropdown {
+            border: 2px solid #8B5CF6;
+            border-radius: 12px;
+            background: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.1);
+        }
+        
+        .modern-dropdown:focus {
+            border-color: #8B5CF6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+            transform: scale(1.02);
+        }
+        
+        .action-btn {
+            border: 2px solid;
+            border-radius: 15px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            font-weight: 600;
+        }
+        
+        .action-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+        
+        .action-btn:hover::before {
+            left: 100%;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        
+        .welcome-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            transition: all 0.4s ease;
+        }
+        
+        .welcome-card:hover {
+            transform: scale(1.02);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.6s ease-in;
+        }
+        
+        .slide-up {
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .pulse-icon {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .header-gradient {
+            background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+
+    <div class="main-content">
+        <div class="container-fluid">
+            <!-- Modern Header with Dropdown -->
+            <div class="row mb-4 fade-in">
+                <div class="col">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <div class="me-4">
+                                <i class="fas fa-wallet pulse-icon" style="font-size: 3rem; color: #8B5CF6;"></i>
+                            </div>
+                            <div>
+                                <h1 class="mb-1 header-gradient fw-bold">Manajemen Biaya Lokasi</h1>
+                                <p class="text-muted mb-0 fs-5">Sistem kontrol biaya operasional berdasarkan lokasi</p>
+                            </div>
+                        </div>
+                        <div class="location-selector">
+                            <select class="form-select form-select-lg modern-dropdown" id="locationDropdown" onchange="changeLocation()" style="min-width: 220px;">
+                                {% for location in locations %}
+                                <option value="{{ location.location_name }}" 
+                                        {% if location.location_name == default_location %}selected{% endif %}>
+                                    📍 {{ location.location_name.upper() }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modern Summary Cards -->
+            <div id="summaryCards" class="row mb-4 slide-up">
+                <div class="col-md-3 mb-3">
+                    <div class="stats-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <div class="card-body text-center py-4">
+                            <i class="fas fa-map-marker-alt fa-3x mb-3 pulse-icon" style="color: rgba(255,255,255,0.9);"></i>
+                            <h2 class="fw-bold" id="locationCode">LMP</h2>
+                            <p class="mb-0 opacity-75">Kode Lokasi</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="stats-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                        <div class="card-body text-center py-4">
+                            <i class="fas fa-store fa-3x mb-3" style="color: rgba(255,255,255,0.9);"></i>
+                            <h2 class="fw-bold" id="storeCount">0</h2>
+                            <p class="mb-0 opacity-75">Total Toko</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="stats-card" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);">
+                        <div class="card-body text-center py-4">
+                            <i class="fas fa-calendar-day fa-3x mb-3" style="color: rgba(255,255,255,0.9);"></i>
+                            <h2 class="fw-bold" id="todayTotal">Rp 0</h2>
+                            <p class="mb-0 opacity-75">Hari Ini</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="stats-card" style="background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);">
+                        <div class="card-body text-center py-4">
+                            <i class="fas fa-calendar-week fa-3x mb-3" style="color: rgba(255,255,255,0.9);"></i>
+                            <h2 class="fw-bold" id="weekTotal">Rp 0</h2>
+                            <p class="mb-0 opacity-75">Minggu Ini</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modern Location Dashboard -->
+            <div id="locationDashboard" class="row slide-up">
+                <div class="col-12">
+                    <div class="modern-card">
+                        <div class="card-header text-white d-flex justify-content-between align-items-center py-4" style="background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%); border-radius: 15px 15px 0 0;">
+                            <h4 class="mb-0 fw-bold">
+                                <i class="fas fa-building me-3"></i>
+                                <span id="selectedLocationName">Dashboard Lokasi</span>
+                            </h4>
+                            <span class="badge bg-light text-dark fs-6 px-3 py-2" id="selectedLocationCode" style="border-radius: 10px;">-</span>
+                        </div>
+                        <div class="card-body p-4">
+                            <!-- Main Dashboard Menu Grid -->
+                            <div class="row g-4 mb-4">
+                                <div class="col-md-3">
+                                    <a href="#" id="warehouseRentLink" class="action-btn btn btn-outline-primary w-100 py-4" style="border-color: #8B5CF6; color: #8B5CF6;">
+                                        <i class="fas fa-warehouse fa-3x d-block mb-3" style="color: #8B5CF6;"></i>
+                                        <h5 class="fw-bold">Sewa Gudang</h5>
+                                        <small class="text-muted d-block">Kelola biaya sewa gudang</small>
+                                    </a>
+                                </div>
+
+                                <div class="col-md-3">
+                                    <a href="#" id="payrollSystemLink" class="action-btn btn btn-outline-info w-100 py-4">
+                                        <i class="fas fa-money-check-alt fa-3x d-block mb-3 text-info"></i>
+                                        <h5 class="fw-bold">Payroll System</h5>
+                                        <small class="text-muted d-block">Sistem payroll bulanan</small>
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <a href="#" id="operationalCostLink" class="action-btn btn btn-outline-warning w-100 py-4">
+                                        <i class="fas fa-cogs fa-3x d-block mb-3 text-warning"></i>
+                                        <h5 class="fw-bold">Biaya Operasional</h5>
+                                        <small class="text-muted d-block">Kelola biaya operasional</small>
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <a href="#" id="advertisingCostLink" class="action-btn btn btn-outline-danger w-100 py-4">
+                                        <i class="fas fa-bullhorn fa-3x d-block mb-3 text-danger"></i>
+                                        <h5 class="fw-bold">Iklan per Toko</h5>
+                                        <small class="text-muted d-block">Kelola biaya iklan toko</small>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Employee Management Features -->
+                            <div class="row g-4">
+                                <div class="col-md-4">
+                                    <a href="{{ url_for('qr_attendance') }}" class="action-btn btn btn-outline-success w-100 py-4" style="background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(40, 167, 69, 0.05) 100%);">
+                                        <i class="fas fa-qrcode fa-2x mb-3 text-success"></i>
+                                        <h5 class="fw-bold text-success">Absensi QR Code</h5>
+                                        <small class="text-muted">Generator QR untuk absensi karyawan</small>
+                                    </a>
+                                </div>
+                                <div class="col-md-4">
+                                    <a href="{{ url_for('employee_qr_generator') }}" class="action-btn btn btn-outline-primary w-100 py-4" style="background: linear-gradient(135deg, rgba(0, 123, 255, 0.1) 0%, rgba(0, 123, 255, 0.05) 100%);">
+                                        <i class="fas fa-magic fa-2x mb-3 text-primary"></i>
+                                        <h5 class="fw-bold text-primary">Generator QR</h5>
+                                        <small class="text-muted">Generate QR Code untuk berbagai keperluan</small>
+                                    </a>
+                                </div>
+                                <div class="col-md-4">
+                                    <a href="{{ url_for('employee_management') }}" class="action-btn btn btn-outline-info w-100 py-4" style="background: linear-gradient(135deg, rgba(23, 162, 184, 0.1) 0%, rgba(23, 162, 184, 0.05) 100%);">
+                                        <i class="fas fa-user-plus fa-2x mb-3 text-info"></i>
+                                        <h5 class="fw-bold text-info">Tambah Karyawan</h5>
+                                        <small class="text-muted">Kelola data dan tambah karyawan baru</small>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+        {% if user.role == 'admin' %}
+        <!-- Admin Tools -->
+        <div class="row mt-4">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-tools me-2"></i>Admin Tools</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <a href="#" class="btn btn-warning w-100 mb-2" onclick="initializeLocations()">
+                                    <i class="fas fa-plus me-2"></i>Inisialisasi Data Lokasi
+                                </a>
+                                <small class="text-muted">Setup data lokasi Lampung & Tangerang</small>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="#" class="btn btn-info w-100 mb-2" onclick="setupDemoStores()">
+                                    <i class="fas fa-store me-2"></i>Setup Demo Toko
+                                </a>
+                                <small class="text-muted">Buat contoh toko untuk testing</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // Location data
+        const locationData = {
+            {% for location in locations %}
+            "{{ location.location_name }}": {
+                code: "{{ location.location_code }}",
+                name: "{{ location.location_name }}",
+                storeCount: {{ summary_data[location.location_name]['store_count'] }},
+                todayTotal: {{ summary_data[location.location_name]['today_total'] }},
+                weekTotal: {{ summary_data[location.location_name]['week_total'] }}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        };
+
+        function changeLocation() {
+            const dropdown = document.getElementById('locationDropdown');
+            const selectedLocation = dropdown.value;
+            
+            // Add loading effect to dropdown
+            dropdown.style.opacity = '0.7';
+            setTimeout(() => {
+                dropdown.style.opacity = '1';
+            }, 300);
+            
+            // Update dashboard content for selected location
+            updateDashboardContent(selectedLocation);
+        }
+
+        function hideElements(elementIds, callback) {
+            let hiddenCount = 0;
+            elementIds.forEach(id => {
+                const element = document.getElementById(id);
+                if (element && element.style.display !== 'none') {
+                    element.style.opacity = '0';
+                    element.style.transform = 'translateY(20px)';
+                    setTimeout(() => {
+                        element.style.display = 'none';
+                        hiddenCount++;
+                        if (hiddenCount === elementIds.length && callback) {
+                            callback();
+                        }
+                    }, 300);
+                } else {
+                    hiddenCount++;
+                    if (hiddenCount === elementIds.length && callback) {
+                        callback();
+                    }
+                }
+            });
+        }
+
+        function showElement(elementId, animationClass) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.className = element.className.replace(/fade-in|slide-up/g, '').trim();
+                element.style.display = elementId === 'summaryCards' ? 'flex' : 'block';
+                element.style.opacity = '0';
+                element.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    element.className += ` ${animationClass}`;
+                    element.style.opacity = '1';
+                    element.style.transform = 'translateY(0)';
+                }, 50);
+            }
+        }
+
+        function updateDashboardContent(locationName) {
+            const location = locationData[locationName];
+            
+            // Update summary cards with counter animation
+            animateCounter('locationCode', location.code, false);
+            animateCounter('storeCount', location.storeCount, true);
+            animateCounter('todayTotal', 'Rp ' + location.todayTotal.toLocaleString('id-ID'), false);
+            animateCounter('weekTotal', 'Rp ' + location.weekTotal.toLocaleString('id-ID'), false);
+            
+            // Update dashboard header with typing effect
+            typeWriter('selectedLocationName', location.name);
+            document.getElementById('selectedLocationCode').textContent = location.code;
+            
+            // Update menu links
+            const baseUrl = '/expense/' + encodeURIComponent(locationName);
+            document.getElementById('warehouseRentLink').href = baseUrl + '/sewa';
+
+            document.getElementById('operationalCostLink').href = baseUrl + '/operasional';
+            document.getElementById('advertisingCostLink').href = baseUrl + '/iklan';
+            
+            // Payroll System - menggunakan endpoint baru yang sudah disederhanakan
+            document.getElementById('payrollSystemLink').href = baseUrl + '/gaji';
+            
+            if (document.getElementById('qrGeneratorLink')) {
+                document.getElementById('qrGeneratorLink').href = baseUrl + '/qr-generator';
+            }
+            if (document.getElementById('expenseReportsLink')) {
+                document.getElementById('expenseReportsLink').href = baseUrl + '/reports';
+            }
+        }
+
+        function animateCounter(elementId, finalValue, isNumber) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            if (isNumber) {
+                let current = 0;
+                const target = parseInt(finalValue);
+                const increment = target / 20;
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        current = target;
+                        clearInterval(timer);
+                    }
+                    element.textContent = Math.floor(current);
+                }, 50);
+            } else {
+                element.style.opacity = '0';
+                setTimeout(() => {
+                    element.textContent = finalValue;
+                    element.style.opacity = '1';
+                }, 200);
+            }
+        }
+
+        function typeWriter(elementId, text) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            element.textContent = '';
+            let i = 0;
+            const speed = 100;
+            
+            function type() {
+                if (i < text.length) {
+                    element.textContent += text.charAt(i);
+                    i++;
+                    setTimeout(type, speed);
+                }
+            }
+            type();
+        }
+
+        // Initialize on page load with default location
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdown = document.getElementById('locationDropdown');
+            const defaultLocation = '{{ default_location }}';
+            
+            // Set dropdown to default location and update content
+            dropdown.value = defaultLocation;
+            updateDashboardContent(defaultLocation);
+        });
+    </script>
+{% endblock %}

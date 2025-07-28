@@ -1,0 +1,940 @@
+{% extends "base.html" %}
+
+{% block title %}Picking Interface - Order {{ order.order_number }}{% endblock %}
+
+{% block extra_head %}
+<script>
+// Global order ID untuk digunakan di seluruh halaman
+window.CURRENT_ORDER_ID = {{ order.id }};
+console.log('ORDER ID SET TO:', window.CURRENT_ORDER_ID);
+</script>
+<style>
+.picking-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.order-header {
+    background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.progress-section {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.item-card {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.item-card.picked {
+    border-color: #28a745;
+    background: #f8fff9;
+}
+
+.item-card.picking {
+    border-color: #ffc107;
+    background: #fffbf0;
+}
+
+.item-info {
+    margin-bottom: 15px;
+}
+
+.sku-badge {
+    background: #e9ecef;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9em;
+    color: #495057;
+}
+
+.quantity-badge {
+    background: #007bff;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+}
+
+.scan-section {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.locked-input {
+    background-color: #d4edda !important;
+    border-color: #28a745 !important;
+    cursor: not-allowed !important;
+}
+
+.unlock-btn {
+    margin-left: 5px;
+}
+    margin-top: 15px;
+}
+
+.scan-input {
+    padding: 12px;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    font-size: 1rem;
+    margin-bottom: 10px;
+}
+
+.scan-input:focus {
+    border-color: #6c5ce7;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+}
+
+.scan-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-scan {
+    background: #6c5ce7;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-manual {
+    background: #17a2b8;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-confirm {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.btn-confirm:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
+.quantity-input-section {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.quantity-input {
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.quantity-input.valid {
+    border-color: #28a745;
+    background: #f8fff9;
+}
+
+.quantity-input.invalid {
+    border-color: #dc3545;
+    background: #fff5f5;
+}
+
+.camera-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    z-index: 1000;
+}
+
+.camera-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    max-width: 300px;
+    width: 90%;
+}
+
+.camera-preview {
+    width: 250px;
+    height: 250px;
+    background: black;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    position: relative;
+    overflow: hidden;
+    margin: 0 auto 15px auto;
+}
+
+.camera-preview video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.scan-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px;
+    height: 200px;
+    border: 2px solid #28a745;
+    border-radius: 8px;
+    background: rgba(40, 167, 69, 0.1);
+}
+
+.scan-result {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    text-align: center;
+}
+
+.status-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.status-pending {
+    background: #ffc107;
+    color: white;
+}
+
+.status-picked {
+    background: #28a745;
+    color: white;
+}
+
+.complete-section {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    margin-top: 20px;
+    display: none;
+}
+
+.btn-complete {
+    background: white;
+    color: #28a745;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 15px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="picking-container" data-order-id="{{ order.id }}">
+    <div class="order-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="fas fa-clipboard-check"></i> Picking Interface</h2>
+                <h4>Order: {{ order.order_number }}</h4>
+                <p class="mb-0">Customer: {{ order.customer_name }}</p>
+            </div>
+            <a href="{{ url_for('fulfillment_dashboard') }}" class="btn btn-light">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="progress-section">
+        <h5><i class="fas fa-tasks"></i> Progress</h5>
+        <div class="progress mb-2" style="height: 20px;">
+            <div class="progress-bar bg-success" style="width: {{ (picked_items/total_items*100) if total_items > 0 else 0 }}%"></div>
+        </div>
+        <p class="mb-0">
+            <span id="progress-text">{{ picked_items }}/{{ total_items }} items picked</span>
+            <span class="float-right">{{ "%.0f"|format((picked_items/total_items*100) if total_items > 0 else 0) }}%</span>
+        </p>
+    </div>
+
+    <!-- Items List -->
+    <div id="items-container">
+        {% for item in items %}
+        <div class="item-card {{ 'picked' if item.is_picked else '' }}" data-item-id="{{ item.id }}">
+            <div class="item-info">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="mb-1">
+                        <span class="status-icon {{ 'status-picked' if item.is_picked else 'status-pending' }}">
+                            {{ '✓' if item.is_picked else (loop.index) }}
+                        </span>
+                        {{ item.product_name }}
+                    </h5>
+                    <span class="quantity-badge">Qty: {{ item.quantity }}</span>
+                </div>
+                
+                <div class="mb-2">
+                    <span class="sku-badge">{{ item.sku }}</span>
+                </div>
+
+                {% if item.is_picked %}
+                    <div class="alert alert-success mb-0">
+                        <i class="fas fa-check-circle"></i> Picked successfully
+                        {% if item.picked_at %}
+                        <small class="text-muted d-block">{{ item.picked_at.strftime('%H:%M:%S') }}</small>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="scan-section">
+                        <div class="input-group">
+                            <input type="text" 
+                                   class="form-control scan-input" 
+                                   placeholder="Scan barcode atau masukkan manual..."
+                                   data-item-id="{{ item.id }}"
+                                   data-sku="{{ item.sku }}"
+                                   data-quantity="{{ item.quantity }}">
+                            <button class="btn btn-outline-secondary" type="button" onclick="openCamera({{ item.id }})">
+                                <i class="fas fa-camera"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="quantity-input-section" style="margin: 10px 0;">
+                            <label for="qty-{{ item.id }}" class="form-label">
+                                <i class="fas fa-calculator"></i> Jumlah yang diambil:
+                            </label>
+                            <div class="input-group">
+                                <input type="number" 
+                                       id="qty-{{ item.id }}"
+                                       class="form-control quantity-input" 
+                                       placeholder="0"
+                                       min="1"
+                                       max="{{ item.quantity }}"
+                                       data-item-id="{{ item.id }}"
+                                       data-expected="{{ item.quantity }}"
+                                       value="">
+                                <span class="input-group-text">/ {{ item.quantity }}</span>
+                            </div>
+                            <small class="text-muted">Harus tepat {{ item.quantity }} item</small>
+                        </div>
+                        
+                        <button class="btn-confirm" onclick="confirmPick({{ item.id }})" disabled>
+                            <i class="fas fa-check"></i> Konfirmasi Ambil
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Complete Section -->
+    <div class="complete-section" id="complete-section">
+        <h3><i class="fas fa-star"></i> Semua Item Selesai Dipick!</h3>
+        <p class="mb-0">Order siap untuk proses packing</p>
+        <button class="btn-complete" onclick="goToPacking()">
+            <i class="fas fa-box"></i> Lanjut ke Packing
+        </button>
+    </div>
+</div>
+
+<!-- Camera Modal -->
+<div class="camera-modal" id="camera-modal">
+    <div class="camera-content">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5><i class="fas fa-camera"></i> Scan Barcode</h5>
+            <button class="btn btn-secondary" onclick="closeCamera()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="camera-preview">
+            <video id="camera-video" autoplay playsinline muted></video>
+            <div class="scan-overlay"></div>
+            <div class="scan-result" id="scan-result">Arahkan kamera ke barcode...</div>
+        </div>
+        
+        <div class="text-center">
+            <p class="text-muted">Arahkan kamera ke barcode produk</p>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentStream = null;
+let currentItemId = null;
+
+function focusInput(itemId) {
+    const input = document.querySelector(`input[data-item-id="${itemId}"]`);
+    input.focus();
+    input.select();
+}
+
+function openCamera(itemId) {
+    currentItemId = itemId;
+    const modal = document.getElementById('camera-modal');
+    const video = document.getElementById('camera-video');
+    
+    modal.style.display = 'block';
+    
+    // Request camera access with better constraints
+    const constraints = {
+        video: {
+            facingMode: 'environment',
+            width: { ideal: 1280, min: 640 },
+            height: { ideal: 720, min: 480 },
+            frameRate: { ideal: 30, min: 15 }
+        }
+    };
+    
+    navigator.mediaDevices.getUserMedia(constraints)
+    .then(stream => {
+        currentStream = stream;
+        video.srcObject = stream;
+        
+        // Simple barcode detection (basic implementation)
+        // In production, you'd use a proper barcode library
+        detectBarcode(video);
+    })
+    .catch(err => {
+        console.error('Camera access error:', err);
+        alert('Tidak dapat mengakses kamera. Silakan gunakan input manual.');
+        closeCamera();
+    });
+}
+
+function closeCamera() {
+    const modal = document.getElementById('camera-modal');
+    modal.style.display = 'none';
+    
+    if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+        currentStream = null;
+    }
+}
+
+function detectBarcode(video) {
+    const scanResult = document.getElementById('scan-result');
+    let isScanning = true;
+    
+    scanResult.textContent = 'Memuat ZXing scanner...';
+    scanResult.style.background = 'rgba(0,123,255,0.7)';
+    scanResult.style.color = 'white';
+    scanResult.style.padding = '10px';
+    scanResult.style.borderRadius = '5px';
+    scanResult.style.textAlign = 'center';
+    scanResult.style.marginTop = '10px';
+    
+    // Load ZXing library (most reliable)
+    const zxingScript = document.createElement('script');
+    zxingScript.src = 'https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js';
+    zxingScript.onload = function() {
+        scanResult.textContent = 'Menginisialisasi ZXing scanner...';
+        
+        try {
+            const codeReader = new ZXing.BrowserQRCodeReader();
+            
+            scanResult.textContent = 'Scanner siap - Arahkan kamera ke barcode/QR';
+            
+            // Start continuous decode
+            codeReader.decodeFromVideoDevice(null, video, (result, error) => {
+                if (result && isScanning) {
+                    const detectedCode = result.getText();
+                    console.log('ZXing detected:', detectedCode);
+                    
+                    scanResult.textContent = `Kode terdeteksi: ${detectedCode}`;
+                    scanResult.style.background = 'rgba(40, 167, 69, 0.8)';
+                    
+                    // Fill input field
+                    if (currentItemId) {
+                        const input = document.querySelector(`input[data-item-id="${currentItemId}"]`);
+                        if (input) {
+                            input.value = detectedCode;
+                            validateInput(input);
+                            isScanning = false;
+                            codeReader.reset();
+                            setTimeout(closeCamera, 1500);
+                        }
+                    }
+                }
+                
+                if (error && error.name !== 'NotFoundException') {
+                    console.log('ZXing error:', error);
+                }
+            });
+            
+        } catch (err) {
+            console.log('ZXing initialization error:', err);
+            fallbackToManual();
+        }
+    };
+    
+    zxingScript.onerror = function() {
+        console.log('Failed to load ZXing, using manual input');
+        fallbackToManual();
+    };
+    
+    function fallbackToManual() {
+        scanResult.textContent = 'Klik kamera untuk input manual';
+        scanResult.style.background = 'rgba(255, 193, 7, 0.8)';
+        
+        video.addEventListener('click', handleManualInput);
+    }
+    
+    function handleManualInput() {
+        isScanning = false;
+        const userInput = prompt('Masukkan kode barcode/QR yang terlihat di kamera:');
+        if (userInput && currentItemId) {
+            const input = document.querySelector(`input[data-item-id="${currentItemId}"]`);
+            if (input) {
+                input.value = userInput.trim();
+                validateInput(input);
+                closeCamera();
+            }
+        } else {
+            isScanning = true;
+        }
+    }
+    
+    // Add manual input option
+    video.addEventListener('click', handleManualInput);
+    
+    // Add script to document
+    document.head.appendChild(zxingScript);
+}
+
+// Removed problematic function - using manual input only
+
+// Real-time input validation
+document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('scan-input')) {
+        validateInput(e.target);
+    } else if (e.target.classList.contains('quantity-input')) {
+        validateQuantity(e.target);
+    }
+});
+
+function validateInput(input) {
+    const itemId = input.dataset.itemId;
+    const scannedCode = input.value.trim();
+    const expectedSkuFull = input.dataset.sku.trim();
+    
+    // Extract SKU from pipe format: "MJP | BLD-GLSMY-PTH | SET GELAS..." -> "BLD-GLSMY-PTH"
+    const extractSku = (skuString) => {
+        if (skuString.includes('|')) {
+            const parts = skuString.split('|');
+            if (parts.length >= 2) {
+                return parts[1].trim(); // Get the middle part (actual SKU)
+            }
+        }
+        return skuString; // Return as is if no pipe format
+    };
+    
+    const expectedSku = extractSku(expectedSkuFull);
+    const scannedSku = extractSku(scannedCode);
+    
+    if (scannedCode.length === 0) {
+        input.style.borderColor = '#dee2e6';
+        input.style.backgroundColor = '#ffffff';
+        checkCanConfirm(itemId);
+        return;
+    }
+    
+    // STRICT VALIDATION: Code must match EXACTLY from first character to last character
+    const isValid = scannedSku === expectedSku;
+    
+    if (isValid) {
+        input.style.borderColor = '#28a745';
+        input.style.backgroundColor = '#d4edda';
+        
+        // Lock the input field when code is correct
+        input.readOnly = true;
+        input.style.cursor = 'not-allowed';
+        
+        // Show success message
+        const successMsg = input.parentElement.parentElement.querySelector('.validation-message');
+        if (successMsg) {
+            successMsg.remove();
+        }
+        const successDiv = document.createElement('div');
+        successDiv.className = 'validation-message text-success mt-1';
+        successDiv.innerHTML = '<i class="fas fa-check-circle"></i> Kode cocok! Input terkunci.';
+        input.parentElement.parentElement.appendChild(successDiv);
+        
+        // Add unlock button
+        const unlockBtn = document.createElement('button');
+        unlockBtn.className = 'btn btn-sm btn-outline-secondary mt-1';
+        unlockBtn.innerHTML = '<i class="fas fa-unlock"></i> Unlock';
+        unlockBtn.onclick = function() {
+            input.readOnly = false;
+            input.style.cursor = 'text';
+            input.focus();
+            unlockBtn.remove();
+            successDiv.innerHTML = '<i class="fas fa-check-circle"></i> Kode cocok!';
+        };
+        input.parentElement.parentElement.appendChild(unlockBtn);
+    } else {
+        input.style.borderColor = '#dc3545';
+        input.style.backgroundColor = '#f8d7da';
+        // Show error message
+        const errorMsg = input.parentElement.parentElement.querySelector('.validation-message');
+        if (errorMsg) {
+            errorMsg.remove();
+        }
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'validation-message text-danger mt-1';
+        errorDiv.innerHTML = `<i class="fas fa-times-circle"></i> Kode tidak cocok! Diharapkan: <strong>${expectedSku}</strong>`;
+        input.parentElement.parentElement.appendChild(errorDiv);
+        
+        // Auto-delete input for incorrect data after 2 seconds
+        setTimeout(() => {
+            input.value = '';
+            input.style.borderColor = '#dee2e6';
+            input.style.backgroundColor = '#ffffff';
+            input.readOnly = false;
+            input.style.cursor = 'text';
+            
+            // Remove all validation messages and unlock buttons
+            const existingMessages = input.parentElement.parentElement.querySelectorAll('.validation-message');
+            existingMessages.forEach(msg => msg.remove());
+            
+            const unlockBtns = input.parentElement.parentElement.querySelectorAll('.btn-outline-secondary');
+            unlockBtns.forEach(btn => btn.remove());
+            
+            input.focus();
+            checkCanConfirm(itemId);
+        }, 2000);
+    }
+    
+    checkCanConfirm(itemId);
+}
+
+function validateQuantity(input) {
+    const itemId = input.dataset.itemId;
+    const enteredQty = parseInt(input.value) || 0;
+    const expectedQty = parseInt(input.dataset.expected);
+    
+    if (enteredQty === 0) {
+        input.classList.remove('valid', 'invalid');
+        checkCanConfirm(itemId);
+        return;
+    }
+    
+    if (enteredQty === expectedQty) {
+        input.classList.add('valid');
+        input.classList.remove('invalid');
+    } else {
+        input.classList.add('invalid');
+        input.classList.remove('valid');
+        
+        // Auto-delete incorrect quantity after 2 seconds
+        setTimeout(() => {
+            input.value = '';
+            input.classList.remove('valid', 'invalid');
+            input.focus();
+            checkCanConfirm(itemId);
+        }, 2000);
+    }
+    
+    checkCanConfirm(itemId);
+}
+
+function checkCanConfirm(itemId) {
+    const scanInput = document.querySelector(`input.scan-input[data-item-id="${itemId}"]`);
+    const qtyInput = document.querySelector(`input.quantity-input[data-item-id="${itemId}"]`);
+    const confirmBtn = document.querySelector(`[data-item-id="${itemId}"]`).querySelector('.btn-confirm');
+    
+    const scannedCode = scanInput.value.trim();
+    const expectedSkuFull = scanInput.dataset.sku.trim();
+    const enteredQty = parseInt(qtyInput.value) || 0;
+    const expectedQty = parseInt(qtyInput.dataset.expected);
+    
+    // Extract SKU from pipe format: "MJP | BLD-GLSMY-PTH | SET GELAS..." -> "BLD-GLSMY-PTH"
+    const extractSku = (skuString) => {
+        if (skuString.includes('|')) {
+            const parts = skuString.split('|');
+            if (parts.length >= 2) {
+                return parts[1].trim(); // Get the middle part (actual SKU)
+            }
+        }
+        return skuString; // Return as is if no pipe format
+    };
+    
+    const expectedSku = extractSku(expectedSkuFull);
+    const scannedSku = extractSku(scannedCode);
+    
+    // STRICT VALIDATION: Code must match EXACTLY from first character to last character
+    const codeValid = scannedCode.length > 0 && scannedSku === expectedSku;
+    const qtyValid = enteredQty === expectedQty;
+    
+    if (codeValid && qtyValid) {
+        confirmBtn.disabled = false;
+        confirmBtn.style.background = '#28a745';
+        confirmBtn.style.cursor = 'pointer';
+        confirmBtn.innerHTML = '<i class="fas fa-check"></i> Konfirmasi Ambil';
+    } else {
+        confirmBtn.disabled = true;
+        confirmBtn.style.background = '#6c757d';
+        confirmBtn.style.cursor = 'not-allowed';
+        if (!codeValid && !qtyValid) {
+            confirmBtn.innerHTML = '<i class="fas fa-times"></i> Kode & Jumlah Tidak Cocok';
+        } else if (!codeValid) {
+            confirmBtn.innerHTML = '<i class="fas fa-times"></i> Kode Tidak Cocok';
+        } else if (!qtyValid) {
+            confirmBtn.innerHTML = '<i class="fas fa-times"></i> Jumlah Tidak Cocok';
+        }
+    }
+}
+
+function confirmPick(itemId) {
+    const scanInput = document.querySelector(`input.scan-input[data-item-id="${itemId}"]`);
+    const qtyInput = document.querySelector(`input.quantity-input[data-item-id="${itemId}"]`);
+    const scannedCode = scanInput.value.trim();
+    const enteredQty = parseInt(qtyInput.value) || 0;
+    const expectedQty = parseInt(qtyInput.dataset.expected);
+    
+    if (!scannedCode) {
+        alert('Silakan scan barcode atau masukkan kode produk terlebih dahulu');
+        return;
+    }
+    
+    if (enteredQty !== expectedQty) {
+        alert(`Jumlah harus tepat ${expectedQty} item! Anda memasukkan ${enteredQty}`);
+        qtyInput.focus();
+        return;
+    }
+    
+    // Use template variable directly - most reliable method
+    const orderId = {{ order.id }};
+    
+    console.log('=== ORDER ID FINAL DEBUG ===');
+    console.log('Template order_id:', orderId);
+    console.log('Window global:', window.CURRENT_ORDER_ID);
+    
+    // CONSTRUCT REQUEST WITH GUARANTEED ORDER_ID
+    const requestData = {
+        order_id: orderId,
+        item_id: parseInt(itemId),
+        barcode: scannedCode,
+        quantity: enteredQty
+    };
+    
+    // CRITICAL: Validate order_id is present and valid
+    if (!requestData.order_id || isNaN(requestData.order_id) || requestData.order_id <= 0) {
+        alert('Error: Order ID tidak valid. Mohon refresh halaman atau hubungi administrator.');
+        return;
+    }
+    
+    console.log('=== REQUEST DATA ===');
+    console.log('Request data object:', requestData);
+    console.log('JSON payload:', JSON.stringify(requestData));
+    
+    // Double check the request data before sending
+    console.log('=== PRE-SEND VALIDATION ===');
+    console.log('Order ID exists:', !!requestData.order_id);
+    console.log('Item ID exists:', !!requestData.item_id);
+    console.log('Barcode exists:', !!requestData.barcode);
+    console.log('Quantity exists:', !!requestData.quantity);
+    console.log('All fields valid:', !!(requestData.order_id && requestData.item_id && requestData.barcode && requestData.quantity));
+    
+    fetch('/scan/product', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            // Mark item as picked directly without confirmation popup
+            const itemCard = document.querySelector(`[data-item-id="${itemId}"]`);
+            itemCard.classList.add('picked');
+            itemCard.innerHTML = `
+                <div class="item-info">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="mb-1">
+                            <span class="status-icon status-picked">✓</span>
+                            ${itemCard.querySelector('h5').textContent.replace(/^\d+/, '').trim()}
+                        </h5>
+                        <span class="quantity-badge">Qty: ${enteredQty}</span>
+                    </div>
+                    <div class="mb-2">
+                        <span class="sku-badge">${scanInput.dataset.sku}</span>
+                    </div>
+                    <div class="alert alert-success mb-0">
+                        <i class="fas fa-check-circle"></i> Picked successfully
+                        <small class="text-muted d-block">${new Date().toLocaleTimeString()}</small>
+                    </div>
+                </div>
+            `;
+            
+            // Update progress - calculate based on current state
+            const allItems = document.querySelectorAll('.item-card');
+            const pickedItems = document.querySelectorAll('.item-card.picked');
+            updateProgress({
+                picked: pickedItems.length,
+                total: allItems.length
+            });
+            
+            // Check if all items are picked
+            if (data.all_items_picked) {
+                // Show completion message
+                showToast(data.message, 'success');
+                
+                // Show completion section with instruction
+                document.getElementById('complete-section').style.display = 'block';
+                document.getElementById('complete-section').innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-check-circle fa-3x mb-3"></i>
+                        <h4>Picking Selesai!</h4>
+                        <p class="mb-3">Semua item berhasil di-pick. Silakan lanjutkan ke <strong>Scan Center → Validasi Packing</strong> untuk memproses pesanan ini.</p>
+                        <a href="/scan_center?mode=packing" class="btn btn-primary btn-lg">
+                            <i class="fas fa-box"></i> Lanjut ke Validasi Packing
+                        </a>
+                    </div>
+                `;
+                window.scrollTo(0, document.body.scrollHeight);
+            } else {
+                // Show success message for individual item
+                showToast('Item berhasil dipick dan dikonfirmasi!', 'success');
+            }
+        } else {
+            console.error('API Error:', data.error);
+            showToast(data.error || 'Terjadi kesalahan saat memproses item', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Network Error:', error);
+        showToast('Terjadi kesalahan jaringan: ' + error.message, 'error');
+    });
+}
+
+function updateProgress(progress) {
+    const progressBar = document.querySelector('.progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const percentage = Math.round((progress.picked / progress.total) * 100);
+    
+    progressBar.style.width = percentage + '%';
+    progressText.textContent = `${progress.picked}/${progress.total} items picked`;
+    progressBar.parentElement.nextElementSibling.querySelector('.float-right').textContent = percentage + '%';
+}
+
+function goToPacking() {
+    // Redirect to scan center with packing mode
+    window.location.href = `/scan_center?mode=packing`;
+}
+
+function showToast(message, type) {
+    // Simple toast notification with support for info type
+    let alertType = 'success';
+    let iconType = 'check-circle';
+    
+    if (type === 'error') {
+        alertType = 'danger';
+        iconType = 'exclamation-circle';
+    } else if (type === 'info') {
+        alertType = 'info';
+        iconType = 'info-circle';
+    }
+    
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${alertType} position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
+    toast.innerHTML = `
+        <i class="fas fa-${iconType}"></i> ${message}
+        <button type="button" class="close" onclick="this.parentElement.remove()">
+            <span>&times;</span>
+        </button>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 5000);
+}
+
+// Auto-focus first empty input on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const firstEmptyInput = document.querySelector('.scan-input');
+    if (firstEmptyInput) {
+        firstEmptyInput.focus();
+    }
+    
+    // Initialize all quantity inputs as empty (0)
+    document.querySelectorAll('.quantity-input').forEach(input => {
+        input.value = '';
+        validateQuantity(input);
+    });
+    
+    // Check if all items are already picked - show complete section
+    const allItems = document.querySelectorAll('.item-card');
+    const pickedItems = document.querySelectorAll('.item-card.picked');
+    
+    if (allItems.length > 0 && allItems.length === pickedItems.length) {
+        console.log('All items already picked - showing complete section');
+        document.getElementById('complete-section').style.display = 'block';
+    }
+    
+    // Debug: Check if order_id is properly set
+    const container = document.querySelector('.picking-container');
+    const orderIdFromData = container ? container.getAttribute('data-order-id') : null;
+    console.log('Page loaded - Order ID available:', orderIdFromData);
+    console.log('Container element:', container);
+    console.log('All data attributes:', container ? container.dataset : 'No container');
+});
+</script>
+{% endblock %}

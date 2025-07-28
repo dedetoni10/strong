@@ -1,0 +1,963 @@
+{% extends "base_sidebar.html" %}
+
+{% block content %}
+<div class="content-header">
+    <h1><i class="fas fa-qrcode me-2"></i>Scanner Absensi QR Code</h1>
+    <p>Scan barcode absensi dengan time validation dan approval workflow</p>
+</div>
+
+<!-- Statistics Cards -->
+<div class="stats-cards">
+    <div class="stat-card">
+        <div class="stat-icon" style="background-color: #28a745;">
+            <i class="fas fa-calendar-check text-white"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="attendance-today">0</h3>
+            <p>Absen Hari Ini</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background-color: #007bff;">
+            <i class="fas fa-check-circle text-white"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="approved-today">0</h3>
+            <p>Auto-Approved</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background-color: #ffc107;">
+            <i class="fas fa-exclamation-triangle text-white"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="violations-today">0</h3>
+            <p>Violations</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background-color: #dc3545;">
+            <i class="fas fa-clock text-white"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="pending-approvals">0</h3>
+            <p>Pending Approval</p>
+        </div>
+    </div>
+</div>
+
+<!-- Scanner Section -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-qrcode me-2"></i>Scanner Barcode Absensi
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Workflow Auto-Detection:</strong><br>
+                    1. Scan barcode absensi dengan kamera<br>
+                    2. Sistem otomatis deteksi karyawan + tipe absensi<br>
+                    3. Validasi waktu dan toleransi otomatis<br>
+                    4. Ambil foto selfie untuk dokumentasi<br>
+                    5. Submit absensi (auto-approve atau butuh approval)
+                </div>
+                
+                <!-- Auto-Detected Employee Info -->
+                <div id="employeeInfo" class="mb-3" style="display: none;">
+                    <div class="alert alert-success">
+                        <h6><i class="fas fa-user me-2"></i>Karyawan Terdeteksi:</h6>
+                        <div id="detectedEmployee">
+                            <strong>Nama:</strong> <span id="empName">-</span><br>
+                            <strong>No. Karyawan:</strong> <span id="empNumber">-</span><br>
+                            <strong>Cabang:</strong> <span id="empBranch">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Auto-Detected Barcode Info -->
+                <div id="barcodeInfo" class="mb-3" style="display: none;">
+                    <div class="alert alert-primary">
+                        <h6><i class="fas fa-qrcode me-2"></i>Info Absensi:</h6>
+                        <div id="detectedBarcode">
+                            <strong>Tipe:</strong> <span id="barcodeType">-</span><br>
+                            <strong>Target Waktu:</strong> <span id="targetTime">-</span><br>
+                            <strong>Waktu Sekarang:</strong> <span id="currentTime">--:--</span><br>
+                            <strong>Status:</strong> <span id="toleranceStatus" class="badge">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Barcode Scanner -->
+                <div class="mb-3">
+                    <label for="barcodeInput" class="form-label">
+                        <i class="fas fa-qrcode me-2"></i>Scan Barcode Absensi:
+                    </label>
+                    <input type="text" 
+                           class="form-control form-control-lg" 
+                           id="barcodeInput" 
+                           placeholder="Scan barcode untuk auto-detect karyawan dan tipe absensi"
+                           autocomplete="off"
+                           onchange="autoDetectAttendance()"
+                           onkeyup="if(event.key === 'Enter') autoDetectAttendance()">
+                    <small class="text-muted">Scan dengan barcode scanner atau ketik format: EMP_123|MASUK|20250724</small>
+                </div>
+                
+                <!-- Reason Input (for violations) -->
+                <div id="reasonSection" class="mb-3" style="display: none;">
+                    <label for="reasonInput" class="form-label">Alasan (untuk scan di luar toleransi):</label>
+                    <textarea class="form-control" id="reasonInput" rows="2" placeholder="Masukkan alasan..."></textarea>
+                </div>
+                
+                <!-- Selfie Camera Section -->
+                <div id="selfieSection" class="mb-3" style="display: none;">
+                    <label class="form-label">Ambil Foto Selfie:</label>
+                    <div class="text-center">
+                        <video id="selfieVideo" width="300" height="200" style="display: none; border: 2px solid #ddd; border-radius: 8px;"></video>
+                        <canvas id="selfieCanvas" width="300" height="200" style="display: none;"></canvas>
+                        <div id="selfiePreview" style="display: none;">
+                            <img id="selfieImage" width="300" height="200" style="border: 2px solid #ddd; border-radius: 8px;">
+                        </div>
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-primary" id="startCamera" onclick="startSelfieCamera()">
+                                <i class="fas fa-camera me-1"></i>Buka Kamera
+                            </button>
+                            <button type="button" class="btn btn-success" id="takeSelfie" onclick="takeSelfie()" style="display: none;">
+                                <i class="fas fa-camera me-1"></i>Ambil Foto
+                            </button>
+                            <button type="button" class="btn btn-warning" id="retakeSelfie" onclick="retakeSelfie()" style="display: none;">
+                                <i class="fas fa-redo me-1"></i>Ambil Ulang
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Submit Button -->
+                <div class="text-center">
+                    <button type="button" class="btn btn-success btn-lg" id="submitAttendance" onclick="submitAttendance()" disabled>
+                        <i class="fas fa-check me-2"></i>Submit Absensi
+                    </button>
+                </div>
+                
+                <!-- Result Display -->
+                <div id="scanResult" class="mt-3" style="display: none;"></div>
+                
+                <!-- Early Leave Reason (only show if early leave) -->
+                <div id="earlyLeaveSection" class="alert alert-warning" style="display: none;">
+                    <h6><i class="fas fa-exclamation-triangle me-2"></i>Pulang Cepat - Perlu Alasan</h6>
+                    <div class="mb-3">
+                        <label for="earlyLeaveReason" class="form-label">Alasan Pulang Cepat:</label>
+                        <select class="form-select" id="earlyLeaveReason" required>
+                            <option value="">Pilih alasan...</option>
+                            <option value="sakit">Sakit</option>
+                            <option value="keluarga_darurat">Keluarga Darurat</option>
+                            <option value="keperluan_mendadak">Keperluan Mendadak</option>
+                            <option value="izin_khusus">Izin Khusus</option>
+                        </select>
+                        <div class="form-text text-warning">
+                            <i class="fas fa-info-circle me-1"></i>Memerlukan approval atasan
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="scanResult" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-camera me-2"></i>Webcam Selfie
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <div id="webcamContainer" style="display: none;">
+                    <video id="webcam" width="280" height="210" autoplay style="border-radius: 8px; border: 2px solid #ddd;"></video>
+                    <canvas id="canvas" width="280" height="210" style="display: none;"></canvas>
+                    <div class="mt-3">
+                        <button class="btn btn-success" id="captureBtn" onclick="capturePhoto()">
+                            <i class="fas fa-camera me-2"></i>Ambil Foto
+                        </button>
+                        <button class="btn btn-secondary ms-2" id="retakeBtn" onclick="retakePhoto()" style="display: none;">
+                            <i class="fas fa-redo me-2"></i>Foto Ulang
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="webcamPlaceholder">
+                    <div class="text-muted">
+                        <i class="fas fa-camera fa-3x mb-3"></i>
+                        <p>Webcam akan aktif setelah QR code valid discan</p>
+                    </div>
+                </div>
+                
+                <div id="photoPreview" style="display: none;">
+                    <img id="capturedPhoto" src="" alt="Captured" style="max-width: 100%; border-radius: 8px; border: 2px solid #28a745;">
+                    <div class="mt-3">
+                        <button class="btn btn-warning" onclick="retakePhoto()">
+                            <i class="fas fa-redo me-2"></i>Foto Ulang
+                        </button>
+                        <p class="text-success mt-2"><i class="fas fa-check me-1"></i>Foto sudah diambil! Klik Submit Absensi di sebelah kiri.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Today's QR Attendance -->
+<div class="card">
+    <div class="card-header bg-purple text-white">
+        <h5 class="mb-0" style="color: black !important;">
+            <i class="fas fa-list me-2" style="color: black !important;"></i>Absensi QR Hari Ini
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-purple">
+                    <tr>
+                        <th>No</th>
+                        <th>Nama</th>
+                        <th>Cabang</th>
+                        <th>Waktu Masuk</th>
+                        <th>Waktu Keluar</th>
+                        <th>Metode</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attendance in today_attendances %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if attendance.check_in_photo %}
+                                <img src="data:image/jpeg;base64,{{ attendance.check_in_photo }}" 
+                                     class="rounded-circle me-2" 
+                                     width="32" height="32" 
+                                     alt="Photo">
+                                {% else %}
+                                <div class="rounded-circle bg-secondary me-2 d-flex align-items-center justify-content-center" 
+                                     style="width: 32px; height: 32px;">
+                                    <i class="fas fa-user text-white" style="font-size: 14px;"></i>
+                                </div>
+                                {% endif %}
+                                <span class="fw-bold">{{ attendance.employee.full_name }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ attendance.employee.branch_location }}</span>
+                        </td>
+                        <td>
+                            {% if attendance.check_in_time %}
+                                <span class="text-success">{{ attendance.check_in_time.strftime('%H:%M:%S') }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if attendance.check_out_time %}
+                                <span class="text-warning">{{ attendance.check_out_time.strftime('%H:%M:%S') }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-primary">QR + Selfie</span>
+                        </td>
+                        <td>
+                            {% if attendance.status == 'present' %}
+                                <span class="badge bg-success">Hadir</span>
+                            {% elif attendance.status == 'late' %}
+                                <span class="badge bg-warning">Terlambat</span>
+                            {% elif attendance.status == 'absent' %}
+                                <span class="badge bg-danger">Tidak Hadir</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ attendance.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-info" onclick="viewAttendancePhotos({{ attendance.id }}, '{{ attendance.employee.full_name }}')">
+                                <i class="fas fa-images"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+// ========== ATTENDANCE SYSTEM VARIABLES ==========
+let selectedEmployeeId = null;
+let currentEmployeeId = null;
+let currentAttendanceType = null;
+let currentBarcodeData = null;
+let currentBarcodeType = null;
+let selfiePhotoBase64 = null;
+let webcamStream = null;
+let scanResult = null;
+
+// ========== INITIALIZATION ==========
+document.addEventListener('DOMContentLoaded', function() {
+    updateStatistics();
+    if (typeof startClock === 'function') {
+        startClock();
+    }
+    
+    const barcodeInput = document.getElementById('barcodeInput');
+    if (barcodeInput) {
+        barcodeInput.focus();
+        
+        // Auto-process barcode when scanner inputs data
+        barcodeInput.addEventListener('input', function() {
+            const barcode = this.value.trim();
+            if (barcode.length > 8) { // Minimum barcode length
+                autoDetectAttendance();
+            }
+        });
+    }
+    
+    // Re-focus after any click to ensure scanner input works
+    document.addEventListener('click', function() {
+        if (barcodeInput) {
+            setTimeout(() => barcodeInput.focus(), 100);
+        }
+    });
+});
+
+// ========== AUTO-DETECTION SYSTEM ==========
+// Auto-detect attendance from barcode scan
+function autoDetectAttendance() {
+    const barcodeInput = document.getElementById('barcodeInput');
+    const barcodeData = barcodeInput.value.trim();
+    
+    if (!barcodeData) {
+        return;
+    }
+    
+    console.log('Auto-detecting barcode:', barcodeData);
+    
+    // Call decode API
+    fetch('/attendance/decode_barcode', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            barcode_data: barcodeData
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Display detected employee info
+            selectedEmployeeId = data.employee.id;
+            currentEmployeeId = data.employee.id; 
+            currentBarcodeData = barcodeData;
+            currentBarcodeType = data.barcode_info.type;
+            currentAttendanceType = data.barcode_info.type;
+            
+            // Update employee info display
+            document.getElementById('empName').textContent = data.employee.name;
+            document.getElementById('empNumber').textContent = data.employee.employee_id;
+            document.getElementById('empBranch').textContent = data.employee.branch_location;
+            document.getElementById('employeeInfo').style.display = 'block';
+            
+            // Update barcode info display
+            document.getElementById('barcodeType').textContent = data.barcode_info.type.toUpperCase();
+            document.getElementById('targetTime').textContent = data.barcode_info.target_time;
+            document.getElementById('currentTime').textContent = data.barcode_info.current_time;
+            
+            // Update tolerance status
+            const statusBadge = document.getElementById('toleranceStatus');
+            if (data.barcode_info.is_within_tolerance) {
+                statusBadge.textContent = 'DALAM TOLERANSI';
+                statusBadge.className = 'badge bg-success';
+            } else {
+                statusBadge.textContent = 'BUTUH APPROVAL';
+                statusBadge.className = 'badge bg-warning';
+                // Show reason section for violations
+                document.getElementById('reasonSection').style.display = 'block';
+            }
+            
+            document.getElementById('barcodeInfo').style.display = 'block';
+            
+            // Show selfie section
+            document.getElementById('selfieSection').style.display = 'block';
+            
+            // Enable submit when selfie is taken
+            checkSubmitReady();
+            
+            // Start webcam after employee detected
+            startWebcam();
+            
+            console.log('Employee detected:', data.employee);
+            console.log('Barcode info:', data.barcode_info);
+            
+        } else {
+            // Show error
+            showAlert('danger', data.message);
+            resetInterface();
+        }
+    })
+    .catch(error => {
+        console.error('Error decoding barcode:', error);
+        showAlert('danger', 'Error sistem saat decode barcode');
+        resetInterface();
+    });
+}
+
+function resetInterface() {
+    // Hide all info sections
+    document.getElementById('employeeInfo').style.display = 'none';
+    document.getElementById('barcodeInfo').style.display = 'none';
+    document.getElementById('selfieSection').style.display = 'none';
+    document.getElementById('reasonSection').style.display = 'none';
+    
+    // Clear input
+    document.getElementById('barcodeInput').value = '';
+    
+    // Reset variables
+    selectedEmployeeId = null;
+    currentEmployeeId = null;
+    currentAttendanceType = null;
+    currentBarcodeData = null;
+    currentBarcodeType = null;
+    selfiePhotoBase64 = null;
+    
+    // Disable submit button
+    document.getElementById('submitAttendance').disabled = true;
+}
+
+// ========== SUBMIT READINESS CHECK ==========
+function checkSubmitReady() {
+    const submitBtn = document.getElementById('submitAttendance');
+    
+    // Check if all required data is available
+    const hasEmployee = selectedEmployeeId !== null;
+    const hasBarcode = currentBarcodeData !== null;
+    const hasSelfie = selfiePhotoBase64 !== null;
+    
+    if (hasEmployee && hasBarcode && hasSelfie) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Submit Absensi';
+    } else {
+        submitBtn.disabled = true;
+        if (!hasSelfie) {
+            submitBtn.innerHTML = '<i class="fas fa-camera me-2"></i>Ambil Selfie Dulu';
+        } else {
+            submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Submit Absensi';
+        }
+    }
+}
+
+// ========== BARCODE SCANNING ==========
+function processAttendanceScan() {
+    const barcodeInput = document.getElementById('barcodeInput');
+    const barcodeData = barcodeInput.value.trim();
+    
+    if (!selectedEmployeeId) {
+        showScanResult('danger', 'Pilih karyawan terlebih dahulu');
+        barcodeInput.value = '';
+        return;
+    }
+    
+    if (!barcodeData) {
+        showScanResult('warning', 'Scan barcode absensi');
+        return;
+    }
+    
+    console.log('Processing barcode:', barcodeData);
+    
+    // Show loading
+    showScanResult('info', '<i class="fas fa-spinner fa-spin me-2"></i>Memproses scan barcode...');
+    
+    // Process barcode scan
+    fetch('/attendance/scan', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            employee_id: selectedEmployeeId,
+            barcode_data: barcodeData
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentBarcodeData = barcodeData;
+            currentBarcodeType = data.barcode_type;
+            scanResult = data;
+            
+            if (data.status === 'auto_approved') {
+                // Auto-approved, proceed to selfie
+                showScanResult('success', `✅ ${data.message}<br><small>Scan dalam toleransi - Auto approved</small>`);
+                showSelfieSection();
+            } else if (data.status === 'needs_approval') {
+                // Needs approval, show reason input
+                showScanResult('warning', `⚠️ ${data.message}<br><small>Scan di luar toleransi - Butuh approval atasan</small>`);
+                showReasonSection();
+            } else if (data.status === 'blocked') {
+                // Blocked, cannot scan
+                showScanResult('danger', `❌ ${data.message}<br><small>Tidak dapat scan sampai approval selesai</small>`);
+                resetForm();
+            }
+            
+            // Clear barcode input
+            barcodeInput.value = '';
+        } else {
+            showScanResult('danger', `❌ Error: ${data.message}`);
+            barcodeInput.value = '';
+            barcodeInput.focus();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showScanResult('danger', '❌ Terjadi kesalahan saat memproses scan');
+        barcodeInput.value = '';
+        barcodeInput.focus();
+    });
+}
+
+function showScanResult(type, message) {
+    const resultDiv = document.getElementById('scanResult');
+    resultDiv.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+    resultDiv.style.display = 'block';
+}
+
+function showReasonSection() {
+    document.getElementById('reasonSection').style.display = 'block';
+    document.getElementById('reasonInput').focus();
+    document.getElementById('submitAttendance').disabled = false;
+}
+
+function showSelfieSection() {
+    document.getElementById('selfieSection').style.display = 'block';
+}
+
+function resetForm() {
+    document.getElementById('reasonSection').style.display = 'none';
+    document.getElementById('selfieSection').style.display = 'none';
+    document.getElementById('submitAttendance').disabled = true;
+    selectedEmployeeId = null;
+    currentBarcodeData = null;
+    currentBarcodeType = null;
+    selfiePhotoBase64 = null;
+    scanResult = null;
+    
+    document.getElementById('employeeSelect').value = '';
+    document.getElementById('selectedEmployeeInfo').style.display = 'none';
+    document.getElementById('barcodeInput').focus();
+    
+    // Stop webcam if running
+    if (webcamStream) {
+        webcamStream.getTracks().forEach(track => track.stop());
+        webcamStream = null;
+    }
+}
+
+// ========== SELFIE CAMERA FUNCTIONS ==========
+function startSelfieCamera() {
+    const video = document.getElementById('selfieVideo');
+    const startBtn = document.getElementById('startCamera');
+    const takeBtn = document.getElementById('takeSelfie');
+    
+    navigator.mediaDevices.getUserMedia({ 
+        video: { 
+            width: 300, 
+            height: 200,
+            facingMode: 'user' // Front camera for selfie
+        } 
+    })
+    .then(stream => {
+        webcamStream = stream;
+        video.srcObject = stream;
+        video.style.display = 'block';
+        startBtn.style.display = 'none';
+        takeBtn.style.display = 'inline-block';
+        
+        document.getElementById('submitAttendance').disabled = false;
+    })
+    .catch(error => {
+        console.error('Error accessing camera:', error);
+        alert('Tidak dapat mengakses kamera. Pastikan kamera tersambung dan izin telah diberikan.');
+    });
+}
+
+function takeSelfie() {
+    const video = document.getElementById('selfieVideo');
+    const canvas = document.getElementById('selfieCanvas');
+    const context = canvas.getContext('2d');
+    const preview = document.getElementById('selfiePreview');
+    const image = document.getElementById('selfieImage');
+    const takeBtn = document.getElementById('takeSelfie');
+    const retakeBtn = document.getElementById('retakeSelfie');
+    
+    // Draw video frame to canvas
+    context.drawImage(video, 0, 0, 300, 200);
+    
+    // Convert to base64
+    selfiePhotoBase64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+    
+    // Show preview
+    image.src = 'data:image/jpeg;base64,' + selfiePhotoBase64;
+    video.style.display = 'none';
+    preview.style.display = 'block';
+    takeBtn.style.display = 'none';
+    retakeBtn.style.display = 'inline-block';
+    
+    // Check submit readiness
+    checkSubmitReady();
+}
+
+function retakeSelfie() {
+    const video = document.getElementById('selfieVideo');
+    const preview = document.getElementById('selfiePreview');
+    const takeBtn = document.getElementById('takeSelfie');
+    const retakeBtn = document.getElementById('retakeSelfie');
+    
+    video.style.display = 'block';
+    preview.style.display = 'none';
+    takeBtn.style.display = 'inline-block';
+    retakeBtn.style.display = 'none';
+    
+    selfiePhotoBase64 = null;
+}
+
+// ========== WEBCAM AUTO-START FUNCTION ==========
+function startWebcam() {
+    const webcamContainer = document.getElementById('webcamContainer');
+    const webcamPlaceholder = document.getElementById('webcamPlaceholder');
+    const video = document.getElementById('webcam');
+    
+    if (webcamContainer && webcamPlaceholder && video) {
+        webcamPlaceholder.style.display = 'none';
+        webcamContainer.style.display = 'block';
+        
+        navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                width: 280, 
+                height: 210,
+                facingMode: 'user' // Front camera for selfie
+            } 
+        })
+        .then(stream => {
+            webcamStream = stream;
+            video.srcObject = stream;
+        })
+        .catch(error => {
+            console.error('Error accessing webcam:', error);
+            alert('Tidak dapat mengakses webcam. Pastikan webcam tersambung dan izin telah diberikan.');
+        });
+    } else {
+        // Fallback to startSelfieCamera if elements not found
+        console.log('Webcam elements not found, using startSelfieCamera fallback');
+        if (typeof startSelfieCamera === 'function') {
+            startSelfieCamera();
+        }
+    }
+}
+
+// ========== ATTENDANCE SUBMISSION ==========
+function submitAttendance() {
+    if (!selectedEmployeeId || !currentBarcodeData || !currentBarcodeType || !selfiePhotoBase64) {
+        showAlert('warning', 'Lengkapi semua data terlebih dahulu (employee, barcode, selfie)');
+        return;
+    }
+    
+    // Check if reason is required for violations
+    const statusBadge = document.getElementById('toleranceStatus');
+    const needsApproval = statusBadge && statusBadge.textContent === 'BUTUH APPROVAL';
+    
+    if (needsApproval) {
+        const reason = document.getElementById('reasonInput').value.trim();
+        if (!reason) {
+            showAlert('warning', 'Masukkan alasan untuk scan di luar toleransi');
+            document.getElementById('reasonInput').focus();
+            return;
+        }
+    }
+    
+    const submitBtn = document.getElementById('submitAttendance');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Memproses...';
+    
+    const requestData = {
+        employee_id: selectedEmployeeId,
+        barcode_data: currentBarcodeData,
+        barcode_type: currentBarcodeType,
+        selfie_photo: selfiePhotoBase64,
+        requires_approval: needsApproval
+    };
+    
+    // Add reason if needed
+    if (needsApproval) {
+        requestData.reason = document.getElementById('reasonInput').value.trim();
+    }
+    
+    fetch('/attendance/scan', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', data.message);
+            
+            // Show success result  
+            document.getElementById('scanResult').innerHTML = `
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>Absensi Berhasil!</strong><br>
+                    <small>${data.message}</small>
+                </div>
+            `;
+            document.getElementById('scanResult').style.display = 'block';
+            
+            // Update statistics
+            updateStatistics();
+            
+            // Reset form after success
+            setTimeout(() => {
+                resetInterface();
+            }, 3000);
+        } else {
+            showAlert('danger', data.message);
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Submit Absensi';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('danger', 'Terjadi kesalahan saat submit absensi');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Submit Absensi';
+    });
+}
+
+// ========== UTILITIES ==========
+function showAlert(type, message) {
+    // Create or update alert div
+    let alertDiv = document.getElementById('alertMessage');
+    if (!alertDiv) {
+        alertDiv = document.createElement('div');
+        alertDiv.id = 'alertMessage';
+        alertDiv.style.position = 'fixed';
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        document.body.appendChild(alertDiv);
+    }
+    
+    alertDiv.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" onclick="this.parentElement.parentElement.innerHTML=''"></button>
+        </div>
+    `;
+    
+    // Auto hide after 5 seconds
+    setTimeout(() => {
+        if (alertDiv) alertDiv.innerHTML = '';
+    }, 5000);
+}
+
+// ========== STATISTICS UPDATE ==========
+function updateStatistics() {
+    fetch('/attendance/statistics_today')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('attendance-today').textContent = data.attendance_today;
+            document.getElementById('approved-today').textContent = data.approved_today;
+            document.getElementById('violations-today').textContent = data.violations_today;
+            document.getElementById('pending-approvals').textContent = data.pending_approvals;
+        }
+    })
+    .catch(error => {
+        console.error('Error updating statistics:', error);
+    });
+}
+
+// ========== GLOBAL VARIABLES (Remove duplicates) ==========
+// Variables already declared above - no need to redeclare
+
+function startWebcam() {
+    const webcamContainer = document.getElementById('webcamContainer');
+    const webcamPlaceholder = document.getElementById('webcamPlaceholder');
+    const video = document.getElementById('webcam');
+    
+    webcamPlaceholder.style.display = 'none';
+    webcamContainer.style.display = 'block';
+    
+    navigator.mediaDevices.getUserMedia({ 
+        video: { 
+            width: 280, 
+            height: 210,
+            facingMode: 'user' // Front camera for selfie
+        } 
+    })
+    .then(stream => {
+        webcamStream = stream;
+        video.srcObject = stream;
+    })
+    .catch(error => {
+        console.error('Error accessing webcam:', error);
+        showAlert('danger', 'Tidak dapat mengakses webcam. Pastikan webcam tersambung dan izin telah diberikan.');
+    });
+}
+
+function capturePhoto() {
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    const capturedPhoto = document.getElementById('capturedPhoto');
+    
+    // Draw video frame to canvas
+    context.drawImage(video, 0, 0, 280, 210);
+    
+    // Convert to base64
+    const photoData = canvas.toDataURL('image/jpeg', 0.8);
+    
+    // Store photo data globally
+    selfiePhotoBase64 = photoData;
+    
+    // Show preview
+    capturedPhoto.src = photoData;
+    document.getElementById('photoPreview').style.display = 'block';
+    document.getElementById('webcamContainer').style.display = 'none';
+    
+    // Stop webcam
+    if (webcamStream) {
+        webcamStream.getTracks().forEach(track => track.stop());
+    }
+    
+    // Check if submit is ready
+    checkSubmitReady();
+}
+
+function retakePhoto() {
+    document.getElementById('photoPreview').style.display = 'none';
+    startWebcam();
+}
+
+function submitAttendance() {
+    if (!selectedEmployeeId) {
+        showAlert('danger', 'Data karyawan tidak ditemukan');
+        return;
+    }
+    
+    if (!selfiePhotoBase64) {
+        showAlert('warning', 'Ambil foto selfie terlebih dahulu');
+        return;
+    }
+    
+    const submitBtn = document.getElementById('submitAttendance');
+    const reasonTextarea = document.getElementById('reasonInput');
+    const earlyLeaveReason = document.getElementById('earlyLeaveReason');
+    
+    // Show loading
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Menyimpan...';
+    submitBtn.disabled = true;
+    
+    console.log('Submitting attendance with data:', {
+        employee_id: selectedEmployeeId,
+        barcode_data: currentBarcodeData,
+        has_photo: !!selfiePhotoBase64,
+        reason: reasonTextarea ? reasonTextarea.value : ''
+    });
+    
+    // Submit attendance with tolerance approval
+    fetch(`/attendance/submit_with_approval`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            employee_id: selectedEmployeeId,
+            barcode_data: currentBarcodeData,
+            photo: selfiePhotoBase64,
+            reason: reasonTextarea ? reasonTextarea.value : '',
+            early_leave_reason: earlyLeaveReason ? earlyLeaveReason.value : ''
+        })
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            showAlert('success', data.message);
+            // Reset form after success
+            setTimeout(() => {
+                resetInterface();
+            }, 3000);
+        } else {
+            showAlert('danger', data.message || 'Gagal submit absensi');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Submit Absensi';
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting attendance:', error);
+        showAlert('danger', 'Terjadi kesalahan saat submit absensi');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Submit Absensi';
+    });
+}
+
+function resetInterface() {
+    // Hide photo preview and webcam
+    document.getElementById('photoPreview').style.display = 'none';
+    document.getElementById('webcamContainer').style.display = 'none';
+    document.getElementById('webcamPlaceholder').style.display = 'block';
+    
+    // Hide tolerance sections
+    document.getElementById('toleranceSection').style.display = 'none';
+    document.getElementById('earlyLeaveSection').style.display = 'none';
+    
+    // Clear scan result
+    document.getElementById('scanResult').innerHTML = '';
+    
+    // Clear barcode input
+    document.getElementById('barcodeInput').value = '';
+    
+    // Reset global variables
+    selectedEmployeeId = null;
+    currentEmployeeId = null;
+    currentAttendanceType = null;
+    currentBarcodeData = null;
+    currentBarcodeType = null;
+    selfiePhotoBase64 = null;
+    
+    // Stop webcam if running
+    if (webcamStream) {
+        webcamStream.getTracks().forEach(track => track.stop());
+        webcamStream = null;
+    }
+    
+    // Update statistics
+    updateStatistics();
+}
+
+// ========== ATTENDANCE PHOTO VIEWER ==========
+function viewAttendancePhotos(attendanceId, employeeName) {
+    window.open(`/attendance/photos/${attendanceId}`, '_blank', 'width=800,height=600');
+}
+</script>
+{% endblock %}

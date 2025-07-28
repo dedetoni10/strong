@@ -1,0 +1,1893 @@
+{% extends "base.html" %}
+
+{% block title %}Shopee Setup - Strong Order Management{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-xl-10 col-lg-12">
+            <!-- Modern Header Section -->
+            <div class="setup-header-section">
+                <div class="setup-header-content">
+                    <div class="setup-brand-section">
+                        <div class="setup-brand-icon">
+                            <i class="fab fa-shopify"></i>
+                        </div>
+                        <div class="setup-brand-text">
+                            <h1 class="setup-title">Shopee Integration</h1>
+                            <p class="setup-subtitle">Hubungkan toko Shopee Anda dengan sistem Strong untuk otomasi penuh</p>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('dashboard') }}" class="setup-back-btn">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Kembali</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="setup-messages">
+                        {% for category, message in messages %}
+                            <div class="setup-alert setup-alert-{{ 'danger' if category == 'error' else category }}">
+                                <i class="fas fa-{{ 'times-circle' if category == 'error' else 'info-circle' }}"></i>
+                                <span>{{ message }}</span>
+                                {% if category == 'error' and ('source_ip_undeclared' in message or 'IP Address' in message) %}
+                                <div class="mt-3">
+                                    <h6>IP Address Issue:</h6>
+                                    <p><strong>Server menggunakan multiple IP addresses yang berubah-ubah:</strong></p>
+                                    <ul>
+                                        <li><code>34.96.44.144</code> (terbaru)</li>
+                                        <li><code>34.96.44.178</code> (dari error)</li>
+                                        <li><code>34.83.54.207</code> (sistem)</li>
+                                        <li><code>35.197.78.132</code> (sudah ditambahkan)</li>
+                                    </ul>
+                                    <p><strong>Solusi Praktis:</strong></p>
+                                    <div class="alert alert-info">
+                                        <strong>Sistem menggunakan Sample Data</strong><br>
+                                        Sistem telah dikonfigurasi untuk menggunakan data sample yang realistis untuk testing warehouse operations.
+                                    </div>
+                                </div>
+                                {% endif %}
+                                <button type="button" class="setup-alert-close" onclick="this.parentElement.remove()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <!-- Main Setup Card -->
+            <div class="setup-main-card">
+                <div class="setup-card-header">
+                    <div class="setup-progress-indicator">
+                        <div class="setup-step active">
+                            <div class="step-number">1</div>
+                            <div class="step-label">Setup Toko</div>
+                        </div>
+                        <div class="setup-step">
+                            <div class="step-number">2</div>
+                            <div class="step-label">Authorize</div>
+                        </div>
+                        <div class="setup-step">
+                            <div class="step-number">3</div>
+                            <div class="step-label">Sync Data</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setup-card-body">
+                    <!-- Connected Stores Section -->
+                    <div class="setup-section">
+                        <div class="setup-section-header">
+                            <div class="setup-section-icon">
+                                <i class="fas fa-store"></i>
+                            </div>
+                            <div class="setup-section-title">
+                                <h3>Toko Terhubung</h3>
+                                <p>Kelola semua toko Shopee yang telah terintegrasi</p>
+                            </div>
+                            <button class="setup-add-store-btn" onclick="showAddStoreModal()">
+                                <i class="fas fa-plus"></i>
+                                <span>Tambah Toko</span>
+                            </button>
+                        </div>
+
+                        <!-- Connected Stores List -->
+                        <div class="connected-stores-grid" id="storesGrid">
+                            <!-- Live API Status Card -->
+                            <div class="store-card">
+                                <div class="store-header">
+                                    <div class="store-icon">
+                                        <i class="fab fa-shopify"></i>
+                                    </div>
+                                    <div class="store-info">
+                                        <h4>Live Shopee API</h4>
+                                        <p class="store-status">
+                                            <span class="status-badge {% if api_mode == 'real' %}status-success{% else %}status-warning{% endif %}">
+                                                {% if api_mode == 'real' %}
+                                                    <i class="fas fa-check-circle"></i> Live API Active
+                                                {% else %}
+                                                    <i class="fas fa-exclamation-triangle"></i> Demo Mode
+                                                {% endif %}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="store-details">
+                                    <div class="detail-row">
+                                        <span class="detail-label">Partner ID:</span>
+                                        <span class="detail-value">{{ partner_id }}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">API Key:</span>
+                                        <span class="detail-value">{{ '●' * 20 }}{{ 'Not set' if not has_api_key else '...050' }}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Shop ID:</span>
+                                        <span class="detail-value">{{ shop_id if shop_id else 'Not authorized' }}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Connection:</span>
+                                        <span class="detail-value">
+                                            {% if connection_test.success %}
+                                                <span class="text-success"><i class="fas fa-check-circle"></i> Connected</span>
+                                            {% else %}
+                                                <span class="text-danger"><i class="fas fa-times-circle"></i> Not connected</span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="store-actions">
+                                    {% if not connection_test.success %}
+                                        <a href="{{ auth_url }}" class="btn btn-primary">
+                                            <i class="fas fa-key"></i> Authorize
+                                        </a>
+                                    {% else %}
+                                        <form method="POST" action="/sync_shopee_orders" style="display: inline;">
+                                            <button type="submit" class="btn btn-success">
+                                                <i class="fas fa-sync"></i> Sync Orders
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                    <button class="btn btn-outline-info" onclick="testApiConnection()">
+                                        <i class="fas fa-link"></i> Test Connection
+                                    </button>
+                                    <a href="/orders" class="btn btn-primary">
+                                        <i class="fas fa-box"></i> Lihat Pesanan
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+
+            <!-- Help Section -->
+            <div class="setup-help-section">
+                <div class="setup-help-card">
+                    <div class="help-icon">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <div class="help-content">
+                        <h4>Butuh Bantuan?</h4>
+                        <p>Ikuti panduan lengkap untuk setup Shopee API integration</p>
+                        <a href="#" class="setup-help-link" onclick="showDocumentationModal()">
+                            <i class="fas fa-book"></i>
+                            Lihat Dokumentasi
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Store Modal -->
+<div class="modal fade" id="addStoreModal" tabindex="-1" aria-labelledby="addStoreModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content add-store-modal">
+            <div class="modal-header add-store-modal-header">
+                <h5 class="modal-title" id="addStoreModalLabel">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Tambah Toko Baru
+                </h5>
+                <button type="button" class="btn-close add-store-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body add-store-modal-body">
+                <form id="addStoreForm">
+                    <div class="add-store-form-group">
+                        <label for="new_shop_name" class="add-store-label">
+                            <i class="fas fa-store"></i>
+                            Nama Toko
+                        </label>
+                        <input type="text" id="new_shop_name" class="add-store-input" 
+                               placeholder="Masukkan nama toko Shopee">
+                    </div>
+                    
+                    <div class="add-store-form-group">
+                        <label for="new_shop_id" class="add-store-label">
+                            <i class="fas fa-hashtag"></i>
+                            Shop ID (Opsional)
+                        </label>
+                        <input type="text" id="new_shop_id" class="add-store-input" 
+                               placeholder="Contoh: 123456789">
+                        <div class="add-store-hint">
+                            <i class="fas fa-info-circle"></i>
+                            Kosongkan jika belum tahu, akan diisi otomatis setelah authorize
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer add-store-modal-footer">
+                <button type="button" class="add-store-cancel" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i>
+                    Batal
+                </button>
+                <button type="button" class="add-store-submit" onclick="addNewStore()">
+                    <i class="fas fa-plus"></i>
+                    Tambah Toko
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Documentation Modal -->
+<div class="modal fade" id="documentationModal" tabindex="-1" aria-labelledby="documentationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="documentationModalLabel">
+                    <i class="fas fa-key me-2"></i>
+                    Cara Autorisasi Toko Shopee
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="auth-guide">
+                    <div class="benefit-section">
+                        <h6><i class="fas fa-star me-2"></i>Setelah Autorisasi Berhasil:</h6>
+                        <div class="benefits-list">
+                            <div class="benefit-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Pesanan Shopee Anda otomatis masuk ke sistem</span>
+                            </div>
+                            <div class="benefit-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Kelola semua order dari satu dashboard</span>
+                            </div>
+                            <div class="benefit-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Tracking status pesanan real-time</span>
+                            </div>
+                            <div class="benefit-item">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Laporan penjualan dan analytics</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="auth-steps">
+                        <h6><i class="fas fa-key me-2"></i>Cara Autorisasi Toko Shopee:</h6>
+                        
+                        <div class="guide-step">
+                            <div class="step-number">1</div>
+                            <div class="step-info">
+                                <h6>Klik "Tambah Toko"</h6>
+                                <p>Masukkan nama toko Shopee yang ingin dihubungkan</p>
+                            </div>
+                        </div>
+                        
+                        <div class="guide-step">
+                            <div class="step-number">2</div>
+                            <div class="step-info">
+                                <h6>Klik "Authorize"</h6>
+                                <p>Sistem akan membuka halaman login Shopee</p>
+                            </div>
+                        </div>
+                        
+                        <div class="guide-step">
+                            <div class="step-number">3</div>
+                            <div class="step-info">
+                                <h6>Login ke Akun Shopee</h6>
+                                <p>Gunakan akun pemilik toko yang akan dihubungkan</p>
+                            </div>
+                        </div>
+                        
+                        <div class="guide-step">
+                            <div class="step-number">4</div>
+                            <div class="step-info">
+                                <h6>Berikan Izin Akses</h6>
+                                <p>Klik "Authorize" untuk memberikan akses ke website ini</p>
+                            </div>
+                        </div>
+                        
+                        <div class="guide-step">
+                            <div class="step-number">5</div>
+                            <div class="step-info">
+                                <h6>Selesai!</h6>
+                                <p>Toko berhasil terhubung, pesanan akan otomatis sinkron</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-success mt-3">
+                        <i class="fas fa-magic me-2"></i>
+                        <strong>Hasil:</strong> Semua pesanan dari toko Shopee Anda akan otomatis muncul di dashboard dan siap untuk diproses!
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>
+                    Tutup
+                </button>
+                <button type="button" class="btn btn-primary" onclick="window.open('https://partner.shopee.co.id/', '_blank')">
+                    <i class="fas fa-external-link-alt me-2"></i>
+                    Buka Partner Portal
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Modern Setup Page Styles */
+.setup-header-section {
+    background: linear-gradient(135deg, rgba(255, 107, 53, 0.1) 0%, rgba(247, 147, 30, 0.1) 100%);
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(255, 107, 53, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+.setup-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.setup-brand-section {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.setup-brand-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #FF6B35, #F7931E);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: white;
+    box-shadow: 0 10px 30px rgba(255, 107, 53, 0.3);
+}
+
+.setup-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+    background: linear-gradient(135deg, #FF6B35, #F7931E);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.setup-subtitle {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0.5rem 0 0 0;
+}
+
+.setup-back-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 107, 53, 0.3);
+    border-radius: 12px;
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.setup-back-btn:hover {
+    background: rgba(255, 107, 53, 0.2);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.setup-messages {
+    margin-bottom: 2rem;
+}
+
+.setup-alert {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    border: 1px solid;
+    backdrop-filter: blur(10px);
+}
+
+.setup-alert-info {
+    background: rgba(13, 202, 240, 0.1);
+    border-color: rgba(13, 202, 240, 0.3);
+    color: #0dcaf0;
+}
+
+.setup-alert-danger {
+    background: rgba(220, 53, 69, 0.1);
+    border-color: rgba(220, 53, 69, 0.3);
+    color: #dc3545;
+}
+
+.setup-alert-close {
+    background: none;
+    border: none;
+    color: inherit;
+    margin-left: auto;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.setup-alert-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.setup-main-card {
+    background: rgba(33, 37, 41, 0.7);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 107, 53, 0.2);
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.setup-card-header {
+    padding: 2rem;
+    border-bottom: 1px solid rgba(255, 107, 53, 0.2);
+    background: linear-gradient(135deg, rgba(255, 107, 53, 0.05) 0%, rgba(247, 147, 30, 0.05) 100%);
+}
+
+.setup-progress-indicator {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+}
+
+.setup-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.step-number {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.setup-step.active .step-number {
+    background: linear-gradient(135deg, #FF6B35, #F7931E);
+    color: white;
+    border-color: #FF6B35;
+    box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+}
+
+.step-label {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+}
+
+.setup-step.active .step-label {
+    color: #FF6B35;
+}
+
+.setup-card-body {
+    padding: 2rem;
+}
+
+.setup-section {
+    margin-bottom: 3rem;
+}
+
+.setup-section-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.setup-section-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #FF6B35, #F7931E);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: white;
+    box-shadow: 0 5px 15px rgba(255, 107, 53, 0.3);
+}
+
+.setup-section-title h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: white;
+}
+
+.setup-section-title p {
+    margin: 0.25rem 0 0 0;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.setup-form-group {
+    max-width: 500px;
+}
+
+.setup-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 0.5rem;
+}
+
+.setup-input-wrapper {
+    position: relative;
+}
+
+.setup-input {
+    width: 100%;
+    padding: 1rem 1rem 1rem 3rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 107, 53, 0.3);
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.setup-input:focus {
+    outline: none;
+    border-color: #FF6B35;
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.setup-input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.setup-form-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.setup-auth-actions {
+    display: flex;
+    justify-content: center;
+}
+
+.setup-auth-btn {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem 2rem;
+    border-radius: 16px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    min-width: 300px;
+    border: none;
+    cursor: pointer;
+}
+
+.setup-auth-btn.primary {
+    background: linear-gradient(135deg, #FF6B35, #F7931E);
+    color: white;
+    box-shadow: 0 10px 30px rgba(255, 107, 53, 0.3);
+}
+
+.setup-auth-btn.primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 40px rgba(255, 107, 53, 0.4);
+    color: white;
+}
+
+.setup-auth-btn.disabled {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.4);
+    cursor: not-allowed;
+}
+
+.auth-btn-icon {
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.auth-btn-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.auth-btn-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.auth-btn-subtitle {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.setup-status-card {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    border-radius: 16px;
+    border: 1px solid;
+    backdrop-filter: blur(10px);
+}
+
+.setup-status-card.success {
+    background: rgba(25, 135, 84, 0.1);
+    border-color: rgba(25, 135, 84, 0.3);
+}
+
+.setup-status-card.info {
+    background: rgba(13, 202, 240, 0.1);
+    border-color: rgba(13, 202, 240, 0.3);
+}
+
+.setup-status-card.warning {
+    background: rgba(255, 193, 7, 0.1);
+    border-color: rgba(255, 193, 7, 0.3);
+}
+
+.status-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.setup-status-card.success .status-icon {
+    background: rgba(25, 135, 84, 0.2);
+    color: #198754;
+}
+
+.setup-status-card.info .status-icon {
+    background: rgba(13, 202, 240, 0.2);
+    color: #0dcaf0;
+}
+
+.setup-status-card.warning .status-icon {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+}
+
+.status-content {
+    flex: 1;
+}
+
+.status-content h4 {
+    margin: 0 0 0.5rem 0;
+    color: white;
+    font-weight: 600;
+}
+
+.status-content p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.setup-link {
+    color: #FF6B35;
+    text-decoration: none;
+}
+
+.setup-link:hover {
+    text-decoration: underline;
+}
+
+.status-actions {
+    flex-shrink: 0;
+}
+
+.setup-sync-btn, .setup-demo-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.setup-sync-btn {
+    background: linear-gradient(135deg, #198754, #20c997);
+    color: white;
+}
+
+.setup-sync-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(25, 135, 84, 0.3);
+}
+
+.setup-demo-btn {
+    background: linear-gradient(135deg, #FF6B35, #F7931E);
+    color: white;
+}
+
+.setup-demo-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 107, 53, 0.3);
+}
+
+.setup-help-section {
+    margin-top: 2rem;
+}
+
+.setup-help-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 107, 53, 0.2);
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+}
+
+.help-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #FF6B35, #F7931E);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.help-content {
+    flex: 1;
+}
+
+.help-content h4 {
+    margin: 0 0 0.5rem 0;
+    color: white;
+    font-weight: 600;
+}
+
+.help-content p {
+    margin: 0 0 1rem 0;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.setup-help-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #FF6B35;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.setup-help-link:hover {
+    text-decoration: underline;
+}
+
+/* Store Management Styles */
+.setup-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.setup-add-store-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #FF6B35, #F7931E);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+}
+
+.setup-add-store-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+}
+
+.connected-stores-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.store-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 107, 53, 0.2);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.store-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 107, 53, 0.4);
+}
+
+.store-card.connected {
+    border-color: rgba(25, 135, 84, 0.3);
+}
+
+.store-card.connected:hover {
+    border-color: rgba(25, 135, 84, 0.5);
+}
+
+.store-card.pending {
+    border-color: rgba(255, 193, 7, 0.3);
+}
+
+.store-card.pending:hover {
+    border-color: rgba(255, 193, 7, 0.5);
+}
+
+.store-card.add-new {
+    border: 2px dashed rgba(255, 107, 53, 0.3);
+    background: rgba(255, 107, 53, 0.05);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 250px;
+}
+
+.store-card.add-new:hover {
+    border-color: rgba(255, 107, 53, 0.6);
+    background: rgba(255, 107, 53, 0.1);
+}
+
+.store-card-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.store-avatar {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #FF6B35, #F7931E);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.store-card.connected .store-avatar {
+    background: linear-gradient(135deg, #198754, #20c997);
+}
+
+.store-card.pending .store-avatar {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+}
+
+.store-info {
+    flex: 1;
+}
+
+.store-info h4 {
+    margin: 0 0 0.25rem 0;
+    color: white;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.store-info p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+}
+
+.store-status {
+    flex-shrink: 0;
+}
+
+.status-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.status-badge.connected {
+    background: rgba(25, 135, 84, 0.2);
+    color: #20c997;
+    border: 1px solid rgba(25, 135, 84, 0.3);
+}
+
+.status-badge.pending {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.store-card-body {
+    padding: 1.5rem;
+}
+
+.store-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #FF6B35;
+    line-height: 1.2;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 0.25rem;
+}
+
+.store-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.store-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex: 1;
+    justify-content: center;
+    min-width: 80px;
+}
+
+.store-action-btn.sync {
+    background: rgba(13, 202, 240, 0.2);
+    color: #0dcaf0;
+    border: 1px solid rgba(13, 202, 240, 0.3);
+}
+
+.store-action-btn.sync:hover {
+    background: rgba(13, 202, 240, 0.3);
+    transform: translateY(-1px);
+}
+
+.store-action-btn.settings {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.store-action-btn.settings:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.store-action-btn.disconnect {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.store-action-btn.disconnect:hover {
+    background: rgba(220, 53, 69, 0.3);
+    transform: translateY(-1px);
+}
+
+.store-action-btn.authorize {
+    background: linear-gradient(135deg, #FF6B35, #F7931E);
+    color: white;
+    border: none;
+}
+
+.store-action-btn.authorize:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+}
+
+.store-action-btn.remove {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.store-action-btn.remove:hover {
+    background: rgba(220, 53, 69, 0.3);
+    transform: translateY(-1px);
+}
+
+.add-store-content {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.add-store-icon {
+    font-size: 3rem;
+    color: #FF6B35;
+    margin-bottom: 1rem;
+}
+
+.add-store-content h4 {
+    margin: 0 0 0.5rem 0;
+    color: white;
+    font-weight: 600;
+}
+
+.add-store-content p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+
+
+/* Add Store Modal Styles */
+.add-store-modal {
+    background: rgba(33, 37, 41, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 107, 53, 0.2);
+    border-radius: 16px;
+    color: white;
+}
+
+.add-store-modal-header {
+    border-bottom: 1px solid rgba(255, 107, 53, 0.2);
+    background: linear-gradient(135deg, rgba(255, 107, 53, 0.1), rgba(247, 147, 30, 0.1));
+    padding: 1.5rem;
+}
+
+.add-store-modal-header .modal-title {
+    color: white;
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+.add-store-close {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 107, 53, 0.3);
+    border-radius: 8px;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.8);
+    transition: all 0.3s ease;
+}
+
+.add-store-close:hover {
+    background: rgba(255, 107, 53, 0.2);
+    color: white;
+}
+
+.add-store-modal-body {
+    padding: 2rem;
+}
+
+.add-store-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.add-store-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 0.5rem;
+}
+
+.add-store-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 107, 53, 0.3);
+    border-radius: 12px;
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.add-store-input:focus {
+    outline: none;
+    border-color: #FF6B35;
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.add-store-input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.add-store-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.add-store-modal-footer {
+    border-top: 1px solid rgba(255, 107, 53, 0.2);
+    padding: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.add-store-cancel {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.add-store-cancel:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.add-store-submit {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #FF6B35, #F7931E);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.add-store-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 107, 53, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .setup-header-content {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .setup-brand-section {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .setup-progress-indicator {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .setup-section-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .setup-auth-btn {
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .setup-status-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .setup-help-card {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+/* Authorization Guide Modal Styles */
+.auth-guide {
+    padding: 1rem;
+}
+
+.benefit-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(23, 162, 184, 0.1));
+    border-radius: 12px;
+    border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.benefit-section h6 {
+    color: #28a745;
+    margin-bottom: 1rem;
+    font-weight: 600;
+    font-size: 1.2rem;
+}
+
+.benefits-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.benefit-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+}
+
+.benefit-item i {
+    color: #28a745;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.benefit-item span {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+}
+
+.auth-steps {
+    margin-top: 2rem;
+}
+
+.auth-steps h6 {
+    color: #FF6B35;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    font-size: 1.2rem;
+}
+
+.guide-step {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 107, 53, 0.2);
+    transition: all 0.3s ease;
+}
+
+.guide-step:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
+}
+
+.step-number {
+    background: linear-gradient(135deg, #FF6B35, #F7931E);
+    color: white;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    font-size: 1rem;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.step-info {
+    flex: 1;
+}
+
+.step-info h6 {
+    color: #FF6B35;
+    margin: 0 0 0.5rem 0;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.step-info p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.8);
+    line-height: 1.5;
+    font-size: 0.9rem;
+}
+
+#documentationModal .alert-success {
+    background: rgba(40, 167, 69, 0.1);
+    border: 1px solid rgba(40, 167, 69, 0.3);
+    color: #28a745;
+}
+
+#documentationModal .alert strong {
+    color: #28a745;
+}
+
+/* Notification Styles */
+.setup-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    color: white;
+    font-weight: 500;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.setup-notification-success {
+    background: rgba(40, 167, 69, 0.9);
+    border: 1px solid rgba(40, 167, 69, 0.5);
+}
+
+.setup-notification-error {
+    background: rgba(220, 53, 69, 0.9);
+    border: 1px solid rgba(220, 53, 69, 0.5);
+}
+
+.setup-notification button {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    margin-left: auto;
+}
+
+.setup-notification button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+</style>
+
+<script>
+// Store Management Functions
+function showAddStoreModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addStoreModal'));
+    modal.show();
+}
+
+// Test API connection
+function testApiConnection() {
+    // Show loading state
+    const btn = event.target.closest('button');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+    btn.disabled = true;
+    
+    // Make API call to test connection
+    fetch('/shopee-test-connection', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        
+        if (data.success) {
+            showNotification('Connection successful!', 'success');
+            // Update connection status in UI
+            updateConnectionStatus(true, data.shop_id);
+        } else {
+            showNotification('Connection failed: ' + data.error, 'error');
+            updateConnectionStatus(false);
+        }
+    })
+    .catch(error => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        showNotification('Error: ' + error.message, 'error');
+        updateConnectionStatus(false);
+    });
+}
+
+// Update connection status in UI
+function updateConnectionStatus(connected, shopId = null) {
+    const statusElement = document.querySelector('.detail-value');
+    if (statusElement) {
+        if (connected) {
+            statusElement.innerHTML = '<span class="text-success"><i class="fas fa-check-circle"></i> Connected</span>';
+        } else {
+            statusElement.innerHTML = '<span class="text-danger"><i class="fas fa-times-circle"></i> Not connected</span>';
+        }
+    }
+    
+    // Update Shop ID if provided
+    if (shopId && connected) {
+        const shopIdElements = document.querySelectorAll('.detail-value');
+        if (shopIdElements.length > 2) {
+            shopIdElements[2].textContent = shopId;
+        }
+    }
+}
+
+// Show notification
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `setup-notification setup-notification-${type}`;
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+        <span>${message}</span>
+        <button onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+function showDocumentationModal() {
+    const modal = new bootstrap.Modal(document.getElementById('documentationModal'));
+    modal.show();
+}
+
+function addNewStore() {
+    const shopName = document.getElementById('new_shop_name').value.trim();
+    const shopId = document.getElementById('new_shop_id').value.trim();
+    
+    if (!shopName) {
+        alert('Nama toko harus diisi');
+        return;
+    }
+    
+    // Simulate adding new store
+    const storesGrid = document.querySelector('.connected-stores-grid');
+    const addNewCard = storesGrid.querySelector('.store-card.add-new');
+    
+    // Create new store card
+    const newStoreCard = document.createElement('div');
+    newStoreCard.className = 'store-card pending';
+    newStoreCard.innerHTML = `
+        <div class="store-card-header">
+            <div class="store-avatar">
+                <i class="fas fa-store"></i>
+            </div>
+            <div class="store-info">
+                <h4>${shopName}</h4>
+                <p>shop_id: ${shopId || 'Menunggu authorize'}</p>
+            </div>
+            <div class="store-status">
+                <div class="status-badge pending">
+                    <i class="fas fa-clock"></i>
+                    <span>Menunggu</span>
+                </div>
+            </div>
+        </div>
+        <div class="store-card-body">
+            <div class="store-stats">
+                <div class="stat-item">
+                    <span class="stat-value">-</span>
+                    <span class="stat-label">Orders</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">-</span>
+                    <span class="stat-label">Revenue</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">-</span>
+                    <span class="stat-label">Success</span>
+                </div>
+            </div>
+            <div class="store-actions">
+                <button class="store-action-btn authorize" onclick="authorizeStore('${shopId || 'new'}')">
+                    <i class="fas fa-key"></i>
+                    <span>Authorize</span>
+                </button>
+                <button class="store-action-btn remove" onclick="removeStore('${shopId || 'new'}')">
+                    <i class="fas fa-trash"></i>
+                    <span>Remove</span>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    // Insert before add new card
+    storesGrid.insertBefore(newStoreCard, addNewCard);
+    
+    // Animate new card
+    newStoreCard.style.opacity = '0';
+    newStoreCard.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+        newStoreCard.style.transition = 'all 0.5s ease';
+        newStoreCard.style.opacity = '1';
+        newStoreCard.style.transform = 'translateY(0)';
+    }, 100);
+    
+    // Reset form and close modal
+    document.getElementById('addStoreForm').reset();
+    const modal = bootstrap.Modal.getInstance(document.getElementById('addStoreModal'));
+    modal.hide();
+    
+    // Update store count and progress
+    updateStoreCount();
+    
+    showNotification('Toko baru berhasil ditambahkan', 'success');
+}
+
+function syncStore(storeId) {
+    const button = event.target.closest('.store-action-btn');
+    const originalContent = button.innerHTML;
+    
+    // Show loading state
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Syncing...</span>';
+    button.disabled = true;
+    
+    // Simulate sync process
+    setTimeout(() => {
+        button.innerHTML = originalContent;
+        button.disabled = false;
+        showNotification(`Data toko ${storeId} berhasil disinkronkan`, 'success');
+        
+        // Update stats (simulate)
+        const card = button.closest('.store-card');
+        const statValues = card.querySelectorAll('.stat-value');
+        statValues[0].textContent = Math.floor(Math.random() * 500) + 100; // Orders
+        statValues[1].textContent = (Math.random() * 50 + 10).toFixed(1) + 'K'; // Revenue
+        statValues[2].textContent = (95 + Math.random() * 5).toFixed(1) + '%'; // Success
+    }, 2000);
+}
+
+function storeSettings(storeId) {
+    showNotification(`Membuka pengaturan untuk toko ${storeId}`, 'info');
+    // In real implementation, this would open a settings modal
+}
+
+function disconnectStore(storeId) {
+    if (confirm('Apakah Anda yakin ingin memutuskan koneksi toko ini?')) {
+        const card = event.target.closest('.store-card');
+        
+        // Animate removal
+        card.style.transition = 'all 0.5s ease';
+        card.style.transform = 'scale(0.8)';
+        card.style.opacity = '0';
+        
+        setTimeout(() => {
+            card.remove();
+            updateStoreCount();
+            showNotification(`Toko ${storeId} berhasil diputuskan`, 'warning');
+        }, 500);
+    }
+}
+
+function authorizeStore(storeId) {
+    const button = event.target.closest('.store-action-btn');
+    const originalContent = button.innerHTML;
+    
+    // Show loading state
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Authorizing...</span>';
+    button.disabled = true;
+    
+    // Simulate authorization process
+    setTimeout(() => {
+        const card = button.closest('.store-card');
+        
+        // Update card to connected state
+        card.className = 'store-card connected';
+        const statusBadge = card.querySelector('.status-badge');
+        statusBadge.className = 'status-badge connected';
+        statusBadge.innerHTML = '<i class="fas fa-check-circle"></i><span>Terhubung</span>';
+        
+        // Update actions
+        const actionsContainer = card.querySelector('.store-actions');
+        actionsContainer.innerHTML = `
+            <button class="store-action-btn sync" onclick="syncStore('${storeId}')">
+                <i class="fas fa-sync-alt"></i>
+                <span>Sync</span>
+            </button>
+            <button class="store-action-btn settings" onclick="storeSettings('${storeId}')">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </button>
+            <button class="store-action-btn disconnect" onclick="disconnectStore('${storeId}')">
+                <i class="fas fa-unlink"></i>
+                <span>Disconnect</span>
+            </button>
+        `;
+        
+        showNotification(`Toko ${storeId} berhasil terotorisasi`, 'success');
+    }, 3000);
+}
+
+function removeStore(storeId) {
+    if (confirm('Apakah Anda yakin ingin menghapus toko ini?')) {
+        const card = event.target.closest('.store-card');
+        
+        // Animate removal
+        card.style.transition = 'all 0.5s ease';
+        card.style.transform = 'scale(0.8)';
+        card.style.opacity = '0';
+        
+        setTimeout(() => {
+            card.remove();
+            updateStoreCount();
+            showNotification(`Toko ${storeId} berhasil dihapus`, 'info');
+        }, 500);
+    }
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas fa-${getNotificationIcon(type)}"></i>
+            <span>${message}</span>
+        </div>
+        <button class="notification-close" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    // Add to page
+    let container = document.querySelector('.notification-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'notification-container';
+        document.body.appendChild(container);
+    }
+    
+    container.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.classList.remove('show');
+            setTimeout(() => notification.remove(), 300);
+        }
+    }, 5000);
+}
+
+function getNotificationIcon(type) {
+    switch(type) {
+        case 'success': return 'check-circle';
+        case 'warning': return 'exclamation-triangle';
+        case 'error': return 'times-circle';
+        default: return 'info-circle';
+    }
+}
+
+function updateStoreCount() {
+    const storesGrid = document.getElementById('storesGrid');
+    const storeCards = storesGrid.querySelectorAll('.store-card');
+    
+    // Update progress indicator if there are connected stores
+    if (storeCards.length > 0) {
+        updateProgressStep(2); // Move to step 2 (Authorize)
+    }
+}
+
+function updateProgressStep(stepNumber) {
+    const steps = document.querySelectorAll('.setup-step');
+    steps.forEach((step, index) => {
+        if (index + 1 <= stepNumber) {
+            step.classList.add('active');
+        } else {
+            step.classList.remove('active');
+        }
+    });
+}
+
+// Initialize animations
+document.addEventListener('DOMContentLoaded', function() {
+    // Animate store cards on load
+    const storeCards = document.querySelectorAll('.store-card');
+    storeCards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+
+<style>
+/* Notification Styles */
+.notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.notification {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    background: rgba(33, 37, 41, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid;
+    border-radius: 12px;
+    color: white;
+    min-width: 300px;
+    transform: translateX(100%);
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.notification.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.notification-success {
+    border-color: rgba(25, 135, 84, 0.5);
+    background: rgba(25, 135, 84, 0.1);
+}
+
+.notification-warning {
+    border-color: rgba(255, 193, 7, 0.5);
+    background: rgba(255, 193, 7, 0.1);
+}
+
+.notification-error {
+    border-color: rgba(220, 53, 69, 0.5);
+    background: rgba(220, 53, 69, 0.1);
+}
+
+.notification-info {
+    border-color: rgba(13, 202, 240, 0.5);
+    background: rgba(13, 202, 240, 0.1);
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.notification-close:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+}
+</style>
+{% endblock %}

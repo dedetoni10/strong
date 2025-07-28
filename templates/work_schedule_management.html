@@ -1,0 +1,296 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Pengaturan Jam Kerja{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-clock text-primary"></i> Pengaturan Jam Kerja</h2>
+                <p class="text-muted">Atur jam kerja dan toleransi waktu untuk setiap cabang</p>
+            </div>
+        </div>
+
+        <!-- Branch Schedule Cards -->
+        <div class="row g-4">
+            {% for branch in ['Lampung', 'Tangerang'] %}
+            <div class="col-md-6 col-sm-12 mb-4">
+                <div class="card">
+                    <div class="card-header bg-purple text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-map-marker-alt"></i> {{ branch }}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Schedule Forms -->
+                        {% for schedule_type, display_name in [
+                            ('masuk', 'Jam Masuk Kerja'),
+                            ('keluar', 'Jam Pulang Kerja'),
+                            ('lembur_malam', 'Jam Masuk Lembur Malam'),
+                            ('keluar_lembur', 'Jam Selesai Lembur')
+                        ] %}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">{{ display_name }}</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label small">Jam Target</label>
+                                    <input type="time" 
+                                           class="form-control" 
+                                           id="time_{{ branch|lower }}_{{ schedule_type }}"
+                                           value="{% if schedules_by_branch.get(branch, {}).get(schedule_type) %}{{ schedules_by_branch[branch][schedule_type].target_time.strftime('%H:%M') }}{% endif %}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">Toleransi (menit)</label>
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="tolerance_{{ branch|lower }}_{{ schedule_type }}"
+                                           value="{% if schedules_by_branch.get(branch, {}).get(schedule_type) %}{{ schedules_by_branch[branch][schedule_type].tolerance_minutes }}{% else %}30{% endif %}"
+                                           min="0" max="120">
+                                </div>
+                            </div>
+                            <!-- Display current window -->
+                            <div class="mt-2">
+                                <small class="text-muted" id="window_{{ branch|lower }}_{{ schedule_type }}">
+                                    {% if schedules_by_branch.get(branch, {}).get(schedule_type) %}
+                                        Jendela toleransi: {{ schedules_by_branch[branch][schedule_type].window_display }}
+                                    {% else %}
+                                        Jendela toleransi: Belum diatur
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <button type="button" 
+                                    class="btn btn-sm btn-primary mt-2"
+                                    onclick="saveSchedule('{{ branch }}', '{{ schedule_type }}')">
+                                <i class="fas fa-save"></i> Simpan
+                            </button>
+                        </div>
+                        {% if not loop.last %}<hr>{% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Current Schedules Summary -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-purple text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-table"></i> Ringkasan Jadwal Kerja
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Cabang</th>
+                                        <th>Jam Masuk</th>
+                                        <th>Jam Pulang</th>
+                                        <th>Lembur Masuk</th>
+                                        <th>Lembur Selesai</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for branch in ['Lampung', 'Tangerang'] %}
+                                    <tr>
+                                        <td><strong>{{ branch }}</strong></td>
+                                        {% for schedule_type in ['masuk', 'keluar', 'lembur_malam', 'keluar_lembur'] %}
+                                        <td>
+                                            {% if schedules_by_branch.get(branch, {}).get(schedule_type) %}
+                                                {{ schedules_by_branch[branch][schedule_type].target_time.strftime('%H:%M') }}
+                                                <br>
+                                                <small class="text-muted">
+                                                    ±{{ schedules_by_branch[branch][schedule_type].tolerance_minutes }}min
+                                                </small>
+                                            {% else %}
+                                                <span class="text-muted">Belum diatur</span>
+                                            {% endif %}
+                                        </td>
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function saveSchedule(branch, scheduleType) {
+    const timeInput = document.getElementById(`time_${branch.toLowerCase()}_${scheduleType}`);
+    const toleranceInput = document.getElementById(`tolerance_${branch.toLowerCase()}_${scheduleType}`);
+    const windowDisplay = document.getElementById(`window_${branch.toLowerCase()}_${scheduleType}`);
+    
+    if (!timeInput.value) {
+        alert('Mohon isi jam target terlebih dahulu');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('branch_location', branch);
+    formData.append('schedule_type', scheduleType);
+    formData.append('target_time', timeInput.value);
+    formData.append('tolerance_minutes', toleranceInput.value || 30);
+    
+    fetch('/work_schedule/save', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            
+            // Update tolerance window display
+            updateToleranceWindow(branch, scheduleType, timeInput.value, toleranceInput.value || 30);
+            
+            // Reload page to show updated summary
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi error saat menyimpan jadwal');
+    });
+}
+
+function updateToleranceWindow(branch, scheduleType, targetTime, toleranceMinutes) {
+    const windowDisplay = document.getElementById(`window_${branch.toLowerCase()}_${scheduleType}`);
+    
+    if (targetTime) {
+        // Calculate tolerance window
+        const [hours, minutes] = targetTime.split(':').map(Number);
+        const targetDate = new Date();
+        targetDate.setHours(hours, minutes, 0, 0);
+        
+        const startDate = new Date(targetDate.getTime() - (toleranceMinutes * 60000));
+        const endDate = new Date(targetDate.getTime() + (toleranceMinutes * 60000));
+        
+        const startTime = startDate.toTimeString().substr(0, 5);
+        const endTime = endDate.toTimeString().substr(0, 5);
+        
+        windowDisplay.textContent = `Jendela toleransi: ${startTime} - ${endTime}`;
+    }
+}
+
+// Save schedule function
+function saveSchedule(branch, scheduleType) {
+    const timeInput = document.getElementById(`time_${branch.toLowerCase()}_${scheduleType}`);
+    const toleranceInput = document.getElementById(`tolerance_${branch.toLowerCase()}_${scheduleType}`);
+    
+    if (!timeInput || !timeInput.value) {
+        alert('Harap isi jam target terlebih dahulu');
+        return;
+    }
+    
+    const targetTime = timeInput.value;
+    const toleranceMinutes = parseInt(toleranceInput.value) || 30;
+    
+    // Show loading
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = 'Menyimpan...';
+    button.disabled = true;
+    
+    // Send data to backend
+    fetch('/work_schedule/save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            branch_location: branch,
+            schedule_type: scheduleType,
+            target_time: targetTime,
+            tolerance_minutes: toleranceMinutes
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update tolerance window display
+            updateToleranceWindow(branch, scheduleType, targetTime, toleranceMinutes);
+            alert('Pengaturan berhasil disimpan!');
+        } else {
+            alert('Gagal menyimpan: ' + (data.error || 'Terjadi kesalahan'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat menyimpan');
+    })
+    .finally(() => {
+        // Restore button
+        button.textContent = originalText;
+        button.disabled = false;
+    });
+}
+
+// Add real-time tolerance window update
+document.querySelectorAll('input[type="time"], input[type="number"]').forEach(input => {
+    input.addEventListener('change', function() {
+        const id = this.id;
+        const parts = id.split('_');
+        
+        if (parts.length >= 3) {
+            const branch = parts[1].charAt(0).toUpperCase() + parts[1].slice(1);
+            const scheduleType = parts.slice(2).join('_');
+            
+            const timeInput = document.getElementById(`time_${parts[1]}_${scheduleType}`);
+            const toleranceInput = document.getElementById(`tolerance_${parts[1]}_${scheduleType}`);
+            
+            if (timeInput && timeInput.value && toleranceInput) {
+                updateToleranceWindow(branch, scheduleType, timeInput.value, toleranceInput.value || 30);
+            }
+        }
+    });
+});
+</script>
+
+<style>
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+
+.btn-primary {
+    background-color: #8B5CF6;
+    border-color: #8B5CF6;
+}
+
+.btn-primary:hover {
+    background-color: #7C3AED;
+    border-color: #7C3AED;
+}
+
+.text-primary {
+    color: #8B5CF6 !important;
+}
+
+.form-control:focus {
+    border-color: #8B5CF6;
+    box-shadow: 0 0 0 0.2rem rgba(139, 92, 246, 0.25);
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+</style>
+{% endblock %}

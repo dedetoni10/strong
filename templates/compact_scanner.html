@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block title %}Compact Scanner - STRONG Order Management{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Compact Scanner Dark Theme */
+body {
+    background-color: #1E2430 !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.compact-scanner-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background-color: #1E2430;
+}
+
+.scanner-header {
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 20px;
+    letter-spacing: 0.5px;
+}
+
+.camera-preview-compact {
+    width: 260px;
+    height: 180px;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    border: 2px solid #333;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.camera-preview-compact video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.camera-fallback {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.camera-fallback i {
+    display: block;
+    font-size: 2rem;
+    margin-bottom: 8px;
+    opacity: 0.3;
+}
+
+.scan-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.scan-target {
+    width: 120px;
+    height: 120px;
+    border: 2px solid #fff;
+    border-radius: 8px;
+    position: relative;
+    opacity: 0.8;
+}
+
+.scan-target::before,
+.scan-target::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #007bff;
+}
+
+.scan-target::before {
+    top: -3px;
+    left: -3px;
+    border-right: none;
+    border-bottom: none;
+}
+
+.scan-target::after {
+    bottom: -3px;
+    right: -3px;
+    border-left: none;
+    border-top: none;
+}
+
+.scan-button-compact {
+    width: 200px;
+    height: 50px;
+    background: #6f42c1;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 12px rgba(111, 66, 193, 0.3);
+}
+
+.scan-button-compact:hover {
+    background: #5a359a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(111, 66, 193, 0.4);
+}
+
+.scan-button-compact:active {
+    transform: translateY(0);
+}
+
+.scan-button-compact i {
+    font-size: 1.1rem;
+}
+
+.status-message {
+    margin-top: 16px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    text-align: center;
+    min-height: 20px;
+}
+
+.success-message {
+    color: #28a745;
+}
+
+.error-message {
+    color: #dc3545;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+    .camera-preview-compact {
+        width: 240px;
+        height: 160px;
+    }
+    
+    .scan-button-compact {
+        width: 180px;
+        height: 48px;
+        font-size: 0.9rem;
+    }
+    
+    .scanner-header {
+        font-size: 1.3rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="compact-scanner-container">
+    <h1 class="scanner-header">Scan Barcode Produk</h1>
+    
+    <div class="camera-preview-compact" id="cameraPreview">
+        <video id="scannerVideo" autoplay playsinline style="display: none;"></video>
+        <div id="cameraFallback" class="camera-fallback">
+            <div>
+                <i class="fas fa-video-slash"></i>
+                <div>Kamera tidak tersedia</div>
+            </div>
+        </div>
+        <canvas id="scannerCanvas" style="display: none;"></canvas>
+        <div class="scan-overlay">
+            <div class="scan-target"></div>
+        </div>
+    </div>
+    
+    <button class="scan-button-compact" id="scanButton" onclick="toggleScanner()">
+        <i class="fas fa-camera"></i>
+        <span id="buttonText">Scan</span>
+    </button>
+    
+    <div class="status-message" id="statusMessage">
+        Tekan tombol Scan untuk memulai
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script>
+let stream = null;
+let scanning = false;
+let scannerActive = false;
+
+const video = document.getElementById('scannerVideo');
+const canvas = document.getElementById('scannerCanvas');
+const fallback = document.getElementById('cameraFallback');
+const button = document.getElementById('scanButton');
+const buttonText = document.getElementById('buttonText');
+const statusMessage = document.getElementById('statusMessage');
+
+function updateStatus(message, type = 'normal') {
+    statusMessage.textContent = message;
+    statusMessage.className = 'status-message';
+    if (type === 'success') statusMessage.classList.add('success-message');
+    if (type === 'error') statusMessage.classList.add('error-message');
+}
+
+function toggleScanner() {
+    if (!scannerActive) {
+        startScanner();
+    } else {
+        stopScanner();
+    }
+}
+
+function startScanner() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        updateStatus('Browser tidak mendukung akses kamera', 'error');
+        return;
+    }
+    
+    button.disabled = true;
+    buttonText.textContent = 'Memulai...';
+    updateStatus('Mengakses kamera...');
+    
+    navigator.mediaDevices.getUserMedia({
+        video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+        },
+        audio: false
+    })
+    .then(function(mediaStream) {
+        stream = mediaStream;
+        video.srcObject = stream;
+        
+        video.onloadedmetadata = function() {
+            video.play();
+            video.style.display = 'block';
+            fallback.style.display = 'none';
+            
+            scannerActive = true;
+            scanning = true;
+            
+            button.disabled = false;
+            buttonText.textContent = 'Stop';
+            updateStatus('Arahkan barcode ke dalam kotak', 'success');
+            
+            scanForQRCode();
+        };
+    })
+    .catch(function(error) {
+        console.error('Camera error:', error);
+        
+        // Show fallback black screen
+        fallback.style.display = 'flex';
+        video.style.display = 'none';
+        
+        scannerActive = true;
+        button.disabled = false;
+        buttonText.textContent = 'Stop';
+        updateStatus('Kamera tidak tersedia - menampilkan layar hitam', 'error');
+    });
+}
+
+function stopScanner() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+    
+    scanning = false;
+    scannerActive = false;
+    
+    video.style.display = 'none';
+    fallback.style.display = 'flex';
+    video.srcObject = null;
+    
+    buttonText.textContent = 'Scan';
+    button.disabled = false;
+    updateStatus('Scanner dihentikan');
+}
+
+function scanForQRCode() {
+    if (!scanning || !scannerActive) return;
+    
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        const ctx = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: "dontInvert"
+        });
+        
+        if (code) {
+            console.log('QR Code detected:', code.data);
+            
+            updateStatus('Berhasil scan: ' + code.data, 'success');
+            
+            // Process the scanned code here
+            setTimeout(() => {
+                stopScanner();
+                updateStatus('Scan selesai - siap untuk scan berikutnya');
+            }, 2000);
+            
+            return;
+        }
+    }
+    
+    requestAnimationFrame(scanForQRCode);
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    updateStatus('Tekan tombol Scan untuk memulai');
+});
+</script>
+{% endblock %}

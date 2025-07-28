@@ -1,0 +1,199 @@
+    <div class="main-content">
+        <div class="container-fluid">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Add New Expense Record Card -->
+            <div class="content-card mb-4">
+                <div class="content-card-header">
+                    <h5><i class="fas fa-plus"></i> Tambah Pengeluaran Baru</h5>
+                </div>
+                <div class="content-card-body">
+                    <form method="POST" action="{{ url_for('add_expense_record') }}" enctype="multipart/form-data" class="row g-3">
+                        <div class="col-md-2">
+                            <label for="expense_date" class="form-label">Tanggal</label>
+                            <input type="date" class="form-control" id="expense_date" name="expense_date" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="expense_type" class="form-label">Kategori</label>
+                            <select class="form-select" id="expense_type" name="expense_type" required>
+                                <option value="">Pilih Kategori</option>
+                                <option value="packaging">Packaging</option>
+                                <option value="utilities">Listrik & PAM</option>
+                                <option value="internet">Internet</option>
+                                <option value="expedisi">Ekspedisi</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="expense_name" class="form-label">Keterangan</label>
+                            <input type="text" class="form-control" id="expense_name" name="expense_name" placeholder="Beli plastik, bayar listrik, dll" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="amount" class="form-label">Jumlah</label>
+                            <input type="number" class="form-control" id="amount" name="amount" placeholder="50000" step="1000" min="0" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="vendor_name" class="form-label">Vendor</label>
+                            <input type="text" class="form-control" id="vendor_name" name="vendor_name" placeholder="Nama toko/supplier">
+                        </div>
+                        <div class="col-md-1 d-flex align-items-end">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-plus"></i> Tambah
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="receipt_photo" class="form-label">Upload Nota</label>
+                            <input type="file" class="form-control" id="receipt_photo" name="receipt_photo" accept="image/*">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="transfer_proof" class="form-label">Upload Bukti Transfer</label>
+                            <input type="file" class="form-control" id="transfer_proof" name="transfer_proof" accept="image/*">
+                        </div>
+                        <div class="col-12">
+                            <label for="notes" class="form-label">Catatan Tambahan</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Catatan opsional"></textarea>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Expense Records Summary Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card border-warning">
+                        <div class="card-body text-center">
+                            <i class="fas fa-box fa-2x text-warning mb-2"></i>
+                            <h5 class="card-title">Packaging</h5>
+                            <h6 class="text-muted">{{ current_month }}</h6>
+                            <h4 class="text-warning">Rp {{ "{:,.0f}".format(total_packaging) }}</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-success">
+                        <div class="card-body text-center">
+                            <i class="fas fa-lightbulb fa-2x text-success mb-2"></i>
+                            <h5 class="card-title">Listrik & PAM</h5>
+                            <h6 class="text-muted">{{ current_month }}</h6>
+                            <h4 class="text-success">Rp {{ "{:,.0f}".format(total_utilities) }}</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-primary">
+                        <div class="card-body text-center">
+                            <i class="fas fa-wifi fa-2x text-primary mb-2"></i>
+                            <h5 class="card-title">Internet</h5>
+                            <h6 class="text-muted">{{ current_month }}</h6>
+                            <h4 class="text-primary">Rp {{ "{:,.0f}".format(total_internet) }}</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-info">
+                        <div class="card-body text-center">
+                            <i class="fas fa-shipping-fast fa-2x text-info mb-2"></i>
+                            <h5 class="card-title">Ekspedisi</h5>
+                            <h6 class="text-muted">{{ current_month }}</h6>
+                            <h4 class="text-info">Rp {{ "{:,.0f}".format(total_expedisi) }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Expense Records List -->
+            <div class="content-card">
+                <div class="content-card-header">
+                    <h5><i class="fas fa-list"></i> Daftar Pengeluaran</h5>
+                </div>
+                <div class="content-card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th width="5%">No</th>
+                                    <th width="10%">Tanggal</th>
+                                    <th width="12%">Kategori</th>
+                                    <th width="25%">Keterangan</th>
+                                    <th width="12%">Jumlah</th>
+                                    <th width="15%">Vendor</th>
+                                    <th width="10%">Dokumentasi</th>
+                                    <th width="8%">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for expense in expense_records %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ expense.expense_date.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        {% if expense.expense_type == 'packaging' %}
+                                            <span class="badge bg-warning">Packaging</span>
+                                        {% elif expense.expense_type == 'utilities' %}
+                                            <span class="badge bg-success">Listrik & PAM</span>
+                                        {% elif expense.expense_type == 'internet' %}
+                                            <span class="badge bg-primary">Internet</span>
+                                        {% elif expense.expense_type == 'expedisi' %}
+                                            <span class="badge bg-info">Ekspedisi</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ expense.expense_name }}</td>
+                                    <td>Rp {{ "{:,.0f}".format(expense.amount) }}</td>
+                                    <td>{{ expense.vendor_name if expense.vendor_name else '-' }}</td>
+                                    <td>
+                                        <div class="btn-group-vertical" role="group">
+                                            {% if expense.receipt_photo %}
+                                            <a href="{{ url_for('view_expense_document', expense_id=expense.id, doc_type='receipt') }}" 
+                                               target="_blank" class="btn btn-sm btn-outline-primary mb-1">
+                                                <i class="fas fa-receipt"></i> Nota
+                                            </a>
+                                            {% endif %}
+                                            {% if expense.transfer_proof %}
+                                            <a href="{{ url_for('view_expense_document', expense_id=expense.id, doc_type='transfer') }}" 
+                                               target="_blank" class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-money-check-alt"></i> Transfer
+                                            </a>
+                                            {% endif %}
+                                            {% if not expense.receipt_photo and not expense.transfer_proof %}
+                                            <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    onclick="editExpenseRecord({{ expense.id }}, '{{ expense.expense_date.strftime('%Y-%m-%d') }}', '{{ expense.expense_type }}', '{{ expense.expense_name }}', {{ expense.amount }}, '{{ expense.vendor_name or '' }}', '{{ expense.notes or '' }}')" 
+                                                    data-bs-toggle="modal" data-bs-target="#editExpenseModal">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <a href="{{ url_for('delete_expense_record', expense_id=expense.id) }}" 
+                                               class="btn btn-sm btn-outline-danger" 
+                                               onclick="return confirm('Yakin ingin menghapus pengeluaran ini?')">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-info">
+                                    <td colspan="4"><strong>Total Pengeluaran {{ current_month }}</strong></td>
+                                    <td><strong>Rp {{ "{:,.0f}".format(total_monthly_expenses) }}</strong></td>
+                                    <td colspan="3"><small>Rata-rata/hari: Rp {{ "{:,.0f}".format(total_daily_average) }}</small></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>

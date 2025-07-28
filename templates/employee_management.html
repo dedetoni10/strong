@@ -1,0 +1,1354 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Manajemen Karyawan{% endblock %}
+
+{% block extra_head %}
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        color: white;
+        transition: all 0.3s ease;
+        border: none;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+    
+    .employee-card {
+        border: none;
+        border-radius: 15px;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+    
+    .employee-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .location-badge {
+        border-radius: 20px;
+        padding: 8px 16px;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+    
+    .location-lampung {
+        background: linear-gradient(45deg, #28a745, #20c997);
+        color: white;
+    }
+    
+    .location-tangerang {
+        background: linear-gradient(45deg, #007bff, #6f42c1);
+        color: white;
+    }
+    
+    .status-active {
+        background: linear-gradient(45deg, #28a745, #20c997);
+        color: white;
+        border-radius: 15px;
+        padding: 5px 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .status-inactive {
+        background: linear-gradient(45deg, #dc3545, #fd7e14);
+        color: white;
+        border-radius: 15px;
+        padding: 5px 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .salary-badge {
+        background: linear-gradient(45deg, #ffc107, #fd7e14);
+        color: #000;
+        border-radius: 12px;
+        padding: 4px 10px;
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+    
+    .btn-add-employee {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        border-radius: 25px;
+        padding: 12px 30px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-add-employee:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
+    }
+    
+    .modern-card {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .gradient-header {
+        background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+        color: white;
+        padding: 25px;
+    }
+    
+    .search-box {
+        border-radius: 25px;
+        border: 2px solid #e9ecef;
+        padding: 12px 20px;
+        transition: all 0.3s ease;
+    }
+    
+    .search-box:focus {
+        border-color: #8B5CF6;
+        box-shadow: 0 0 0 0.2rem rgba(139, 92, 246, 0.25);
+    }
+    
+    .filter-dropdown {
+        border-radius: 15px;
+        border: 2px solid #e9ecef;
+        padding: 8px 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-users fa-3x text-primary me-3"></i>
+                        <div>
+                            <h1 class="mb-1 fw-bold" style="color: #8B5CF6;">Manajemen Karyawan</h1>
+                            <p class="text-muted mb-0">Kelola data karyawan dan informasi kepegawaian</p>
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary btn-lg px-4 py-2" data-bs-toggle="modal" data-bs-target="#addEmployeeModal" style="background: linear-gradient(45deg, #8B5CF6, #6366F1); border: none; border-radius: 10px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">
+                            <i class="fas fa-user-plus me-2"></i>Tambah Karyawan Baru
+                        </button>
+                        <button type="button" id="deleteSelectedBtn" class="btn btn-danger btn-lg px-4 py-2 ms-2" style="display: none; border-radius: 10px;" onclick="deleteSelectedEmployees()">
+                            <i class="fas fa-trash me-2"></i>Delete Selected
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="stats-card">
+                    <div class="card-body text-center py-4">
+                        <i class="fas fa-users fa-3x mb-3"></i>
+                        <h2 class="fw-bold">{{ stats.total_employees }}</h2>
+                        <p class="mb-0 opacity-75">Total Karyawan</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                    <div class="card-body text-center py-4">
+                        <i class="fas fa-user-check fa-3x mb-3"></i>
+                        <h2 class="fw-bold">{{ stats.active_employees }}</h2>
+                        <p class="mb-0 opacity-75">Karyawan Aktif</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);">
+                    <div class="card-body text-center py-4">
+                        <i class="fas fa-map-marker-alt fa-3x mb-3"></i>
+                        <h2 class="fw-bold">{{ stats.lampung_employees }}</h2>
+                        <p class="mb-0 opacity-75">Karyawan Lampung</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stats-card" style="background: linear-gradient(135deg, #007bff 0%, #6f42c1 100%);">
+                    <div class="card-body text-center py-4">
+                        <i class="fas fa-building fa-3x mb-3"></i>
+                        <h2 class="fw-bold">{{ stats.tangerang_employees }}</h2>
+                        <p class="mb-0 opacity-75">Karyawan Tangerang</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employee List -->
+        <div class="row">
+            <div class="col-12">
+                <div class="modern-card">
+                    <div class="gradient-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0 fw-bold">
+                                <i class="fas fa-list me-2"></i>Daftar Karyawan
+                            </h4>
+                            <div class="d-flex gap-3">
+                                <button class="btn btn-danger" id="deleteSelectedBtn" onclick="deleteSelectedEmployees()" style="display: none;">
+                                    <i class="fas fa-trash me-2"></i>Hapus Terpilih
+                                </button>
+                                <input type="text" class="form-control search-box" placeholder="Cari karyawan..." id="searchEmployee" style="width: 250px;">
+                                <select class="form-select filter-dropdown" id="filterLocation" style="width: 150px;">
+                                    <option value="">Semua Lokasi</option>
+                                    <option value="Lampung">Lampung</option>
+                                    <option value="Tangerang">Tangerang</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th width="5%">
+                                            <input type="checkbox" id="selectAllEmployees" onchange="toggleAllEmployees()">
+                                        </th>
+                                        <th width="12%">ID Karyawan</th>
+                                        <th width="20%">Nama Lengkap</th>
+                                        <th width="12%">Posisi</th>
+                                        <th width="12%">Lokasi</th>
+                                        <th width="18%">Kelompok Gaji</th>
+                                        <th width="8%">Status</th>
+                                        <th width="8%">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="employeeTableBody">
+                                    {% for employee in employees %}
+                                    <tr class="employee-row" data-employee-id="{{ employee.id }}" data-name="{{ employee.full_name.lower() }}" data-location="{{ employee.branch_location }}">
+                                        <td>
+                                            <input type="checkbox" class="employee-checkbox" value="{{ employee.id }}" onchange="handleCheckboxChange(this)">
+                                        </td>
+                                        <td>
+                                            <span class="fw-bold text-primary">{{ employee.employee_id }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="editable-field" data-field="full_name" data-employee-id="{{ employee.id }}">
+                                                {{ employee.full_name }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="editable-field" data-field="position" data-employee-id="{{ employee.id }}">
+                                                {{ employee.position or 'Staff' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge location-{{ employee.branch_location.lower() if employee.branch_location else 'lampung' }}">
+                                                <i class="fas fa-map-marker-alt me-1"></i>{{ employee.branch_location or 'Lampung' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="editable-field text-primary fw-bold" data-field="salary_group" data-employee-id="{{ employee.id }}" data-location="{{ employee.branch_location }}">
+                                                {{ employee.group_name or 'Belum Diatur' }}
+                                            </span>
+                                            <br>
+                                            <small class="text-muted">Rp {{ "{:,.0f}".format(employee.daily_wage or 0) }}/hari</small>
+                                        </td>
+                                        <td>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input status-toggle" type="checkbox" 
+                                                       data-employee-id="{{ employee.id }}" 
+                                                       {{ 'checked' if employee.is_active else '' }}
+                                                       onchange="toggleEmployeeStatusInline({{ employee.id }}, this.checked)">
+                                                <label class="form-check-label">
+                                                    <span class="status-text">{{ 'Aktif' if employee.is_active else 'Non-aktif' }}</span>
+                                                </label>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary me-1" onclick="showEmployeeDetails({{ employee.id }})" title="Detail">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-warning" onclick="console.log('🔍 EDIT BUTTON CLICKED - Employee ID:', {{ employee.id }}); editEmployee({{ employee.id }})" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div class="card-footer d-flex justify-content-between align-items-center">
+                            <div class="pagination-info">
+                                <span class="text-muted">
+                                    Menampilkan {{ employees|length }} dari {{ total_employees or employees|length }} karyawan
+                                </span>
+                            </div>
+                            <nav aria-label="Employee pagination">
+                                <ul class="pagination pagination-sm mb-0">
+                                    <li class="page-item">
+                                        <a class="page-link" href="#" onclick="changePage(1)">First</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="#" onclick="changePage(Math.max(1, currentPage-1))">Previous</a>
+                                    </li>
+                                    <li class="page-item active">
+                                        <span class="page-link">1</span>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="#" onclick="changePage(currentPage+1)">Next</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Employee Modal -->
+<div class="modal fade" id="addEmployeeModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header gradient-header">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-user-plus me-2"></i>Tambah Karyawan Baru
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addEmployeeForm" onsubmit="submitAddEmployee(event); return false;">
+                <div class="modal-body p-4">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Nama Lengkap *</label>
+                            <input type="text" class="form-control" name="full_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">ID Karyawan *</label>
+                            <input type="text" class="form-control" name="employee_id" id="employeeId" readonly value="EMP_003" style="background-color: #f8f9fa !important; color: #6c757d !important; cursor: not-allowed !important;" tabindex="-1">
+                            <small class="form-text text-muted"><i class="fas fa-info-circle"></i> ID akan di-generate otomatis oleh sistem</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Posisi</label>
+                            <select class="form-select" name="position">
+                                <option value="">Pilih Posisi</option>
+                                <option value="Admin">Admin</option>
+                                <option value="Picker">Picker</option>
+                                <option value="Packer">Packer</option>
+                                <option value="Shipper">Shipper</option>
+                                <option value="Supervisor">Supervisor</option>
+                                <option value="Manager">Manager</option>
+                                <option value="Staff">Staff</option>
+                                <option value="Operator">Operator</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold">Lokasi Cabang *</label>
+                            <select class="form-select" name="branch_location" required id="branchLocationSelect" onchange="filterSalaryGroups()">
+                                <option value="">Pilih Lokasi</option>
+                                <option value="Lampung">Lampung</option>
+                                <option value="Tangerang">Tangerang</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label fw-bold">Kelompok Gaji *</label>
+                            <select class="form-select" name="salary_group_id" required id="salaryGroupSelect">
+                                <option value="">Pilih Kelompok Gaji</option>
+                                {% for group in salary_groups %}
+                                <option value="{{ group.id }}" data-location="{{ group.location_name }}" data-wage="{{ group.daily_wage }}">
+                                    {{ group.location_name }} - {{ group.group_name }} (Rp {{ group.daily_wage|int }}/hari)
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Pilih kelompok gaji sesuai dengan lokasi dan posisi karyawan</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="handleFormSubmit()">
+                        <i class="fas fa-save me-2"></i>Simpan Karyawan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Employee Detail Modal -->
+<div class="modal fade" id="employeeDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header gradient-header">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-user-circle me-2"></i>Detail Karyawan
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="employeeDetailContent">
+                    <!-- Content will be loaded dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Global variables for salary groups data
+let salaryGroupsData = [];
+
+// Load salary groups data on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadSalaryGroupsData();
+    initializeInlineEditing();
+});
+
+function loadSalaryGroupsData() {
+    // Load salary groups for all locations
+    {% if salary_groups %}
+    salaryGroupsData = {{ salary_groups|tojson }};
+    {% endif %}
+}
+
+function initializeInlineEditing() {
+    // Add click handlers for editable fields
+    document.querySelectorAll('.editable-field').forEach(field => {
+        field.addEventListener('click', function() {
+            makeFieldEditable(this);
+        });
+    });
+}
+
+function makeFieldEditable(element) {
+    const field = element.dataset.field;
+    const employeeId = element.dataset.employeeId;
+    const currentValue = element.textContent.trim();
+    
+    // Prevent multiple editing
+    if (element.querySelector('input, select')) return;
+    
+    let inputElement;
+    
+    switch(field) {
+        case 'full_name':
+        case 'position':
+            inputElement = document.createElement('input');
+            inputElement.type = 'text';
+            inputElement.className = 'form-control form-control-sm';
+            inputElement.value = currentValue;
+            break;
+            
+        case 'salary_group':
+            inputElement = document.createElement('select');
+            inputElement.className = 'form-select form-select-sm';
+            
+            // Add default option
+            inputElement.innerHTML = '<option value="">Belum Diatur</option>';
+            
+            // Get location for filtering
+            const location = element.dataset.location;
+            
+            // Add salary group options for this location
+            salaryGroupsData.forEach(group => {
+                if (group.location_name === location) {
+                    const option = document.createElement('option');
+                    option.value = group.id;
+                    option.textContent = `${group.group_name} (Rp ${group.daily_wage.toLocaleString()}/hari)`;
+                    option.selected = group.group_name === currentValue;
+                    inputElement.appendChild(option);
+                }
+            });
+            break;
+    }
+    
+    // Replace text with input
+    element.innerHTML = '';
+    element.appendChild(inputElement);
+    inputElement.focus();
+    
+    // Handle save on blur or enter
+    const saveValue = function() {
+        const newValue = inputElement.value.trim();
+        updateEmployeeField(employeeId, field, newValue, element);
+    };
+    
+    inputElement.addEventListener('blur', saveValue);
+    inputElement.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            saveValue();
+        }
+    });
+    
+    // Handle escape to cancel
+    inputElement.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            element.textContent = currentValue;
+        }
+    });
+}
+
+function updateEmployeeField(employeeId, field, value, element) {
+    // Show loading
+    element.innerHTML = '<i class="fas fa-spinner fa-spin text-primary"></i>';
+    
+    // Prepare data based on field
+    let updateData = {};
+    switch(field) {
+        case 'full_name':
+            updateData.full_name = value;
+            break;
+        case 'position':
+            updateData.position = value;
+            break;
+        case 'salary_group':
+            updateData.salary_group_id = value;
+            break;
+    }
+    
+    // Send update request
+    fetch(`/employee/update_field/${employeeId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update display value
+            let displayValue = value;
+            
+            if (field === 'salary_group') {
+                if (value) {
+                    // Find group name and wage
+                    const group = salaryGroupsData.find(g => g.id == value);
+                    if (group) {
+                        displayValue = group.group_name;
+                        // Update salary display
+                        const salaryDisplay = element.parentNode.querySelector('small');
+                        if (salaryDisplay) {
+                            salaryDisplay.textContent = `Rp ${group.daily_wage.toLocaleString()}/hari`;
+                        }
+                    }
+                } else {
+                    displayValue = 'Belum Diatur';
+                }
+            }
+            
+            element.textContent = displayValue || 'Belum Diatur';
+            element.style.color = '#28a745';
+            
+            // Reset color after 2 seconds
+            setTimeout(() => {
+                element.style.color = '';
+            }, 2000);
+            
+            showAlert('Data berhasil diperbarui!', 'success');
+        } else {
+            element.textContent = 'Error';
+            showAlert('Error: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        element.textContent = 'Error';
+        showAlert('Terjadi kesalahan saat memperbarui data', 'danger');
+    });
+}
+
+function toggleEmployeeStatusInline(employeeId, isActive) {
+    fetch(`/employee/toggle_status/${employeeId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            is_active: isActive
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update status text
+            const statusText = document.querySelector(`tr[data-employee-id="${employeeId}"] .status-text`);
+            if (statusText) {
+                statusText.textContent = isActive ? 'Aktif' : 'Non-aktif';
+            }
+            showAlert(`Status karyawan berhasil ${isActive ? 'diaktifkan' : 'dinonaktifkan'}!`, 'success');
+        } else {
+            // Revert checkbox state
+            const checkbox = document.querySelector(`input[data-employee-id="${employeeId}"]`);
+            if (checkbox) {
+                checkbox.checked = !isActive;
+            }
+            showAlert('Error: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Revert checkbox state
+        const checkbox = document.querySelector(`input[data-employee-id="${employeeId}"]`);
+        if (checkbox) {
+            checkbox.checked = !isActive;
+        }
+        showAlert('Terjadi kesalahan saat mengubah status', 'danger');
+    });
+}
+
+function showEmployeeDetails(employeeId) {
+    fetch(`/employee/details/${employeeId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const employee = data.employee;
+            document.getElementById('employeeDetailContent').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-user me-2"></i>Informasi Dasar</h6>
+                        <table class="table table-borderless">
+                            <tr><td><strong>ID Karyawan:</strong></td><td>${employee.employee_id}</td></tr>
+                            <tr><td><strong>Nama Lengkap:</strong></td><td>${employee.full_name}</td></tr>
+                            <tr><td><strong>Posisi:</strong></td><td>${employee.position || 'Staff'}</td></tr>
+                            <tr><td><strong>Status:</strong></td><td><span class="badge ${employee.is_active ? 'bg-success' : 'bg-secondary'}">${employee.is_active ? 'Aktif' : 'Non-aktif'}</span></td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-money-bill me-2"></i>Informasi Gaji</h6>
+                        <table class="table table-borderless">
+                            <tr><td><strong>Lokasi:</strong></td><td>${employee.branch_location}</td></tr>
+                            <tr><td><strong>Kelompok Gaji:</strong></td><td>${employee.group_name || 'Belum Diatur'}</td></tr>
+                            <tr><td><strong>Gaji Harian:</strong></td><td>Rp ${(employee.daily_wage || 0).toLocaleString()}</td></tr>
+                            <tr><td><strong>Dibuat:</strong></td><td>${employee.created_at}</td></tr>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            new bootstrap.Modal(document.getElementById('employeeDetailModal')).show();
+        } else {
+            showAlert('Error: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Terjadi kesalahan saat memuat detail karyawan', 'danger');
+    });
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+// Search functionality
+document.getElementById('searchEmployee').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    const employeeItems = document.querySelectorAll('.employee-item');
+    
+    employeeItems.forEach(item => {
+        const name = item.dataset.name;
+        if (name.includes(searchTerm)) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+});
+
+// Filter by location
+document.getElementById('filterLocation').addEventListener('change', function() {
+    const selectedLocation = this.value;
+    const employeeItems = document.querySelectorAll('.employee-item');
+    
+    employeeItems.forEach(item => {
+        const location = item.dataset.location;
+        if (!selectedLocation || location === selectedLocation) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+});
+
+// Load next employee ID when modal opens
+function loadNextEmployeeId() {
+    console.log('Loading next employee ID...');
+    const idField = document.getElementById('employeeId');
+    if (!idField) {
+        console.error('employeeId field not found');
+        return;
+    }
+    
+    // Show loading state
+    idField.value = '';
+    idField.placeholder = 'Generating ID...';
+    
+    fetch('/employee_management/get_next_id')
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+            idField.value = data.next_id;
+            idField.placeholder = data.next_id;
+            console.log('ID loaded successfully:', data.next_id);
+        } else {
+            idField.value = '';
+            idField.placeholder = 'Error loading ID';
+            console.error('Error from server:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        idField.value = '';
+        idField.placeholder = 'Error loading ID';
+    });
+}
+
+// Handle form submission with button click
+function handleFormSubmit() {
+    console.log('🎯 HANDLE FORM SUBMIT CALLED!');
+    
+    try {
+        // Get form element
+        const form = document.getElementById('addEmployeeForm');
+        if (!form) {
+            console.error('❌ Form not found!');
+            alert('Error: Form tidak ditemukan');
+            return;
+        }
+        
+        console.log('✅ Form found - calling processEmployeeSubmission...');
+        processEmployeeSubmission();
+    } catch (error) {
+        console.error('❌ Error in handleFormSubmit:', error);
+        alert('Error: ' + error.message);
+    }
+}
+
+// Process employee form submission
+function processEmployeeSubmission() {
+    console.log('🚀 PROCESS EMPLOYEE SUBMISSION CALLED!');
+    
+    try {
+        const form = document.getElementById('addEmployeeForm');
+        if (!form) {
+            console.error('❌ Form element not found in processEmployeeSubmission');
+            alert('Error: Form tidak ditemukan');
+            return;
+        }
+    
+    const formData = new FormData(form);
+    const employeeId = document.getElementById('employeeId').value;
+    
+    // Ensure employee_id is included in form data
+    if (employeeId) {
+        formData.set('employee_id', employeeId);
+        console.log('Employee ID being submitted:', employeeId);
+    }
+    
+    // Convert FormData to JSON for better debugging
+    const formDataObj = {};
+    for (let [key, value] of formData.entries()) {
+        formDataObj[key] = value;
+    }
+    console.log('Form data being submitted:', formDataObj);
+    
+    console.log('🚀 STARTING FORM SUBMISSION...');
+    
+    fetch('/add_employee', {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        console.log('📡 Response received - Status:', response.status);
+        console.log('📡 Response headers:', [...response.headers.entries()]);
+        
+        if (response.status === 302) {
+            console.error('❌ REDIRECT DETECTED - Authentication failed');
+            alert('Error: Authentication gagal - Silakan login ulang');
+            return null;
+        }
+        
+        return response.json();
+    })
+    .then(data => {
+        if (data) {
+            console.log('✅ Server JSON response:', data);
+            if (data.success) {
+                alert('✅ Karyawan berhasil ditambahkan dengan ID: ' + data.employee_id);
+                location.reload();
+            } else {
+                alert('❌ Error: ' + data.message);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('❌ Submit error:', error);
+        alert('❌ Error submitting form: ' + error.message);
+    });
+    
+    } catch (error) {
+        console.error('❌ Critical error in processEmployeeSubmission:', error);
+        alert('❌ Critical error: ' + error.message);
+    }
+}
+
+// View employee function
+function viewEmployee(employeeId) {
+    console.log('Opening view modal for employee ID:', employeeId);
+    
+    // Fetch employee details
+    fetch(`/employee_management/get/${employeeId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                populateViewModal(data.employee);
+                $('#viewEmployeeModal').modal('show');
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching employee:', error);
+            alert('Error loading employee data');
+        });
+}
+
+// Edit employee function - opens modal for editing  
+function editEmployee(employeeId) {
+    console.log('🚀 EDIT EMPLOYEE FUNCTION CALLED - Employee ID:', employeeId);
+    console.log('🚀 Starting fetch request...');
+    
+    // Add try-catch around the entire function
+    try {
+        // Fetch employee details with credentials
+        const fetchPromise = fetch(`/employee_management/get/${employeeId}`, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        console.log('🚀 Fetch promise created, waiting for response...');
+        
+        fetchPromise
+            .then(response => {
+                console.log('🌐 Response received!');
+                console.log('🌐 Response status:', response.status);
+                console.log('🌐 Response ok:', response.ok);
+                console.log('🌐 Response type:', response.type);
+                console.log('🌐 Response url:', response.url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+                }
+                
+                console.log('🌐 Converting response to JSON...');
+                return response.json();
+            })
+            .then(data => {
+                console.log('📨 JSON data received:', data);
+                console.log('📨 Data type:', typeof data);
+                console.log('📨 Data success:', data?.success);
+                
+                if (data && data.success) {
+                    console.log('✅ Response success, calling populateEditModal...');
+                    console.log('✅ Employee data:', data.employee);
+                    populateEditModal(data.employee);
+                    $('#editEmployeeModal').modal('show');
+                } else {
+                    console.error('❌ Server error response:', data);
+                    alert('Gagal memuat data: ' + (data?.message || 'Response tidak valid'));
+                }
+            })
+            .catch(error => {
+                console.error('❌ Fetch error occurred:', error);
+                console.error('❌ Error type:', error.constructor.name);
+                console.error('❌ Error message:', error.message);
+                console.error('❌ Error stack:', error.stack);
+                alert('Gagal memuat data karyawan: ' + error.message);
+            });
+            
+    } catch (syncError) {
+        console.error('❌ Synchronous error in editEmployee:', syncError);
+        alert('Error dalam fungsi edit: ' + syncError.message);
+    }
+}
+
+// Populate view modal with employee data
+function populateViewModal(employee) {
+    document.getElementById('viewEmployeeId').textContent = employee.employee_id;
+    document.getElementById('viewFullName').textContent = employee.full_name;
+    document.getElementById('viewPosition').textContent = employee.position;
+    document.getElementById('viewBranchLocation').textContent = employee.branch_location;
+    document.getElementById('viewSalaryGroup').textContent = employee.salary_group_name || 'N/A';
+    document.getElementById('viewCreatedAt').textContent = new Date(employee.created_at).toLocaleDateString('id-ID');
+}
+
+// Populate edit modal with employee data
+function populateEditModal(employee) {
+    console.log('🔧 Populating edit modal with employee:', employee);
+    
+    // Check if all required elements exist
+    const requiredElements = [
+        'editEmployeeIdField', 'editEmployeeId', 'editFullName', 
+        'editPosition', 'editBranchLocation', 'editSalaryGroup'
+    ];
+    
+    for (const elementId of requiredElements) {
+        const element = document.getElementById(elementId);
+        if (!element) {
+            console.error(`❌ Element with ID '${elementId}' not found!`);
+            alert(`Error: Element '${elementId}' tidak ditemukan di modal`);
+            return;
+        }
+    }
+    
+    try {
+        document.getElementById('editEmployeeIdField').value = employee.id || '';
+        document.getElementById('editEmployeeId').value = employee.employee_id || '';
+        document.getElementById('editFullName').value = employee.full_name || '';
+        document.getElementById('editPosition').value = employee.position || '';
+        document.getElementById('editBranchLocation').value = employee.branch_location || '';
+        document.getElementById('editSalaryGroup').value = employee.salary_group_id || '';
+        
+        console.log('✅ Edit modal populated successfully');
+    } catch (error) {
+        console.error('❌ Error populating edit modal:', error);
+        alert('Error saat mengisi form edit: ' + error.message);
+    }
+}
+
+// Update employee function
+function updateEmployee() {
+    const employeeId = document.getElementById('editEmployeeIdField').value;
+    const formData = {
+        employee_id: document.getElementById('editEmployeeId').value,
+        full_name: document.getElementById('editFullName').value,
+        position: document.getElementById('editPosition').value,
+        branch_location: document.getElementById('editBranchLocation').value,
+        salary_group_id: document.getElementById('editSalaryGroup').value
+    };
+    
+    fetch(`/employee_management/update/${employeeId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Karyawan berhasil diupdate!');
+            $('#editEmployeeModal').modal('hide');
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating employee:', error);
+        alert('Error updating employee');
+    });
+}
+
+// Delete selected employees function
+function deleteSelectedEmployees() {
+    const checkboxes = document.querySelectorAll('.employee-checkbox:checked');
+    const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+    
+    if (selectedIds.length === 0) {
+        alert('Pilih karyawan yang akan dihapus terlebih dahulu!');
+        return;
+    }
+    
+    if (confirm(`Yakin ingin menghapus ${selectedIds.length} karyawan yang dipilih?`)) {
+        console.log('Deleting employees:', selectedIds);
+        
+        fetch('/employee_management/delete_selected', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                employee_ids: selectedIds
+            }),
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`✅ ${selectedIds.length} karyawan berhasil dihapus!`);
+                location.reload();
+            } else {
+                alert('❌ Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Delete error:', error);
+            alert('❌ Terjadi kesalahan saat menghapus karyawan');
+        });
+    }
+}
+
+// Filter salary groups based on selected location
+function filterSalaryGroups() {
+    const locationSelect = document.getElementById('branchLocationSelect');
+    const salaryGroupSelect = document.getElementById('salaryGroupSelect');
+    const selectedLocation = locationSelect.value;
+    
+    // Reset salary group selection
+    salaryGroupSelect.value = '';
+    
+    // Show/hide options based on selected location
+    const options = salaryGroupSelect.querySelectorAll('option');
+    options.forEach(option => {
+        if (option.value === '') {
+            option.style.display = 'block'; // Always show default option
+        } else {
+            const optionLocation = option.getAttribute('data-location');
+            option.style.display = (selectedLocation === '' || optionLocation === selectedLocation) ? 'block' : 'none';
+        }
+    });
+}
+
+// Toggle employee status
+function toggleEmployeeStatus(employeeId, isActive) {
+    const action = isActive ? 'non-aktifkan' : 'aktifkan';
+    
+    if (confirm(`Apakah Anda yakin ingin ${action} karyawan ini?`)) {
+        fetch(`/hr/employees/${employeeId}/toggle_status`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error.message);
+        });
+    }
+}
+
+// Enhanced Checkbox functionality for delete
+function toggleAllEmployees() {
+    const selectAll = document.getElementById('selectAllEmployees');
+    const checkboxes = document.querySelectorAll('.employee-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+    
+    updateDeleteButtonVisibility();
+    console.log('Select all toggled:', selectAll.checked);
+}
+
+// Individual checkbox change handler
+function handleCheckboxChange(checkbox) {
+    console.log('Employee checkbox changed:', checkbox.value, 'checked:', checkbox.checked);
+    updateDeleteButtonVisibility();
+    
+    // Update select all checkbox state
+    const allCheckboxes = document.querySelectorAll('.employee-checkbox');
+    const checkedCheckboxes = document.querySelectorAll('.employee-checkbox:checked');
+    const selectAll = document.getElementById('selectAllEmployees');
+    
+    if (selectAll) {
+        selectAll.checked = allCheckboxes.length === checkedCheckboxes.length && checkedCheckboxes.length > 0;
+    }
+}
+
+// Update delete button visibility and text
+function updateDeleteButtonVisibility() {
+    const checkboxes = document.querySelectorAll('.employee-checkbox:checked');
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+    
+    console.log('Updating delete button - Selected checkboxes:', checkboxes.length);
+    
+    if (deleteBtn) {
+        if (checkboxes.length > 0) {
+            deleteBtn.style.display = 'inline-block';
+            deleteBtn.innerHTML = `<i class="fas fa-trash me-2"></i>Delete Selected (${checkboxes.length})`;
+            console.log('✅ Delete button shown with count:', checkboxes.length);
+        } else {
+            deleteBtn.style.display = 'none';
+            console.log('❌ Delete button hidden - no selection');
+        }
+    } else {
+        console.error('❌ Delete button not found in DOM!');
+        // Debug: show all elements with deleteSelected in ID
+        const allElements = document.querySelectorAll('*[id*="deleteSelected"]');
+        console.log('Elements with deleteSelected:', Array.from(allElements).map(el => el.id));
+        console.log('Button exists?', !!document.getElementById('deleteSelectedBtn'));
+    }
+}
+
+// Complete delete selected function
+function deleteSelectedEmployees() {
+    const employeeIds = Array.from(document.querySelectorAll('.employee-checkbox:checked')).map(cb => cb.value);
+    
+    if (employeeIds.length === 0) {
+        alert('Pilih karyawan yang ingin dihapus terlebih dahulu');
+        return;
+    }
+    
+    if (confirm(`Apakah Anda yakin ingin menghapus ${employeeIds.length} karyawan terpilih?`)) {
+        fetch('/employee_management/delete_selected', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ employee_ids: employeeIds })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Berhasil menghapus ${data.deleted_count} karyawan`);
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error.message);
+        });
+    }
+}
+
+// Pagination variables
+let currentPage = 1;
+const itemsPerPage = 20;
+
+function changePage(page) {
+    currentPage = page;
+    // Implementation for pagination will be added to backend
+    window.location.href = `/employee_management?page=${page}`;
+}
+
+// Initialize modal event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing employee ID system...');
+    
+    // Load next employee ID when add modal is opened
+    const addEmployeeModal = document.getElementById('addEmployeeModal');
+    if (addEmployeeModal) {
+        console.log('Add employee modal found, adding event listener');
+        addEmployeeModal.addEventListener('show.bs.modal', function() {
+            console.log('Modal opening, loading next ID...');
+            setTimeout(loadNextEmployeeId, 100); // Small delay to ensure modal is fully shown
+        });
+        
+        // Also load ID immediately when page loads (for testing)
+        setTimeout(loadNextEmployeeId, 500);
+    } else {
+        console.error('Add employee modal not found');
+    }
+});
+
+// Force load ID when page is ready (backup method)
+window.addEventListener('load', function() {
+    console.log('Window loaded, forcing ID load...');
+    setTimeout(function() {
+        if (document.getElementById('autoEmployeeId')) {
+            loadNextEmployeeId();
+        }
+    }, 1000);
+});
+</script>
+
+<!-- View Employee Modal -->
+<div class="modal fade" id="viewEmployeeModal" tabindex="-1" aria-labelledby="viewEmployeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="viewEmployeeModalLabel">
+                    <i class="fas fa-eye me-2"></i>Detail Karyawan
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title text-primary"><i class="fas fa-id-badge me-2"></i>Informasi Karyawan</h6>
+                                <table class="table table-borderless">
+                                    <tr><td class="fw-bold">ID Karyawan:</td><td id="viewEmployeeId">-</td></tr>
+                                    <tr><td class="fw-bold">Nama Lengkap:</td><td id="viewFullName">-</td></tr>
+                                    <tr><td class="fw-bold">Posisi:</td><td id="viewPosition">-</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title text-success"><i class="fas fa-building me-2"></i>Informasi Penempatan</h6>
+                                <table class="table table-borderless">
+                                    <tr><td class="fw-bold">Lokasi:</td><td id="viewBranchLocation">-</td></tr>
+                                    <tr><td class="fw-bold">Grup Gaji:</td><td id="viewSalaryGroup">-</td></tr>
+                                    <tr><td class="fw-bold">Dibuat:</td><td id="viewCreatedAt">-</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Employee Modal -->
+<div class="modal fade" id="editEmployeeModal" tabindex="-1" aria-labelledby="editEmployeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="editEmployeeModalLabel">
+                    <i class="fas fa-edit me-2"></i>Edit Karyawan
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editEmployeeForm">
+                    <input type="hidden" id="editEmployeeIdField">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="editEmployeeId" class="form-label fw-bold">
+                                <i class="fas fa-id-badge me-2"></i>ID Karyawan
+                            </label>
+                            <input type="text" class="form-control" id="editEmployeeId" readonly style="background-color: #f8f9fa;">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editFullName" class="form-label fw-bold">
+                                <i class="fas fa-user me-2"></i>Nama Lengkap *
+                            </label>
+                            <input type="text" class="form-control" id="editFullName" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="editPosition" class="form-label fw-bold">
+                                <i class="fas fa-briefcase me-2"></i>Posisi *
+                            </label>
+                            <select class="form-select" id="editPosition" required>
+                                <option value="">Pilih Posisi</option>
+                                <option value="Admin">Admin</option>
+                                <option value="Picker">Picker</option>
+                                <option value="Packer">Packer</option>
+                                <option value="Shipper">Shipper</option>
+                                <option value="Supervisor">Supervisor</option>
+                                <option value="Manager">Manager</option>
+                                <option value="Staff">Staff</option>
+                                <option value="Operator">Operator</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editBranchLocation" class="form-label fw-bold">
+                                <i class="fas fa-map-marker-alt me-2"></i>Lokasi Cabang *
+                            </label>
+                            <select class="form-select" id="editBranchLocation" required onchange="filterEditSalaryGroups()">
+                                <option value="">Pilih Lokasi</option>
+                                <option value="Lampung">Lampung</option>
+                                <option value="Tangerang">Tangerang</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="editSalaryGroup" class="form-label fw-bold">
+                                <i class="fas fa-money-bill-wave me-2"></i>Grup Gaji *
+                            </label>
+                            <select class="form-select" id="editSalaryGroup" required>
+                                <option value="">Pilih Grup Gaji</option>
+                                {% for group in salary_groups %}
+                                <option value="{{ group.id }}" data-location="{{ group.location_name }}">
+                                    {{ group.group_name }} - Rp {{ group.daily_wage|int }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Batal
+                </button>
+                <button type="button" class="btn btn-warning" onclick="updateEmployee()">
+                    <i class="fas fa-save me-2"></i>Update Karyawan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Filter salary groups for edit modal
+function filterEditSalaryGroups() {
+    console.log('🔧 Filtering edit salary groups...');
+    const locationSelect = document.getElementById('editBranchLocation');
+    const salaryGroupSelect = document.getElementById('editSalaryGroup');
+    const selectedLocation = locationSelect.value;
+    
+    console.log('🔧 Selected location:', selectedLocation);
+    
+    // Reset salary group selection
+    salaryGroupSelect.value = '';
+    
+    // Show/hide options based on selected location
+    const options = salaryGroupSelect.querySelectorAll('option');
+    options.forEach(option => {
+        if (option.value === '') {
+            option.style.display = 'block'; // Always show default option
+        } else {
+            const optionLocation = option.getAttribute('data-location');
+            option.style.display = (selectedLocation === '' || optionLocation === selectedLocation) ? 'block' : 'none';
+        }
+    });
+}
+</script>
+
+{% endblock %}

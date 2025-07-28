@@ -1,0 +1,438 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Scan Center - Strong Order Management{% endblock %}
+
+{% block extra_css %}
+<style>
+.scan-center-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 2rem;
+    position: relative;
+}
+
+.scan-center-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    z-index: 0;
+}
+
+.scan-content {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.scan-mode-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.scan-mode-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.scan-mode-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    color: white;
+    margin-right: 1rem;
+}
+
+.scan-mode-icon.picking {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+}
+
+.scan-mode-icon.packing {
+    background: linear-gradient(135deg, #f39c12, #d68910);
+}
+
+.scan-mode-icon.shipping {
+    background: linear-gradient(135deg, #27ae60, #229954);
+}
+
+.scan-mode-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.scan-input-group {
+    margin-bottom: 1.5rem;
+}
+
+.scan-input {
+    padding: 1rem;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.scan-input:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+}
+
+.scan-btn {
+    padding: 0.8rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    margin: 0.5rem;
+}
+
+.scan-btn-primary {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    border: none;
+    color: white;
+}
+
+.scan-btn-primary:hover {
+    background: linear-gradient(135deg, #2980b9, #21618c);
+    transform: translateY(-2px);
+}
+
+.scan-btn-secondary {
+    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+    border: none;
+    color: white;
+}
+
+.scan-btn-secondary:hover {
+    background: linear-gradient(135deg, #7f8c8d, #6c757d);
+    transform: translateY(-2px);
+}
+
+.scan-result-section {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    display: none;
+}
+
+.scan-result-section.success {
+    border-left: 4px solid #27ae60;
+    background: rgba(39, 174, 96, 0.1);
+}
+
+.scan-result-section.error {
+    border-left: 4px solid #e74c3c;
+    background: rgba(231, 76, 60, 0.1);
+}
+
+.scan-history-section {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+.scan-history-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.scan-history-item.success {
+    border-left: 3px solid #27ae60;
+}
+
+.scan-history-item.error {
+    border-left: 3px solid #e74c3c;
+}
+
+@media (max-width: 768px) {
+    .scan-center-container {
+        padding: 1rem;
+    }
+    
+    .scan-mode-card {
+        padding: 1.5rem;
+    }
+    
+    .scan-mode-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .scan-mode-icon {
+        margin-right: 0;
+        margin-bottom: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="scan-center-container">
+    <div class="scan-content">
+        <!-- Scan Center Header -->
+        <div class="text-center mb-4">
+            <h1 class="text-white mb-2">
+                <i class="fas fa-qrcode"></i> Scan Center
+            </h1>
+            <p class="text-white-50">Advanced Barcode & QR Code Scanning System</p>
+        </div>
+        
+        <!-- Picking Mode -->
+        <div class="scan-mode-card">
+            <div class="scan-mode-header">
+                <div class="scan-mode-icon picking">
+                    <i class="fas fa-hand-paper"></i>
+                </div>
+                <div>
+                    <h3 class="scan-mode-title">Picking Mode</h3>
+                    <p class="text-muted mb-0">Scan tracking number untuk mulai picking</p>
+                </div>
+            </div>
+            
+            <div class="scan-input-group">
+                <input type="text" class="form-control scan-input" id="picking-input" 
+                       placeholder="Masukkan atau scan tracking number">
+            </div>
+            
+            <div class="text-center">
+                <button type="button" class="btn scan-btn scan-btn-secondary" onclick="openCamera('picking')">
+                    <i class="fas fa-camera me-2"></i>Camera
+                </button>
+                <button type="button" class="btn scan-btn scan-btn-primary" onclick="processPicking()">
+                    <i class="fas fa-check me-2"></i>Proses Picking
+                </button>
+            </div>
+        </div>
+        
+        <!-- Validasi Packing Mode -->
+        <div class="scan-mode-card">
+            <div class="scan-mode-header">
+                <div class="scan-mode-icon packing">
+                    <i class="fas fa-box"></i>
+                </div>
+                <div>
+                    <h3 class="scan-mode-title">Validasi Packing</h3>
+                    <p class="text-muted mb-0">Scan tracking number untuk validasi packing</p>
+                </div>
+            </div>
+            
+            <div class="scan-input-group">
+                <input type="text" class="form-control scan-input" id="packing-input" 
+                       placeholder="Masukkan atau scan tracking number">
+            </div>
+            
+            <div class="text-center">
+                <button type="button" class="btn scan-btn scan-btn-secondary" onclick="openCamera('packing')">
+                    <i class="fas fa-camera me-2"></i>Camera
+                </button>
+                <button type="button" class="btn scan-btn scan-btn-primary" onclick="processPacking()">
+                    <i class="fas fa-check me-2"></i>Validasi Packing
+                </button>
+            </div>
+        </div>
+        
+        <!-- Ready Pickup Mode -->
+        <div class="scan-mode-card">
+            <div class="scan-mode-header">
+                <div class="scan-mode-icon shipping">
+                    <i class="fas fa-shipping-fast"></i>
+                </div>
+                <div>
+                    <h3 class="scan-mode-title">Ready Pickup</h3>
+                    <p class="text-muted mb-0">Scan tracking number untuk tandai siap pickup</p>
+                </div>
+            </div>
+            
+            <div class="scan-input-group">
+                <input type="text" class="form-control scan-input" id="ready-pickup-input" 
+                       placeholder="Masukkan atau scan tracking number">
+            </div>
+            
+            <div class="text-center">
+                <button type="button" class="btn scan-btn scan-btn-secondary" onclick="openCamera('ready_pickup')">
+                    <i class="fas fa-camera me-2"></i>Camera
+                </button>
+                <button type="button" class="btn scan-btn scan-btn-primary" onclick="processReadyPickup()">
+                    <i class="fas fa-truck me-2"></i>Ready Pickup
+                </button>
+            </div>
+        </div>
+        
+        <!-- Scan Result Section -->
+        <div id="scan-result" class="scan-result-section">
+            <div id="scan-result-content"></div>
+        </div>
+        
+        <!-- Scan History Section -->
+        <div class="scan-history-section">
+            <h4 class="mb-3">
+                <i class="fas fa-history"></i> Scan History
+            </h4>
+            <div id="scan-history-content">
+                <p class="text-muted">Belum ada history scan</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Enhanced mobile-friendly scanning functions
+function openCamera(mode) {
+    const inputId = mode === 'picking' ? 'picking-input' : 
+                   mode === 'packing' ? 'packing-input' : 'ready-pickup-input';
+    const input = document.getElementById(inputId);
+    const manualCode = prompt('Masukkan kode tracking atau QR code secara manual:');
+    
+    if (manualCode && manualCode.trim()) {
+        input.value = manualCode.trim();
+        // Auto-process after manual input
+        if (mode === 'picking') {
+            processPicking();
+        } else if (mode === 'packing') {
+            processPacking();
+        } else if (mode === 'ready_pickup') {
+            processReadyPickup();
+        }
+    }
+}
+
+function processPicking() {
+    const input = document.getElementById('picking-input');
+    const trackingNumber = input.value.trim();
+    
+    if (!trackingNumber) {
+        showResult('error', 'Masukkan tracking number terlebih dahulu');
+        return;
+    }
+    
+    // Send to backend for processing
+    fetch('/scan/order', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'barcode=' + encodeURIComponent(trackingNumber)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showResult('success', '✅ Picking berhasil untuk order: ' + data.order_number);
+            // Redirect ke halaman picking
+            setTimeout(() => {
+                window.location.href = '/picking/' + data.order_id;
+            }, 1500);
+        } else {
+            showResult('error', '❌ Error: ' + (data.error || 'Gagal memproses picking'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showResult('error', '❌ Terjadi kesalahan saat memproses picking');
+    });
+}
+
+function processPacking() {
+    const input = document.getElementById('packing-input');
+    const trackingNumber = input.value.trim();
+    
+    if (!trackingNumber) {
+        showResult('error', 'Masukkan tracking number terlebih dahulu');
+        return;
+    }
+    
+    // Find order and redirect to packing validation
+    fetch('/scan/order', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'barcode=' + encodeURIComponent(trackingNumber)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showResult('success', '✅ Redirect ke validasi packing: ' + data.order_number);
+            setTimeout(() => {
+                window.location.href = '/packing_validation/' + data.order_id;
+            }, 1500);
+        } else {
+            showResult('error', '❌ Error: ' + (data.error || 'Order tidak ditemukan'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showResult('error', '❌ Terjadi kesalahan saat mencari order');
+    });
+}
+
+function processReadyPickup() {
+    const input = document.getElementById('ready-pickup-input');
+    const trackingNumber = input.value.trim();
+    
+    if (!trackingNumber) {
+        showResult('error', 'Masukkan tracking number terlebih dahulu');
+        return;
+    }
+    
+    // Send to backend for processing
+    fetch('/scan/ready_pickup', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'barcode=' + encodeURIComponent(trackingNumber)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showResult('success', '✅ Ready Pickup berhasil: ' + data.message);
+            input.value = '';
+        } else {
+            showResult('error', '❌ Error: ' + (data.error || data.message));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showResult('error', '❌ Terjadi kesalahan saat memproses ready pickup');
+    });
+}
+
+function showResult(type, message) {
+    const resultDiv = document.getElementById('scan-result');
+    const contentDiv = document.getElementById('scan-result-content');
+    
+    resultDiv.className = 'scan-result-section ' + type;
+    contentDiv.innerHTML = message;
+    resultDiv.style.display = 'block';
+    
+    // Hide after 5 seconds
+    setTimeout(() => {
+        resultDiv.style.display = 'none';
+    }, 5000);
+}
+</script>
+{% endblock %}

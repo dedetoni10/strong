@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print QR Code - {{ employee_name }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+        
+        @media print {
+            .no-print { display: none !important; }
+            body { margin: 0; padding: 20px; }
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: white;
+            color: black;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .qr-card {
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 400px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .qr-header {
+            background: #8B5CF6;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .qr-image {
+            margin: 20px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .employee-info {
+            margin: 15px 0;
+            text-align: left;
+        }
+        
+        .employee-info table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .employee-info td {
+            padding: 5px 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .employee-info td:first-child {
+            font-weight: bold;
+            width: 30%;
+        }
+        
+        .footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+        
+        .print-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        
+        .print-btn:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button class="print-btn" onclick="window.print()">
+            🖨️ Print QR Code
+        </button>
+        <button class="print-btn" onclick="window.close()" style="background: #6c757d;">
+            ❌ Tutup
+        </button>
+    </div>
+    
+    <div class="qr-card">
+        <div class="qr-header">
+            <h2>🏢 STRONG ORDER MANAGEMENT</h2>
+            <h3>QR Code Karyawan</h3>
+        </div>
+        
+        <div class="qr-image">
+            <img src="data:image/png;base64,{{ qr_code_base64 }}" 
+                 width="250" height="250" 
+                 alt="QR Code {{ employee_name }}">
+        </div>
+        
+        <div class="employee-info">
+            <table>
+                <tr>
+                    <td>Nama:</td>
+                    <td><strong>{{ employee_name }}</strong></td>
+                </tr>
+                <tr>
+                    <td>Posisi:</td>
+                    <td>{{ employee_position }}</td>
+                </tr>
+                <tr>
+                    <td>Cabang:</td>
+                    <td>{{ employee_branch }}</td>
+                </tr>
+                <tr>
+                    <td>ID:</td>
+                    <td>{{ employee_id }}</td>
+                </tr>
+                <tr>
+                    <td>Berlaku s/d:</td>
+                    <td>{{ expiry_date }}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Petunjuk Penggunaan:</strong></p>
+            <p style="font-size: 11px;">
+                1. Scan QR code ini untuk absensi<br>
+                2. Gunakan barcode scanner atau smartphone<br>
+                3. Tempel di tempat yang mudah diakses<br>
+                4. Jangan rusak atau hilangkan QR code
+            </p>
+            <p style="margin-top: 15px;">
+                <small>Dicetak: {{ moment().format('DD/MM/YYYY HH:mm') }} | Strong Order Management System</small>
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        // Auto print when page loads (optional)
+        // window.onload = function() { window.print(); }
+    </script>
+</body>
+</html>

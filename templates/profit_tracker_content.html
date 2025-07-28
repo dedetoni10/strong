@@ -1,0 +1,553 @@
+<!-- Statistics Cards -->
+<div class="stats-cards">
+    <div class="stat-card">
+        <div class="icon blue">
+            <i class="fas fa-coins"></i>
+        </div>
+        <h3>Rp {{ "{:,.0f}".format(profit_stats.total_revenue) }}</h3>
+        <p>Omzet Hari Ini</p>
+    </div>
+    <div class="stat-card">
+        <div class="icon green">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <h3>Rp {{ "{:,.0f}".format(profit_stats.total_profit) }}</h3>
+        <p>Profit Hari Ini</p>
+    </div>
+    <div class="stat-card">
+        <div class="icon orange">
+            <i class="fas fa-percentage"></i>
+        </div>
+        <h3>{{ "{:.1f}".format(profit_stats.margin_percentage) }}%</h3>
+        <p>Margin</p>
+    </div>
+    <div class="stat-card">
+        <div class="icon cyan">
+            <i class="fas fa-shopping-cart"></i>
+        </div>
+        <h3>{{ profit_stats.total_orders }}</h3>
+        <p>Total Order</p>
+    </div>
+</div>
+
+<!-- Profit Per Store Tabs -->
+<div class="content-card">
+    <div class="content-card-header">
+        <h5><i class="fas fa-store"></i> Profit Per Toko</h5>
+    </div>
+    <div class="content-card-body">
+        <!-- Tab Navigation -->
+        <ul class="nav nav-tabs" id="storeTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
+                    Semua Toko
+                </button>
+            </li>
+            {% for store in stores %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="{{ store.sku_code }}-tab" data-bs-toggle="tab" data-bs-target="#{{ store.sku_code }}" type="button" role="tab">
+                    {{ store.sku_code }}
+                </button>
+            </li>
+            {% endfor %}
+        </ul>
+        
+        <!-- Tab Content -->
+        <div class="tab-content mt-3" id="storeTabContent">
+            <!-- All Stores -->
+            <div class="tab-pane fade show active" id="all" role="tabpanel">
+                <div class="row">
+                    {% for store_data in store_profits %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ store_data.store_name }}</h6>
+                                <p class="mb-1"><small class="text-muted">Omzet:</small> <strong>Rp {{ "{:,.0f}".format(store_data.revenue) }}</strong></p>
+                                <p class="mb-1"><small class="text-muted">Profit:</small> <strong>Rp {{ "{:,.0f}".format(store_data.profit) }}</strong></p>
+                                <p class="mb-1"><small class="text-muted">Margin:</small> <strong>{{ "{:.1f}".format(store_data.margin) }}%</strong></p>
+                                <p class="mb-0"><small class="text-muted">Orders:</small> <strong>{{ store_data.orders }}</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Individual Store Tabs -->
+            {% for store_data in store_profits %}
+            <div class="tab-pane fade" id="{{ store_data.sku_code }}" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5>{{ store_data.store_name }}</h5>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <p><strong>Omzet:</strong> Rp {{ "{:,.0f}".format(store_data.revenue) }}</p>
+                                        <p><strong>Profit:</strong> Rp {{ "{:,.0f}".format(store_data.profit) }}</p>
+                                    </div>
+                                    <div class="col-6">
+                                        <p><strong>Margin:</strong> {{ "{:.1f}".format(store_data.margin) }}%</p>
+                                        <p><strong>Orders:</strong> {{ store_data.orders }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Store Management -->
+<div class="content-card">
+    <div class="content-card-header">
+        <h5><i class="fas fa-store"></i> Manajemen Toko</h5>
+    </div>
+    <div class="content-card-body">
+        <!-- Add New Store Form -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <form method="POST" action="{{ url_for('add_store') }}" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="store_name" class="form-label">Nama Toko</label>
+                        <input type="text" class="form-control" id="store_name" name="store_name" placeholder="MITRA JAYA PARTS" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="sku_code" class="form-label">Kode SKU</label>
+                        <input type="text" class="form-control" id="sku_code" name="sku_code" placeholder="MJP" maxlength="5" required style="text-transform: uppercase;">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-plus"></i> Tambah Toko
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Stores List -->
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th width="5%">No</th>
+                        <th width="35%">Nama Toko</th>
+                        <th width="15%">Kode SKU</th>
+                        <th width="15%">Status</th>
+                        <th width="20%">Dibuat</th>
+                        <th width="10%">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for store in stores %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ store.store_name }}</td>
+                        <td><span class="badge bg-primary">{{ store.sku_code }}</span></td>
+                        <td>
+                            {% if store.is_active %}
+                                <span class="badge bg-success">Aktif</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Nonaktif</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ store.created_at.strftime('%d/%m/%Y') if store.created_at else '-' }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="editStore({{ store.id }}, '{{ store.store_name }}', '{{ store.sku_code }}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            {% if not store.is_active %}
+                            <button class="btn btn-sm btn-danger" onclick="deleteStore({{ store.id }}, '{{ store.store_name }}')" title="Hapus Toko">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% else %}
+                            <button class="btn btn-sm btn-secondary" onclick="deactivateStore({{ store.id }}, '{{ store.store_name }}')" title="Nonaktifkan">
+                                <i class="fas fa-pause"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Settings -->
+<div class="content-card">
+    <div class="content-card-header">
+        <h5><i class="fas fa-cog"></i> Pengaturan Biaya</h5>
+    </div>
+    <div class="content-card-body">
+        <form method="POST" action="{{ url_for('profit_tracker_settings') }}">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="admin_fee" class="form-label">Admin Fee (%)</label>
+                        <div class="input-group">
+                            <select class="form-select" id="admin_fee" name="admin_fee_percentage">
+                                <option value="0" {% if current_settings.admin_fee_percentage == 0 %}selected{% endif %}>0%</option>
+                                <option value="8" {% if current_settings.admin_fee_percentage == 8 %}selected{% endif %}>8%</option>
+                                <option value="11" {% if current_settings.admin_fee_percentage == 11 %}selected{% endif %}>11%</option>
+                                <option value="15" {% if current_settings.admin_fee_percentage == 15 %}selected{% endif %}>15%</option>
+                            </select>
+                            <button type="submit" class="btn btn-primary">Terapkan</button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="fee_per_order" class="form-label">Biaya per Order (Rp)</label>
+                        <input type="number" class="form-control" id="fee_per_order" name="fee_per_order" value="{{ current_settings.fee_per_order }}" step="1" min="0">
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="insurance_fee" class="form-label">Asuransi per Order (Rp)</label>
+                        <input type="number" class="form-control" id="insurance_fee" name="insurance_fee" value="{{ current_settings.insurance_fee }}" step="1" min="0">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="store_id" class="form-label">
+                            <i class="fas fa-store text-info me-1"></i>
+                            Pilih Toko untuk Biaya Iklan
+                        </label>
+                        <select class="form-select" id="store_id" name="store_id" required>
+                            <option value="">-- Pilih Toko --</option>
+                            {% for store in available_stores %}
+                            <option value="{{ store.id }}">{{ store.store_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="advertising_cost" class="form-label">
+                            <i class="fas fa-bullhorn text-warning me-1"></i>
+                            Biaya Iklan Hari Ini (Rp)
+                        </label>
+                        <input type="number" class="form-control" id="advertising_cost" name="advertising_cost" value="{{ today_advertising_cost }}" step="1" min="0">
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Data harian tersimpan permanen, tidak akan hilang
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Advertising Cost History -->
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-history text-info me-1"></i>
+                                Riwayat Biaya Iklan (7 Hari Terakhir)
+                            </h6>
+                        </div>
+                        <div class="card-body p-2">
+                            <div style="max-height: 120px; overflow-y: auto;">
+                                {% for cost in recent_costs %}
+                                <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar-day me-1"></i>
+                                        {{ cost.cost_date.strftime('%d/%m/%Y') }}
+                                        {% if cost.cost_date.date() == today_date %}
+                                        <span class="badge bg-primary ms-1">Hari Ini</span>
+                                        {% endif %}
+                                    </small>
+                                    <span class="badge bg-warning">Rp {{ "{:,.0f}".format(cost.advertising_cost) }}</span>
+                                </div>
+                                {% endfor %}
+                                {% if not recent_costs %}
+                                <div class="text-center text-muted py-3">
+                                    <i class="fas fa-inbox"></i>
+                                    <br><small>Belum ada data biaya iklan</small>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-3">
+                <div class="col-12">
+            </div>
+            
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Simpan Pengaturan
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Operational Costs Management -->
+<div class="content-card">
+    <div class="content-card-header">
+        <h5><i class="fas fa-calculator"></i> Biaya Operasional Bulanan</h5>
+    </div>
+    <div class="content-card-body">
+        <!-- Add New Operational Cost Form -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <form method="POST" action="{{ url_for('add_operational_cost') }}" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="cost_type" class="form-label">Jenis Biaya</label>
+                        <select class="form-select" id="cost_type" name="cost_type" required>
+                            <option value="">Pilih Jenis</option>
+                            <option value="packaging">Packaging</option>
+                            <option value="rent">Sewa Tempat</option>
+                            <option value="utilities">Listrik & PAM</option>
+                            <option value="internet">Internet</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="cost_name" class="form-label">Nama Biaya</label>
+                        <input type="text" class="form-control" id="cost_name" name="cost_name" placeholder="Nama Biaya" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="monthly_amount" class="form-label">Jumlah Bulanan</label>
+                        <input type="number" class="form-control" id="monthly_amount" name="monthly_amount" placeholder="3000000" step="1000" min="0" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="notes" class="form-label">Catatan</label>
+                        <input type="text" class="form-control" id="notes" name="notes" placeholder="Opsional">
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Operational Costs List -->
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th width="5%">No</th>
+                        <th width="15%">Jenis</th>
+                        <th width="25%">Nama Biaya</th>
+                        <th width="15%">Bulanan</th>
+                        <th width="12%">Harian</th>
+                        <th width="10%">Status</th>
+                        <th width="15%">Catatan</th>
+                        <th width="8%">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cost in operational_costs %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            {% if cost.cost_type == 'packaging' %>
+                                <span class="badge bg-warning">Packaging</span>
+                            {% elif cost.cost_type == 'rent' %}
+                                <span class="badge bg-info">Sewa</span>
+                            {% elif cost.cost_type == 'utilities' %}
+                                <span class="badge bg-success">Listrik & PAM</span>
+                            {% elif cost.cost_type == 'internet' %}
+                                <span class="badge bg-primary">Internet</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ cost.cost_name }}</td>
+                        <td><strong>Rp {{ "{:,.0f}".format(cost.monthly_amount) }}</strong></td>
+                        <td class="text-muted">Rp {{ "{:,.0f}".format(cost.monthly_amount / 30) }}</td>
+                        <td>
+                            {% if cost.is_active %}
+                                <span class="badge bg-success">Aktif</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Nonaktif</span>
+                            {% endif %}
+                        </td>
+                        <td><small class="text-muted">{{ cost.notes or '-' }}</small></td>
+                        <td>
+                            <button class="btn btn-sm btn-warning" onclick="editOperationalCost({{ cost.id }}, '{{ cost.cost_type }}', '{{ cost.cost_name }}', {{ cost.monthly_amount }}, '{{ cost.notes or '' }}')" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            {% if cost.is_active %}
+                            <button class="btn btn-sm btn-secondary" onclick="toggleOperationalCost({{ cost.id }}, false)" title="Nonaktifkan">
+                                <i class="fas fa-pause"></i>
+                            </button>
+                            {% else %}
+                            <button class="btn btn-sm btn-success" onclick="toggleOperationalCost({{ cost.id }}, true)" title="Aktifkan">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-info">
+                        <td colspan="3"><strong>Total Biaya Operasional</strong></td>
+                        <td><strong>Rp {{ "{:,.0f}".format(total_operational_monthly) }}</strong></td>
+                        <td><strong>Rp {{ "{:,.0f}".format(total_operational_daily) }}</strong></td>
+                        <td colspan="3"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Purple theme styles for profit tracker */
+.content-card-header {
+    background: linear-gradient(135deg, #6f42c1, #8b5cf6) !important;
+}
+
+.stat-card .icon.blue { background-color: #3498db; }
+.stat-card .icon.green { background-color: #27ae60; }
+.stat-card .icon.orange { background-color: #f39c12; }
+.stat-card .icon.cyan { background-color: #17a2b8; }
+
+.nav-tabs .nav-link.active {
+    background-color: #6f42c1;
+    border-color: #6f42c1;
+    color: white;
+}
+
+.nav-tabs .nav-link {
+    color: #6f42c1;
+}
+
+.nav-tabs .nav-link:hover {
+    color: #8b5cf6;
+}
+</style>
+
+<!-- Edit Store Modal -->
+<div class="modal fade" id="editStoreModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Toko</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('edit_store') }}">
+                <div class="modal-body">
+                    <input type="hidden" id="edit_store_id" name="store_id">
+                    <div class="mb-3">
+                        <label for="edit_store_name" class="form-label">Nama Toko</label>
+                        <input type="text" class="form-control" id="edit_store_name" name="store_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_sku_code" class="form-label">Kode SKU</label>
+                        <input type="text" class="form-control" id="edit_sku_code" name="sku_code" maxlength="5" required style="text-transform: uppercase;">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+// Auto-save advertising cost when changed
+document.getElementById('advertising_cost').addEventListener('change', function() {
+    const cost = this.value;
+    
+    fetch('{{ url_for("save_daily_cost") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            advertising_cost: parseFloat(cost) || 0
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Reload page to update profit calculations
+            window.location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error saving advertising cost:', error);
+    });
+});
+
+// Store management functions
+function editStore(storeId, storeName, skuCode) {
+    document.getElementById('edit_store_id').value = storeId;
+    document.getElementById('edit_store_name').value = storeName;
+    document.getElementById('edit_sku_code').value = skuCode;
+    
+    const modal = new bootstrap.Modal(document.getElementById('editStoreModal'));
+    modal.show();
+}
+
+function deactivateStore(storeId, storeName) {
+    if (confirm(`Nonaktifkan toko "${storeName}"? Toko yang nonaktif tidak akan muncul dalam perhitungan profit.`)) {
+        fetch('{{ url_for("toggle_store_status") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                store_id: storeId,
+                is_active: false
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat mengubah status toko');
+        });
+    }
+}
+
+function deleteStore(storeId, storeName) {
+    if (confirm(`Hapus toko "${storeName}" secara permanen? Aksi ini tidak dapat dibatalkan.`)) {
+        fetch('{{ url_for("profit_delete_store") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                store_id: storeId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat menghapus toko');
+        });
+    }
+}
+
+// Auto-uppercase SKU input
+document.getElementById('sku_code').addEventListener('input', function() {
+    this.value = this.value.toUpperCase();
+});
+document.getElementById('edit_sku_code').addEventListener('input', function() {
+    this.value = this.value.toUpperCase();
+});
+</script>

@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block title %}Packing Order {{ order.order_number }} - Shopee Order Management{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('fulfillment_dashboard') }}">Fulfillment</a></li>
+                <li class="breadcrumb-item active">Packing {{ order.order_number }}</li>
+            </ol>
+        </nav>
+        
+        <h1><i class="fas fa-box me-2"></i>Packing Order</h1>
+        <p class="text-muted">Kemas semua item yang sudah dipick untuk pengiriman</p>
+    </div>
+</div>
+
+<!-- Order Info -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Informasi Pesanan
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>No. Pesanan:</strong> {{ order.order_number }}</p>
+                        <p><strong>No. Resi:</strong> {{ order.tracking_number or '-' }}</p>
+                        <p><strong>Customer:</strong> {{ order.customer_name }}</p>
+                        <p><strong>Phone:</strong> {{ order.customer_phone or '-' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Total Amount:</strong> Rp {{ "{:,.0f}".format(order.total_amount) }}</p>
+                        <p><strong>Picking Started:</strong> {{ order.picking_started_at.strftime('%H:%M:%S') if order.picking_started_at else '-' }}</p>
+                        <p><strong>Picking Completed:</strong> {{ order.picking_completed_at.strftime('%H:%M:%S') if order.picking_completed_at else '-' }}</p>
+                        <p><strong>Packing Started:</strong> {{ order.packing_started_at.strftime('%H:%M:%S') if order.packing_started_at else '-' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card border-success">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-check-circle me-2"></i>Status
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <h2 class="text-success">{{ order.status.replace('_', ' ').title() }}</h2>
+                <p class="card-text">Siap untuk packing</p>
+                <i class="fas fa-box fa-3x text-success"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Address -->
+{% if order.customer_address %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-map-marker-alt me-2"></i>Alamat Pengiriman
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6>{{ order.customer_name }}</h6>
+                <p class="mb-0">{{ order.customer_address }}</p>
+                {% if order.customer_phone %}
+                <p class="mb-0"><i class="fas fa-phone me-2"></i>{{ order.customer_phone }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Items to Pack -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-list-check me-2"></i>Items yang Sudah Dipick
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Produk</th>
+                                <th>Qty Pick</th>
+                                <th>Harga</th>
+                                <th>Subtotal</th>
+                                <th>Waktu Pick</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr class="table-success">
+                                <td><code>{{ item.sku }}</code></td>
+                                <td>{{ item.product_name }}</td>
+                                <td>
+                                    <span class="badge bg-success">{{ item.picked_quantity }}</span>
+                                </td>
+                                <td>Rp {{ "{:,.0f}".format(item.price) }}</td>
+                                <td>Rp {{ "{:,.0f}".format(item.price * item.picked_quantity) }}</td>
+                                <td>{{ item.picked_at.strftime('%H:%M:%S') if item.picked_at else '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-dark">
+                                <th colspan="4">Total:</th>
+                                <th>Rp {{ "{:,.0f}".format(order.total_amount) }}</th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Packing Checklist -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clipboard-check me-2"></i>Packing Checklist
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="check1">
+                    <label class="form-check-label" for="check1">
+                        Verifikasi semua item sudah lengkap
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Complete Packing Button -->
+<div class="row">
+    <div class="col-12">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <h5>Selesaikan Packing</h5>
+                <p class="text-muted">Pastikan semua checklist sudah dicentang sebelum menyelesaikan packing</p>
+                
+                <form method="POST" action="{{ url_for('complete_packing', order_id=order.id) }}" id="completePackingForm">
+                    <div class="mb-3">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="finalConfirm" required>
+                            <label class="form-check-label" for="finalConfirm">
+                                <strong>Saya konfirmasi bahwa packing sudah selesai dan siap untuk pengiriman</strong>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-center gap-3">
+                        <button type="submit" class="btn btn-success btn-lg" id="completeBtn" disabled>
+                            <i class="fas fa-check me-2"></i>Selesai Packing
+                        </button>
+                        <a href="{{ url_for('fulfillment_dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Kembali ke Dashboard
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-check-circle me-2"></i>Packing Selesai!
+                </h5>
+            </div>
+            <div class="modal-body text-center">
+                <i class="fas fa-box-open text-success fa-4x mb-3"></i>
+                <h4>Packing berhasil diselesaikan!</h4>
+                <p>Pesanan {{ order.order_number }} siap untuk pengiriman.</p>
+                <p>Selanjutnya scan nomor resi untuk menandai siap diambil kurir.</p>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <div class="d-grid gap-2 w-100">
+                    <a href="{{ url_for('scan_center') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-qrcode me-2"></i>Lanjut Scan Lagi
+                    </a>
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('scan_ready_pickup') }}" class="btn btn-success flex-fill">
+                            <i class="fas fa-truck me-2"></i>Scan Resi Siap Ambil
+                        </a>
+                        <a href="{{ url_for('fulfillment_dashboard') }}" class="btn btn-outline-secondary flex-fill">
+                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const finalConfirm = document.getElementById('finalConfirm');
+    const completeBtn = document.getElementById('completeBtn');
+    const form = document.getElementById('completePackingForm');
+    
+    // Enable/disable complete button based on final confirmation
+    finalConfirm.addEventListener('change', function() {
+        completeBtn.disabled = !this.checked;
+    });
+    
+    // Handle form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Check if main checkbox is checked
+        const mainCheckbox = document.getElementById('check1');
+        
+        if (!mainCheckbox.checked) {
+            alert('Silakan centang checklist verifikasi terlebih dahulu!');
+            return;
+        }
+        
+        // Disable button and show loading
+        completeBtn.disabled = true;
+        completeBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+        
+        // Submit form
+        fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                // Show success modal
+                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                successModal.show();
+            } else {
+                alert('Terjadi kesalahan. Silakan coba lagi.');
+                completeBtn.disabled = false;
+                completeBtn.innerHTML = '<i class="fas fa-check me-2"></i>Selesai Packing';
+            }
+        })
+        .catch(error => {
+            alert('Network error. Silakan coba lagi.');
+            completeBtn.disabled = false;
+            completeBtn.innerHTML = '<i class="fas fa-check me-2"></i>Selesai Packing';
+        });
+    });
+    
+    // Enable button when checkbox is checked
+    document.getElementById('check1').addEventListener('change', function() {
+        const finalConfirm = document.getElementById('finalConfirm');
+        if (this.checked) {
+            finalConfirm.disabled = false;
+        } else {
+            finalConfirm.disabled = true;
+            finalConfirm.checked = false;
+        }
+    });
+});
+</script>
+{% endblock %}

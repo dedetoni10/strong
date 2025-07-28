@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Import Pesanan{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-upload me-2"></i>Import Pesanan Excel</h2>
+                <a href="{{ url_for('orders') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Kembali ke Pesanan
+                </a>
+            </div>
+
+            <!-- Upload Form -->
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-file-excel me-2"></i>Upload File Excel Shopee</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                        <div class="mb-3">
+                            <label for="order_files" class="form-label">Pilih File Excel (.xlsx atau .xls)</label>
+                            <input type="file" 
+                                   class="form-control" 
+                                   name="order_files" 
+                                   id="order_files"
+                                   accept=".xlsx,.xls" 
+                                   multiple 
+                                   required>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Pilih file Excel export dari Shopee. Anda bisa memilih beberapa file sekaligus.
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="alert alert-info">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                <strong>Petunjuk:</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>File harus berformat .xlsx atau .xls</li>
+                                    <li>File harus berisi data export dari Shopee</li>
+                                    <li>Sistem akan otomatis memproses semua pesanan dalam file</li>
+                                    <li>Pesanan duplikat akan diabaikan</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg" id="importBtn">
+                                <i class="fas fa-upload me-2"></i>Mulai Import
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Progress indicator (hidden by default) -->
+            <div class="card mt-4" id="progressCard" style="display: none;">
+                <div class="card-body">
+                    <h5><i class="fas fa-spinner fa-spin me-2"></i>Memproses Import...</h5>
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" 
+                             style="width: 0%">
+                        </div>
+                    </div>
+                    <small class="text-muted mt-2 d-block">Harap tunggu, sistem sedang memproses file Excel...</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('uploadForm').addEventListener('submit', function() {
+    // Show progress card
+    document.getElementById('progressCard').style.display = 'block';
+    
+    // Disable submit button
+    const btn = document.getElementById('importBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Memproses...';
+    
+    // Animate progress bar
+    const progressBar = document.querySelector('.progress-bar');
+    let progress = 0;
+    const interval = setInterval(function() {
+        progress += 10;
+        progressBar.style.width = progress + '%';
+        
+        if (progress >= 90) {
+            clearInterval(interval);
+        }
+    }, 300);
+});
+
+// File input change handler
+document.getElementById('order_files').addEventListener('change', function() {
+    const files = this.files;
+    const btn = document.getElementById('importBtn');
+    
+    if (files.length > 0) {
+        btn.disabled = false;
+        
+        // Show selected files
+        let fileNames = [];
+        for (let i = 0; i < files.length; i++) {
+            fileNames.push(files[i].name);
+        }
+        
+        // Create or update file list
+        let fileList = document.getElementById('selectedFiles');
+        if (!fileList) {
+            fileList = document.createElement('div');
+            fileList.id = 'selectedFiles';
+            fileList.className = 'mt-2 alert alert-success';
+            this.parentNode.appendChild(fileList);
+        }
+        
+        fileList.innerHTML = '<i class="fas fa-check me-2"></i><strong>File dipilih:</strong> ' + fileNames.join(', ');
+    } else {
+        btn.disabled = true;
+        const fileList = document.getElementById('selectedFiles');
+        if (fileList) {
+            fileList.remove();
+        }
+    }
+});
+</script>
+{% endblock %}

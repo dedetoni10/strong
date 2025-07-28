@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Daftar Akun - Strong Order Management{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <img src="{{ url_for('static', filename='images/strong_logo.png') }}" alt="STRONG" height="120" class="mb-3">
+            <h2>Daftar Akun Baru</h2>
+            <p class="text-muted">Buat akun admin untuk mengakses sistem</p>
+        </div>
+        
+        <div class="login-body">
+            <form method="POST" action="{{ url_for('signup') }}">
+                <div class="form-group">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" class="form-control" id="username" name="username" required 
+                           placeholder="Masukkan username" minlength="3" maxlength="50">
+                    <div class="form-text">Username minimal 3 karakter, maksimal 50 karakter</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="name" class="form-label">Nama Lengkap</label>
+                    <input type="text" class="form-control" id="name" name="name" required 
+                           placeholder="Masukkan nama lengkap" maxlength="100">
+                </div>
+                
+                <div class="form-group">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" required 
+                           placeholder="Masukkan email" maxlength="100">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control" id="password" name="password" required 
+                           placeholder="Masukkan password" minlength="6">
+                    <div class="form-text">Password minimal 6 karakter</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirm_password" class="form-label">Konfirmasi Password</label>
+                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required 
+                           placeholder="Konfirmasi password" minlength="6">
+                </div>
+                
+                <div class="form-group">
+                    <label for="role" class="form-label">Role</label>
+                    <select class="form-select" id="role" name="role" required>
+                        <option value="">Pilih Role</option>
+                        <option value="admin">Admin (Akses Penuh)</option>
+                        <option value="picker">Picker (Hanya Picking)</option>
+                        <option value="packer">Packer (Hanya Packing)</option>
+                        <option value="shipper">Shipper (Hanya Pengiriman)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
+                        <label class="form-check-label" for="terms">
+                            Saya setuju dengan ketentuan penggunaan sistem
+                        </label>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-user-plus me-2"></i>Daftar Akun
+                </button>
+            </form>
+        </div>
+        
+        <div class="login-footer">
+            <p>Sudah punya akun? <a href="{{ url_for('login') }}">Login di sini</a></p>
+        </div>
+    </div>
+</div>
+
+<style>
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px;
+}
+
+.login-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 450px;
+    padding: 40px;
+    backdrop-filter: blur(10px);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.login-header h2 {
+    color: #333;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #555;
+    margin-bottom: 8px;
+}
+
+.form-control, .form-select {
+    border: 2px solid #e1e5e9;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 10px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+.login-footer {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e1e5e9;
+}
+
+.login-footer a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.login-footer a:hover {
+    text-decoration: underline;
+}
+
+.form-text {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+.form-check-label {
+    font-size: 14px;
+    color: #555;
+}
+</style>
+{% endblock %}

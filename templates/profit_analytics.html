@@ -1,0 +1,179 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Keuangan - Strong Order Management{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-0">Keuangan</h1>
+        <p class="text-muted">Dashboard analisis keuangan dan profit management</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                            <i class="fas fa-money-bill-wave text-primary"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>Rp {{ "{:,.0f}".format(total_revenue or 0) }}</h3>
+                        <p class="text-muted mb-0">Total Revenue</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                            <i class="fas fa-chart-line text-success"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>Rp {{ "{:,.0f}".format(total_profit or 0) }}</h3>
+                        <p class="text-muted mb-0">Total Profit</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                            <i class="fas fa-coins text-warning"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>Rp {{ "{:,.0f}".format(total_cost or 0) }}</h3>
+                        <p class="text-muted mb-0">Total Cost</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-info bg-opacity-10 p-3">
+                            <i class="fas fa-percentage text-info"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ "{:.1f}".format(overall_profit_margin or 0) }}%</h3>
+                        <p class="text-muted mb-0">Profit Margin</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">
+            <i class="fas fa-lightning-bolt me-2"></i>Quick Actions
+        </h5>
+        <div class="row">
+            <div class="col-md-3">
+                <a href="{{ url_for('export_analytics') }}" class="btn btn-primary w-100 mb-2">
+                    <i class="fas fa-download me-2"></i>Export Report
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{{ url_for('orders') }}" class="btn btn-success w-100 mb-2">
+                    <i class="fas fa-list me-2"></i>View Orders
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{{ url_for('warehouse') }}" class="btn btn-info w-100 mb-2">
+                    <i class="fas fa-box me-2"></i>Product Costs
+                </a>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-warning w-100 mb-2" onclick="refreshAnalytics()">
+                    <i class="fas fa-refresh me-2"></i>Refresh Data
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Profit by Order -->
+<div class="card">
+    <div class="card-header bg-purple text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-chart-bar me-2"></i>Profit by Order
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Order Number</th>
+                        <th>Customer</th>
+                        <th>Revenue</th>
+                        <th>Cost</th>
+                        <th>Profit</th>
+                        <th>Margin</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in profit_by_order %}
+                    <tr>
+                        <td>{{ item.order.order_number }}</td>
+                        <td>{{ item.order.customer_name }}</td>
+                        <td>Rp {{ "{:,.0f}".format(item.profit_data.total_revenue) }}</td>
+                        <td>Rp {{ "{:,.0f}".format(item.profit_data.total_cost) }}</td>
+                        <td>
+                            {% if item.profit_data.total_profit > 0 %}
+                            <span class="text-success">Rp {{ "{:,.0f}".format(item.profit_data.total_profit) }}</span>
+                            {% else %}
+                            <span class="text-danger">Rp {{ "{:,.0f}".format(item.profit_data.total_profit) }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.profit_data.profit_margin > 0 %}
+                            <span class="text-success">{{ "{:.1f}".format(item.profit_data.profit_margin) }}%</span>
+                            {% else %}
+                            <span class="text-danger">{{ "{:.1f}".format(item.profit_data.profit_margin) }}%</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+</style>
+
+<script>
+function refreshAnalytics() {
+    location.reload();
+}
+</script>
+{% endblock %}

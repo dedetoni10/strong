@@ -1,0 +1,859 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Produk Saya - Strong Order Management{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-0">Produk Saya</h1>
+        <p class="text-muted">Integrated dashboard sistem order management</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                            <i class="fas fa-shopping-cart text-primary"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ products.total }}</h3>
+                        <p class="text-muted mb-0">Total Products</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                            <i class="fas fa-box text-success"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ products.total or 0 }}</h3>
+                        <p class="text-muted mb-0">In Stock</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                            <i class="fas fa-clock text-warning"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>0</h3>
+                        <p class="text-muted mb-0">Low Stock</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-info bg-opacity-10 p-3">
+                            <i class="fas fa-chart-line text-info"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>0</h3>
+                        <p class="text-muted mb-0">Categories</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">
+            <i class="fas fa-lightning-bolt me-2"></i>Quick Actions
+        </h5>
+        <div class="row">
+            <div class="col-md-3">
+                <a href="{{ url_for('add_inventory') }}" class="btn btn-primary w-100 mb-2">
+                    <i class="fas fa-plus me-2"></i>Add Product
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{{ url_for('mass_upload_inventory') }}" class="btn btn-success w-100 mb-2">
+                    <i class="fas fa-upload me-2"></i>Mass Upload
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{{ url_for('download_csv_template') }}" class="btn btn-info w-100 mb-2">
+                    <i class="fas fa-download me-2"></i>Download Template
+                </a>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-warning w-100 mb-2" onclick="printSelectedQR()">
+                    <i class="fas fa-qrcode me-2"></i>Print QR
+                </button>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-danger w-100 mb-2" id="deleteSelectedBtn" onclick="deleteSelectedProducts()" style="display: none;">
+                    <i class="fas fa-trash me-2"></i>Delete Selected
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Products Table -->
+<div class="card">
+    <div class="card-header bg-purple text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-box me-2"></i>Product Inventory
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th><input type="checkbox" id="selectAll"></th>
+                        <th>Image</th>
+                        <th>Product Name</th>
+                        <th>SKU</th>
+                        <th>Location</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products.items %}
+                    <tr>
+                        <td><input type="checkbox" class="product-checkbox" data-id="{{ product.id }}" data-sku="{{ product.sku }}"></td>
+                        <td>
+                            {% if product.image_url %}
+                            <img src="{{ product.image_url }}" alt="{{ product.name }}" class="product-image">
+                            {% else %}
+                            <div class="no-image">No Image</div>
+                            {% endif %}
+                        </td>
+                        <td>{{ product.name }}</td>
+                        <td class="hover-edit-cell">
+                            <span class="sku-display">{{ product.sku }}</span>
+                            <i class="fas fa-edit ms-2 text-primary edit-icon" style="cursor: pointer;" 
+                               onclick="showSkuModal({{ product.id }}, '{{ product.name }}', '{{ product.sku }}')"></i>
+                        </td>
+                        <td class="hover-edit-cell">
+                            {% if product.zone or product.rack or product.bin %}
+                                {% set location_parts = [] %}
+                                {% if product.zone %}{% set _ = location_parts.append(product.zone) %}{% endif %}
+                                {% if product.rack %}{% set _ = location_parts.append(product.rack) %}{% endif %}
+                                {% if product.bin %}{% set _ = location_parts.append(product.bin) %}{% endif %}
+                                <span class="badge bg-secondary location-display">{{ location_parts|join('-') }}</span>
+                            {% else %}
+                                <span class="text-muted location-display">-</span>
+                            {% endif %}
+                            <i class="fas fa-edit ms-2 text-primary edit-icon" style="cursor: pointer;" 
+                               onclick="showLocationModal({{ product.id }}, '{{ product.name }}', '{{ product.zone or '' }}', '{{ product.rack or '' }}', '{{ product.bin or '' }}')"></i>
+                        </td>
+                        <td class="hover-edit-cell">
+                            <span class="quantity-display">{{ product.quantity }}</span>
+                            <i class="fas fa-edit ms-2 text-primary edit-icon" style="cursor: pointer;" 
+                               onclick="showQuantityModal({{ product.id }}, '{{ product.name }}', {{ product.quantity }})"></i>
+                        </td>
+                        <td class="hover-edit-cell">
+                            <span class="price-display">Rp{{ product.price|int }}</span>
+                            <i class="fas fa-edit ms-2 text-primary edit-icon" style="cursor: pointer;" 
+                               onclick="showPriceModal({{ product.id }}, '{{ product.name }}', {{ product.price|int }})"></i>
+                        </td>
+
+                        <td>
+                            <a href="{{ url_for('edit_inventory', product_id=product.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{{ url_for('generate_qr_code', sku=product.sku) }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                <i class="fas fa-qrcode"></i>
+                            </a>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct({{ product.id }}, '{{ product.name }}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if products.pages > 1 %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if products.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('warehouse', page=products.prev_num) }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in products.iter_pages() %}
+                {% if page_num %}
+                <li class="page-item {{ 'active' if page_num == products.page else '' }}">
+                    <a class="page-link" href="{{ url_for('warehouse', page=page_num) }}">{{ page_num }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
+                
+                {% if products.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('warehouse', page=products.next_num) }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Quantity Update Modal -->
+<div class="modal fade" id="quantityModal" tabindex="-1" aria-labelledby="quantityModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quantityModalLabel">Atur Stok</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="productNameDisplay" class="mb-3 text-muted"></p>
+                <div class="mb-3">
+                    <label for="newQuantity" class="form-label">Stok</label>
+                    <input type="number" class="form-control" id="newQuantity" min="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="updateQuantityFromModal()">Update</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Price Update Modal -->
+<div class="modal fade" id="priceModal" tabindex="-1" aria-labelledby="priceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="priceModalLabel">Atur Harga</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="productNameDisplayPrice" class="mb-3 text-muted"></p>
+                <div class="mb-3">
+                    <label for="newPrice" class="form-label">Harga</label>
+                    <div class="input-group">
+                        <span class="input-group-text">Rp</span>
+                        <input type="number" class="form-control" id="newPrice" min="0">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="updatePriceFromModal()">Update Harga</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+
+.product-image {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.no-image {
+    width: 50px;
+    height: 50px;
+    background-color: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    border-radius: 4px;
+}
+
+.quantity-input, .price-input {
+    width: 80px;
+}
+
+.badge.bg-secondary {
+    font-family: monospace;
+    font-size: 0.8em;
+    color: #495057;
+    background-color: #e9ecef !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    text-decoration: none !important;
+    border-bottom: none !important;
+}
+
+/* Hover Edit Icons */
+.hover-edit-cell {
+    position: relative;
+}
+
+.edit-icon {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.hover-edit-cell:hover .edit-icon {
+    opacity: 1;
+    visibility: visible;
+}
+
+.card-title {
+    text-decoration: none !important;
+    border-bottom: none !important;
+}
+
+.card-header h5 {
+    text-decoration: none !important;
+    border-bottom: none !important;
+}
+</style>
+
+<script>
+let currentProductId = null;
+
+function showQuantityModal(productId, productName, currentQuantity) {
+    currentProductId = productId;
+    document.getElementById('productNameDisplay').textContent = productName;
+    document.getElementById('newQuantity').value = currentQuantity;
+    
+    // Show modal using Bootstrap
+    var quantityModal = new bootstrap.Modal(document.getElementById('quantityModal'));
+    quantityModal.show();
+}
+
+function showPriceModal(productId, productName, currentPrice) {
+    currentProductId = productId;
+    document.getElementById('productNameDisplayPrice').textContent = productName;
+    document.getElementById('newPrice').value = currentPrice;
+    
+    // Show modal using Bootstrap
+    var priceModal = new bootstrap.Modal(document.getElementById('priceModal'));
+    priceModal.show();
+}
+
+function updateQuantityFromModal() {
+    const newQuantity = document.getElementById('newQuantity').value;
+    
+    if (!currentProductId || !newQuantity || newQuantity < 0) {
+        alert('Please enter a valid quantity');
+        return;
+    }
+    
+    fetch(`/warehouse/${currentProductId}/adjust_quantity`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            quantity: parseInt(newQuantity)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal
+            var quantityModal = bootstrap.Modal.getInstance(document.getElementById('quantityModal'));
+            quantityModal.hide();
+            
+            // Update quantity display in the table without reload
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const editIcon = row.querySelector(`[onclick*="showQuantityModal(${currentProductId}"]`);
+                if (editIcon) {
+                    const quantityDisplay = row.querySelector('.quantity-display');
+                    if (quantityDisplay) {
+                        quantityDisplay.textContent = newQuantity;
+                    }
+                }
+            });
+            
+            // Show success message
+            alert('Quantity berhasil diupdate');
+        } else {
+            alert('Error updating quantity: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat mengupdate quantity');
+    });
+}
+
+function updatePriceFromModal() {
+    const newPrice = document.getElementById('newPrice').value;
+    
+    if (!currentProductId || !newPrice || newPrice < 0) {
+        alert('Please enter a valid price');
+        return;
+    }
+    
+    fetch(`/warehouse/${currentProductId}/update_price`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            price: parseInt(newPrice)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal
+            var priceModal = bootstrap.Modal.getInstance(document.getElementById('priceModal'));
+            priceModal.hide();
+            
+            // Update price display in the table without reload
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const editIcon = row.querySelector(`[onclick*="showPriceModal(${currentProductId}"]`);
+                if (editIcon) {
+                    const priceDisplay = row.querySelector('.price-display');
+                    if (priceDisplay) {
+                        priceDisplay.textContent = 'Rp' + newPrice;
+                    }
+                }
+            });
+            
+            // Show success message
+            alert('Harga berhasil diupdate');
+        } else {
+            alert('Error updating price: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat mengupdate harga');
+    });
+}
+
+function updateQuantity(productId, newQuantity) {
+    fetch(`/warehouse/${productId}/adjust_quantity`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            quantity: newQuantity
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            alert('Error updating quantity: ' + data.message);
+            location.reload();
+        }
+    });
+}
+
+function updatePrice(productId, newPrice) {
+    fetch(`/warehouse/${productId}/adjust_price`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            price: newPrice
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            alert('Error updating price: ' + data.message);
+            location.reload();
+        }
+    });
+}
+
+function deleteProduct(productId, productName) {
+    if (confirm(`Yakin ingin menghapus produk "${productName}"?`)) {
+        fetch(`/warehouse/${productId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Produk berhasil dihapus');
+                location.reload();
+            } else {
+                alert('Error menghapus produk: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat menghapus produk');
+        });
+    }
+}
+
+function deleteSelectedProducts() {
+    const selectedProducts = [];
+    document.querySelectorAll('.product-checkbox:checked').forEach(checkbox => {
+        selectedProducts.push(checkbox.getAttribute('data-id'));
+    });
+    
+    if (selectedProducts.length === 0) {
+        alert('Silakan pilih produk yang ingin dihapus');
+        return;
+    }
+    
+    if (confirm(`Yakin ingin menghapus ${selectedProducts.length} produk terpilih?`)) {
+        fetch('/warehouse/delete_selected', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                product_ids: selectedProducts
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Berhasil menghapus ${data.deleted_count} produk`);
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat menghapus produk');
+        });
+    }
+}
+
+// Global function for Print QR
+window.printSelectedQR = function() {
+    const selectedProducts = [];
+    document.querySelectorAll('.product-checkbox:checked').forEach(checkbox => {
+        selectedProducts.push(checkbox.getAttribute('data-sku'));
+    });
+    
+    if (selectedProducts.length === 0) {
+        alert('Silakan pilih minimal satu produk');
+        return;
+    }
+    
+    selectedProducts.forEach((sku, index) => {
+        setTimeout(() => {
+            window.open(`/qr-code/${sku}`, '_blank');
+        }, index * 300);
+    });
+}
+
+// Fallback function assignment
+function printSelectedQR() {
+    window.printSelectedQR();
+}
+
+// Select all checkbox functionality with proper initialization
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const productCheckboxes = document.querySelectorAll('.product-checkbox');
+    
+    console.log('Found selectAll checkbox:', selectAllCheckbox);
+    console.log('Found product checkboxes:', productCheckboxes.length);
+    
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    
+    function toggleDeleteButton() {
+        const selectedCount = document.querySelectorAll('.product-checkbox:checked').length;
+        if (selectedCount > 0) {
+            deleteSelectedBtn.style.display = 'block';
+        } else {
+            deleteSelectedBtn.style.display = 'none';
+        }
+    }
+    
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            console.log('Select all clicked, checked:', this.checked);
+            productCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            toggleDeleteButton();
+        });
+    }
+    
+    // Add individual checkbox event listeners
+    productCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            console.log('Product checkbox changed:', this.getAttribute('data-sku'), 'checked:', this.checked);
+            
+            // Update select all checkbox state
+            const allChecked = Array.from(productCheckboxes).every(cb => cb.checked);
+            const noneChecked = Array.from(productCheckboxes).every(cb => !cb.checked);
+            
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = allChecked;
+                selectAllCheckbox.indeterminate = !allChecked && !noneChecked;
+            }
+            
+            // Toggle delete button visibility
+            toggleDeleteButton();
+        });
+    });
+});
+
+// Location modal functions
+function showLocationModal(productId, productName, zone, rack, bin) {
+    document.getElementById('locationProductId').value = productId;
+    document.getElementById('locationProductName').textContent = productName;
+    document.getElementById('locationZone').value = zone;
+    document.getElementById('locationRack').value = rack;
+    document.getElementById('locationBin').value = bin;
+    
+    const modal = new bootstrap.Modal(document.getElementById('locationModal'));
+    modal.show();
+}
+
+function updateLocation() {
+    const productId = document.getElementById('locationProductId').value;
+    const zone = document.getElementById('locationZone').value.trim();
+    const rack = document.getElementById('locationRack').value.trim();
+    const bin = document.getElementById('locationBin').value.trim();
+    
+    fetch(`/warehouse/${productId}/update_location`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            zone: zone,
+            rack: rack,
+            bin: bin
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('locationModal'));
+            modal.hide();
+            
+            // Update display without reload
+            const row = document.querySelector(`tr:has(.product-checkbox[data-id="${productId}"])`);
+            if (row) {
+                const locationCell = row.querySelector('.location-display');
+                if (zone || rack || bin) {
+                    const locationParts = [zone, rack, bin].filter(part => part).join('-');
+                    locationCell.innerHTML = `<span class="badge bg-secondary">${locationParts}</span>`;
+                } else {
+                    locationCell.innerHTML = '<span class="text-muted">-</span>';
+                }
+            }
+            
+            // Show success message
+            alert('Lokasi berhasil diupdate');
+        } else {
+            alert('Error updating location: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat mengupdate lokasi');
+    });
+}
+
+// SKU modal functions
+function showSkuModal(productId, productName, currentSku) {
+    document.getElementById('skuProductId').value = productId;
+    document.getElementById('skuProductName').textContent = productName;
+    document.getElementById('newSku').value = currentSku;
+    
+    const modal = new bootstrap.Modal(document.getElementById('skuModal'));
+    modal.show();
+}
+
+function updateSkuFromModal() {
+    const productId = document.getElementById('skuProductId').value;
+    const newSku = document.getElementById('newSku').value.trim();
+    
+    if (!newSku) {
+        alert('SKU tidak boleh kosong');
+        return;
+    }
+    
+    fetch(`/warehouse/${productId}/update_sku`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            sku: newSku
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('skuModal'));
+            modal.hide();
+            
+            // Update display without reload
+            const row = document.querySelector(`tr:has(.product-checkbox[data-id="${productId}"])`);
+            if (row) {
+                const skuCell = row.querySelector('.sku-display');
+                if (skuCell) {
+                    skuCell.textContent = newSku;
+                }
+            }
+            
+            // NO SUCCESS ALERT - removed as requested
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat mengupdate SKU');
+    });
+}
+</script>
+
+<!-- Quantity Modal -->
+<div class="modal fade" id="quantityModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-purple text-white">
+                <h5 class="modal-title">Atur Stok</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6 id="quantityProductName" class="mb-3"></h6>
+                <div class="mb-3">
+                    <label for="newQuantity" class="form-label">Quantity Baru</label>
+                    <input type="number" class="form-control" id="newQuantity" min="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-purple" onclick="updateQuantityFromModal()">Update</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Price Modal -->
+<div class="modal fade" id="priceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-purple text-white">
+                <h5 class="modal-title">Atur Harga</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6 id="priceProductName" class="mb-3"></h6>
+                <div class="mb-3">
+                    <label for="newPrice" class="form-label">Harga Baru (Rp)</label>
+                    <input type="number" class="form-control" id="newPrice" min="0">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-purple" onclick="updatePriceFromModal()">Update</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SKU Modal -->
+<div class="modal fade" id="skuModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-purple text-white">
+                <h5 class="modal-title">Edit SKU</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6 id="skuProductName" class="mb-3"></h6>
+                <div class="mb-3">
+                    <label for="newSku" class="form-label">SKU Baru</label>
+                    <input type="text" class="form-control" id="newSku" placeholder="Masukkan SKU baru">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-purple" onclick="updateSkuFromModal()">Update</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Location Modal -->
+<div class="modal fade" id="locationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-purple text-white">
+                <h5 class="modal-title">Atur Lokasi</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="locationProductId">
+                <h6 id="locationProductName" class="mb-3"></h6>
+                <div class="row">
+                    <div class="col-md-4">
+                        <label for="locationZone" class="form-label">Zone</label>
+                        <input type="text" class="form-control" id="locationZone" placeholder="A, B, C...">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="locationRack" class="form-label">Rack</label>
+                        <input type="text" class="form-control" id="locationRack" placeholder="1, 2, 3...">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="locationBin" class="form-label">Bin</label>
+                        <input type="text" class="form-control" id="locationBin" placeholder="01, 02, 03...">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-purple" onclick="updateLocation()">Update</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
