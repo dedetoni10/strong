@@ -1,0 +1,927 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Parsing Data - STRONG Order Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="page-header">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h1 class="page-title">
+                            <i class="fas fa-code-branch me-2 text-warning"></i>
+                            Parsing Data Tools
+                        </h1>
+                        <p class="text-muted mb-0">Tools untuk memproses dan menganalisis data</p>
+                    </div>
+                    <div class="page-actions">
+                        <span class="badge bg-success">Ready to Use</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SKU Parser Tool -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card modern-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-code me-2"></i>
+                        SKU Parser Tool
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="rawData" class="form-label">Raw Data Input</label>
+                                <textarea id="rawData" class="form-control" rows="8" placeholder="Paste data pesanan di sini...
+Contoh:
+[1] Nama Produk:GEARBOX MESIN CUCI SHARP MODEL KLIK; Nama Variasi:; Harga: Rp 42,000; Jumlah: 1; Nomor Referensi SKU: MJP | SRE-116 | MCC | GEARBOX SHARP KLIK; SKU Induk: MJP | SRE-116 | MCC | GEARBOX SHARP KLIK;"></textarea>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary" onclick="parseData()">
+                                    <i class="fas fa-magic me-2"></i>
+                                    Parse Data
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="clearData()">
+                                    <i class="fas fa-eraser me-2"></i>
+                                    Clear
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="parsedResult" class="form-label">Parsed Result</label>
+                                <div id="parsedResult" class="parsed-result">
+                                    <div class="text-muted text-center p-4">
+                                        <i class="fas fa-arrow-left me-2"></i>
+                                        Hasil parsing akan muncul di sini
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Example Data -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card modern-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        Format & Examples
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6 class="text-success">Input Format</h6>
+                            <div class="example-box">
+                                <pre class="example-text">[1] Nama Produk:GEARBOX MESIN CUCI SHARP MODEL KLIK; Nama Variasi:; Harga: Rp 42,000; Jumlah: 1; Nomor Referensi SKU: MJP | SRE-116 | MCC | GEARBOX SHARP KLIK; SKU Induk: MJP | SRE-116 | MCC | GEARBOX SHARP KLIK;</pre>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-info">Parsing Rules</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success me-2"></i>Extract SKU dari Nomor Referensi SKU</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Jika kosong, ambil dari SKU Induk</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Prioritas: MJE-046, STJ013, dll</li>
+                                <li><i class="fas fa-check text-success me-2"></i>Clean dan format harga</li>
+                                <li><i class="fas fa-shield-alt text-warning me-2"></i>Automatic duplicate detection</li>
+                                <li><i class="fas fa-filter text-info me-2"></i>Skip duplicate SKU & names</li>
+                                <li><i class="fas fa-file-export text-success me-2"></i>Export hanya data unique</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-warning">Output Format</h6>
+                            <div class="example-box">
+                                <pre class="example-text">Nama Produk: SRE-116
+SKU Produk: SRE-116
+Harga Produk: Rp 42,000</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Features -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card modern-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tools me-2"></i>
+                        Advanced Features
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Feature Cards -->
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="fas fa-file-import"></i>
+                                </div>
+                                <h6 class="feature-title">Data Import</h6>
+                                <p class="feature-description">Import dan parsing data dari berbagai format file</p>
+                                <button class="btn btn-outline-primary btn-sm" onclick="showFeatureInfo('import')">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Detail
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="fas fa-filter"></i>
+                                </div>
+                                <h6 class="feature-title">Data Filtering</h6>
+                                <p class="feature-description">Filter dan clean data sesuai kriteria tertentu</p>
+                                <button class="btn btn-outline-primary btn-sm" onclick="showFeatureInfo('filter')">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Detail
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </div>
+                                <h6 class="feature-title">Data Transform</h6>
+                                <p class="feature-description">Transform dan convert data ke format yang diinginkan</p>
+                                <button class="btn btn-outline-primary btn-sm" onclick="showFeatureInfo('transform')">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Detail
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="fas fa-chart-bar"></i>
+                                </div>
+                                <h6 class="feature-title">Data Analysis</h6>
+                                <p class="feature-description">Analisis dan ekstrak insights dari data</p>
+                                <button class="btn btn-outline-primary btn-sm" onclick="showFeatureInfo('analysis')">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Detail
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="fas fa-file-export"></i>
+                                </div>
+                                <h6 class="feature-title">Data Export</h6>
+                                <p class="feature-description">Export hasil parsing ke format yang diperlukan</p>
+                                <button class="btn btn-outline-primary btn-sm" onclick="showFeatureInfo('export')">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Detail
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="fas fa-cogs"></i>
+                                </div>
+                                <h6 class="feature-title">Custom Parser</h6>
+                                <p class="feature-description">Buat parser khusus sesuai kebutuhan spesifik</p>
+                                <button class="btn btn-outline-primary btn-sm" onclick="showFeatureInfo('custom')">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Detail
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Processing Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card modern-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-layer-group me-2"></i>
+                        Bulk Processing
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="bulkData" class="form-label">Bulk Data Input</label>
+                                <textarea id="bulkData" class="form-control" rows="6" placeholder="Paste multiple product data here, each on separate line..."></textarea>
+                            </div>
+                            <div class="d-flex gap-2 mb-3">
+                                <button class="btn btn-info" onclick="loadOrdersData()">
+                                    <i class="fas fa-database me-2"></i>
+                                    Load Orders Data
+                                </button>
+                                <button class="btn btn-success" onclick="processBulkData()">
+                                    <i class="fas fa-tasks me-2"></i>
+                                    Process Bulk Data
+                                </button>
+                                <button class="btn btn-outline-primary" onclick="exportResults()">
+                                    <i class="fas fa-download me-2"></i>
+                                    Export CSV (Unique Only)
+                                </button>
+                                <button class="btn btn-outline-warning" onclick="clearBulkData()">
+                                    <i class="fas fa-eraser me-2"></i>
+                                    Clear All
+                                </button>
+                            </div>
+                            <div id="loadingStatus" class="alert alert-info" style="display: none;">
+                                <i class="fas fa-spinner fa-spin me-2"></i>
+                                Loading orders data...
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stats-card">
+                                <h6>Processing Stats</h6>
+                                <div class="stat-item">
+                                    <span class="stat-label">Total Items:</span>
+                                    <span class="stat-value" id="totalItems">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Processed:</span>
+                                    <span class="stat-value" id="processedItems">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Success Rate:</span>
+                                    <span class="stat-value" id="successRate">0%</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Duplicates:</span>
+                                    <span class="stat-value text-warning" id="duplicateCount">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Unique Items:</span>
+                                    <span class="stat-value text-success" id="uniqueCount">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div id="bulkResults" class="bulk-results">
+                                <!-- Results will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feature Info Modal -->
+<div class="modal fade" id="featureModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="featureModalTitle">Feature Information</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="featureModalBody">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.page-header {
+    background: linear-gradient(135deg, rgba(255, 107, 53, 0.1), rgba(247, 147, 30, 0.1));
+    padding: 2rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 107, 53, 0.2);
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 0.5rem;
+}
+
+.feature-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.feature-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(255, 107, 53, 0.15);
+    border-color: rgba(255, 107, 53, 0.3);
+}
+
+.feature-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #FF6B35, #F7931E);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.feature-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #fff;
+}
+
+.feature-description {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.modern-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+}
+
+.card-header {
+    background: rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.page-actions .badge {
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+}
+
+.parsed-result {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 1rem;
+    min-height: 200px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.example-box {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 0.75rem;
+}
+
+.example-text {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.product-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.product-item:hover {
+    border-color: rgba(255, 107, 53, 0.3);
+    background: rgba(255, 107, 53, 0.05);
+}
+
+.product-field {
+    margin-bottom: 0.5rem;
+}
+
+.field-label {
+    font-weight: 600;
+    color: #FF6B35;
+    margin-right: 0.5rem;
+}
+
+.field-value {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.stats-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-label {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+}
+
+.stat-value {
+    color: #FF6B35;
+    font-weight: 600;
+}
+
+.bulk-results {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 1rem;
+    min-height: 200px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.success-item {
+    border-left: 4px solid #28a745;
+}
+
+.error-item {
+    border-left: 4px solid #dc3545;
+}
+
+.warning-item {
+    border-left: 4px solid #ffc107;
+}
+</style>
+
+<script>
+let parsedResults = [];
+
+function parseData() {
+    const rawData = document.getElementById('rawData').value.trim();
+    const resultDiv = document.getElementById('parsedResult');
+    
+    if (!rawData) {
+        resultDiv.innerHTML = '<div class="text-danger text-center p-4"><i class="fas fa-exclamation-triangle me-2"></i>Please enter data to parse</div>';
+        return;
+    }
+    
+    try {
+        const parsed = parseSingleProduct(rawData);
+        if (parsed) {
+            displaySingleResult(parsed);
+        } else {
+            resultDiv.innerHTML = '<div class="text-danger text-center p-4"><i class="fas fa-times me-2"></i>Unable to parse data</div>';
+        }
+    } catch (error) {
+        resultDiv.innerHTML = `<div class="text-danger text-center p-4"><i class="fas fa-exclamation-triangle me-2"></i>Error: ${error.message}</div>`;
+    }
+}
+
+function parseSingleProduct(data) {
+    // Clean the data
+    const cleanData = data.replace(/"/g, '').trim();
+    
+    // Extract product information using regex
+    const productMatch = cleanData.match(/Nama Produk:([^;]+)/);
+    const priceMatch = cleanData.match(/Harga:\s*Rp\s*([\d,\.]+)/);
+    const nomorRefMatch = cleanData.match(/Nomor Referensi SKU:\s*([^;]+)/);
+    const skuIndukMatch = cleanData.match(/SKU Induk:\s*([^;]+)/);
+    
+    if (!productMatch || !priceMatch) {
+        return null;
+    }
+    
+    let productName = productMatch[1].trim();
+    
+    // Remove [BAYAR DITEMPAT] prefix if present
+    productName = productName.replace(/^\[BAYAR DITEMPAT\]\s*/, '');
+    
+    const price = priceMatch[1].trim();
+    
+    // Get SKU from either Nomor Referensi SKU or SKU Induk
+    let skuSource = '';
+    if (nomorRefMatch && nomorRefMatch[1].trim()) {
+        skuSource = nomorRefMatch[1].trim();
+    } else if (skuIndukMatch && skuIndukMatch[1].trim()) {
+        skuSource = skuIndukMatch[1].trim();
+    }
+    
+    // Extract the relevant SKU part
+    let extractedSKU = '';
+    if (skuSource) {
+        // Look for patterns like MJE-046, STJ013, SRE-116, etc.
+        const skuParts = skuSource.split('|').map(part => part.trim());
+        
+        for (const part of skuParts) {
+            // Check for patterns with letters followed by numbers (e.g., MJE-046, STJ013)
+            if (/^[A-Z]{2,3}[-\d]+$/.test(part)) {
+                extractedSKU = part;
+                break;
+            }
+            // Check for patterns starting with STJ, MJE, SRE etc.
+            if (/^(STJ|MJE|SRE|MJP)\d+/.test(part)) {
+                extractedSKU = part;
+                break;
+            }
+        }
+        
+        // If no specific pattern found, use the first meaningful part
+        if (!extractedSKU) {
+            for (const part of skuParts) {
+                if (part.length > 2 && part !== 'MCC' && part !== 'MXR') {
+                    extractedSKU = part;
+                    break;
+                }
+            }
+        }
+    }
+    
+    return {
+        namaProduk: extractedSKU || productName,
+        skuProduk: extractedSKU || 'N/A',
+        hargaProduk: `Rp ${price}`,
+        originalName: productName,
+        fullSKU: skuSource
+    };
+}
+
+function displaySingleResult(result) {
+    const resultDiv = document.getElementById('parsedResult');
+    
+    resultDiv.innerHTML = `
+        <div class="product-item success-item">
+            <div class="product-field">
+                <span class="field-label">Nama Produk:</span>
+                <span class="field-value">${result.namaProduk}</span>
+            </div>
+            <div class="product-field">
+                <span class="field-label">SKU Produk:</span>
+                <span class="field-value">${result.skuProduk}</span>
+            </div>
+            <div class="product-field">
+                <span class="field-label">Harga Produk:</span>
+                <span class="field-value">${result.hargaProduk}</span>
+            </div>
+            <hr style="border-color: rgba(255, 255, 255, 0.1);">
+            <div class="product-field">
+                <span class="field-label">Original Name:</span>
+                <span class="field-value" style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.6);">${result.originalName}</span>
+            </div>
+            <div class="product-field">
+                <span class="field-label">Full SKU:</span>
+                <span class="field-value" style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.6);">${result.fullSKU}</span>
+            </div>
+        </div>
+    `;
+}
+
+function clearData() {
+    document.getElementById('rawData').value = '';
+    document.getElementById('parsedResult').innerHTML = '<div class="text-muted text-center p-4"><i class="fas fa-arrow-left me-2"></i>Hasil parsing akan muncul di sini</div>';
+}
+
+function clearBulkData() {
+    document.getElementById('bulkData').value = '';
+    document.getElementById('bulkResults').innerHTML = '<div class="text-muted text-center p-4"><i class="fas fa-info-circle me-2"></i>Bulk processing results will appear here</div>';
+    
+    // Reset stats
+    document.getElementById('totalItems').textContent = '0';
+    document.getElementById('processedItems').textContent = '0';
+    document.getElementById('successRate').textContent = '0%';
+    document.getElementById('duplicateCount').textContent = '0';
+    document.getElementById('uniqueCount').textContent = '0';
+    
+    // Clear results
+    parsedResults = [];
+}
+
+function loadOrdersData() {
+    const loadingStatus = document.getElementById('loadingStatus');
+    const bulkDataTextarea = document.getElementById('bulkData');
+    
+    loadingStatus.style.display = 'block';
+    loadingStatus.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading orders data from database...';
+    
+    fetch('/api/get-all-orders-raw')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Extract raw product info from orders
+                const rawDataLines = data.orders_data.map(order => order.raw_product_info);
+                
+                // Fill the textarea with raw data
+                bulkDataTextarea.value = rawDataLines.join('\n');
+                
+                loadingStatus.innerHTML = `<i class="fas fa-check-circle text-success me-2"></i>Successfully loaded ${data.total_items} product items from ${data.orders_data.length} orders.`;
+                loadingStatus.className = 'alert alert-success';
+                
+                // Hide loading status after 3 seconds
+                setTimeout(() => {
+                    loadingStatus.style.display = 'none';
+                }, 3000);
+                
+            } else {
+                loadingStatus.innerHTML = `<i class="fas fa-exclamation-triangle text-danger me-2"></i>Error loading data: ${data.error}`;
+                loadingStatus.className = 'alert alert-danger';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading orders data:', error);
+            loadingStatus.innerHTML = `<i class="fas fa-exclamation-triangle text-danger me-2"></i>Error loading data: ${error.message}`;
+            loadingStatus.className = 'alert alert-danger';
+        });
+}
+
+function processBulkData() {
+    const bulkData = document.getElementById('bulkData').value.trim();
+    const resultsDiv = document.getElementById('bulkResults');
+    
+    if (!bulkData) {
+        resultsDiv.innerHTML = '<div class="text-danger text-center p-4"><i class="fas fa-exclamation-triangle me-2"></i>Please enter bulk data to process</div>';
+        return;
+    }
+    
+    const lines = bulkData.split('\n').filter(line => line.trim());
+    const results = [];
+    const seenSKUs = new Set();
+    const seenProductNames = new Set();
+    let processed = 0;
+    let successful = 0;
+    let duplicates = 0;
+    
+    lines.forEach((line, index) => {
+        processed++;
+        try {
+            const parsed = parseSingleProduct(line);
+            if (parsed) {
+                // Check for duplicates based on SKU and product name
+                const skuKey = parsed.skuProduk.toLowerCase();
+                const nameKey = parsed.namaProduk.toLowerCase();
+                
+                if (seenSKUs.has(skuKey) || seenProductNames.has(nameKey)) {
+                    results.push({ 
+                        success: false, 
+                        error: 'Duplicate product detected', 
+                        index: index + 1, 
+                        rawData: line,
+                        isDuplicate: true,
+                        duplicateType: seenSKUs.has(skuKey) ? 'SKU' : 'Product Name'
+                    });
+                    duplicates++;
+                } else {
+                    seenSKUs.add(skuKey);
+                    seenProductNames.add(nameKey);
+                    results.push({ success: true, data: parsed, index: index + 1 });
+                    successful++;
+                }
+            } else {
+                results.push({ success: false, error: 'Unable to parse', index: index + 1, rawData: line });
+            }
+        } catch (error) {
+            results.push({ success: false, error: error.message, index: index + 1, rawData: line });
+        }
+    });
+    
+    // Update stats
+    document.getElementById('totalItems').textContent = lines.length;
+    document.getElementById('processedItems').textContent = processed;
+    document.getElementById('successRate').textContent = `${Math.round((successful / lines.length) * 100)}%`;
+    document.getElementById('duplicateCount').textContent = duplicates;
+    document.getElementById('uniqueCount').textContent = successful;
+    
+    // Display results
+    let resultsHTML = '';
+    results.forEach(result => {
+        if (result.success) {
+            resultsHTML += `
+                <div class="product-item success-item">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="mb-0 text-success">Item #${result.index}</h6>
+                        <span class="badge bg-success">Success</span>
+                    </div>
+                    <div class="product-field">
+                        <span class="field-label">Nama Produk:</span>
+                        <span class="field-value">${result.data.namaProduk}</span>
+                    </div>
+                    <div class="product-field">
+                        <span class="field-label">SKU Produk:</span>
+                        <span class="field-value">${result.data.skuProduk}</span>
+                    </div>
+                    <div class="product-field">
+                        <span class="field-label">Harga Produk:</span>
+                        <span class="field-value">${result.data.hargaProduk}</span>
+                    </div>
+                </div>
+            `;
+        } else if (result.isDuplicate) {
+            resultsHTML += `
+                <div class="product-item warning-item">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="mb-0 text-warning">Item #${result.index}</h6>
+                        <span class="badge bg-warning">Duplicate</span>
+                    </div>
+                    <div class="product-field">
+                        <span class="field-label">Duplicate Type:</span>
+                        <span class="field-value text-warning">${result.duplicateType}</span>
+                    </div>
+                    <div class="product-field">
+                        <span class="field-label">Status:</span>
+                        <span class="field-value text-warning">Skipped - ${result.error}</span>
+                    </div>
+                    <div class="product-field">
+                        <span class="field-label">Raw Data:</span>
+                        <span class="field-value" style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.6);">${result.rawData}</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            resultsHTML += `
+                <div class="product-item error-item">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="mb-0 text-danger">Item #${result.index}</h6>
+                        <span class="badge bg-danger">Error</span>
+                    </div>
+                    <div class="product-field">
+                        <span class="field-label">Error:</span>
+                        <span class="field-value text-danger">${result.error}</span>
+                    </div>
+                    <div class="product-field">
+                        <span class="field-label">Raw Data:</span>
+                        <span class="field-value" style="font-size: 0.8rem; color: rgba(255, 255, 255, 0.6);">${result.rawData}</span>
+                    </div>
+                </div>
+            `;
+        }
+    });
+    
+    resultsDiv.innerHTML = resultsHTML;
+    parsedResults = results;
+}
+
+function exportResults() {
+    if (parsedResults.length === 0) {
+        alert('No data to export. Please process some data first.');
+        return;
+    }
+    
+    // Filter only successful results (exclude duplicates and errors)
+    const successfulResults = parsedResults.filter(result => result.success);
+    
+    if (successfulResults.length === 0) {
+        alert('No successful data to export. All items were either duplicates or errors.');
+        return;
+    }
+    
+    let csvContent = 'No,Nama Produk,SKU Produk,Harga Produk\n';
+    
+    successfulResults.forEach((result, index) => {
+        csvContent += `${index + 1},"${result.data.namaProduk}","${result.data.skuProduk}","${result.data.hargaProduk}"\n`;
+    });
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `parsed_data_unique_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    
+    // Show success message
+    const loadingStatus = document.getElementById('loadingStatus');
+    loadingStatus.style.display = 'block';
+    loadingStatus.className = 'alert alert-success';
+    loadingStatus.innerHTML = `<i class="fas fa-check-circle me-2"></i>Successfully exported ${successfulResults.length} unique items to CSV (duplicates and errors excluded)`;
+    
+    setTimeout(() => {
+        loadingStatus.style.display = 'none';
+    }, 3000);
+}
+
+function showFeatureInfo(featureType) {
+    const modal = new bootstrap.Modal(document.getElementById('featureModal'));
+    const title = document.getElementById('featureModalTitle');
+    const body = document.getElementById('featureModalBody');
+    
+    const featureInfo = {
+        import: {
+            title: 'Data Import',
+            content: `
+                <h6>Fitur Import Data:</h6>
+                <ul>
+                    <li>Support format: Excel (.xlsx, .xls), CSV, JSON, XML</li>
+                    <li>Auto-detect encoding dan delimiter</li>
+                    <li>Handle large files dengan batch processing</li>
+                    <li>Error handling dan validasi data</li>
+                    <li>Preview data sebelum import</li>
+                </ul>
+            `
+        },
+        filter: {
+            title: 'Data Filtering',
+            content: `
+                <h6>Fitur Filtering Data:</h6>
+                <ul>
+                    <li>Filter berdasarkan kondisi multiple</li>
+                    <li>Remove duplicate entries</li>
+                    <li>Clean invalid data</li>
+                    <li>Standardize format data</li>
+                    <li>Custom filtering rules</li>
+                </ul>
+            `
+        },
+        transform: {
+            title: 'Data Transform',
+            content: `
+                <h6>Fitur Transform Data:</h6>
+                <ul>
+                    <li>Convert format antar tipe file</li>
+                    <li>Restructure data schema</li>
+                    <li>Mapping field names</li>
+                    <li>Aggregate dan summarize data</li>
+                    <li>Join multiple datasets</li>
+                </ul>
+            `
+        },
+        analysis: {
+            title: 'Data Analysis',
+            content: `
+                <h6>Fitur Analysis Data:</h6>
+                <ul>
+                    <li>Statistical analysis</li>
+                    <li>Data profiling dan quality check</li>
+                    <li>Pattern recognition</li>
+                    <li>Trend analysis</li>
+                    <li>Generate insights report</li>
+                </ul>
+            `
+        },
+        export: {
+            title: 'Data Export',
+            content: `
+                <h6>Fitur Export Data:</h6>
+                <ul>
+                    <li>Export ke format: Excel, CSV, JSON, PDF</li>
+                    <li>Custom export templates</li>
+                    <li>Scheduled exports</li>
+                    <li>Compress large files</li>
+                    <li>Email delivery results</li>
+                </ul>
+            `
+        },
+        custom: {
+            title: 'Custom Parser',
+            content: `
+                <h6>Fitur Custom Parser:</h6>
+                <ul>
+                    <li>Build parser untuk format khusus</li>
+                    <li>Regex pattern matching</li>
+                    <li>Custom transformation logic</li>
+                    <li>Save dan reuse parser configurations</li>
+                    <li>API integration untuk external sources</li>
+                </ul>
+            `
+        }
+    };
+    
+    const info = featureInfo[featureType];
+    title.textContent = info.title;
+    body.innerHTML = info.content;
+    
+    modal.show();
+}
+</script>
+{% endblock %}

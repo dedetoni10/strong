@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-light">
+                    <i class="fas fa-list me-2"></i>
+                    {{ title }}
+                </h2>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="badge bg-{{ 'warning' if status_type == 'picking' else 'info' if status_type == 'packing' else 'success' }} fs-6">
+                        {{ orders|length }} Pesanan{% if orders|length >= 50 %} (Max 50){% endif %}
+                    </span>
+                    <button class="btn btn-outline-secondary" onclick="window.location.reload()">
+                        <i class="fas fa-sync-alt me-2"></i>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if orders %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-dark border-secondary">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th>Order Number</th>
+                                    <th>Tracking Number</th>
+                                    <th>Customer Name</th>
+                                    <th>Total Amount</th>
+                                    <th>Items</th>
+                                    <th>Status Time</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in orders %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        <strong>{{ order.order_number }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if order.tracking_number %}
+                                            <span class="badge bg-secondary">{{ order.tracking_number }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ order.customer_name }}</td>
+                                    <td>Rp {{ "{:,.0f}".format(order.total_amount) }}</td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ order.items|length }} Items</span>
+                                    </td>
+                                    <td>
+                                        {% if status_type == 'picking' and order.picking_completed_at %}
+                                            <small class="text-muted">
+                                                {{ order.picking_completed_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                                            </small>
+                                        {% elif status_type == 'packing' and order.packing_completed_at %}
+                                            <small class="text-muted">
+                                                {{ order.packing_completed_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                                            </small>
+                                        {% elif status_type == 'ready_pickup' and order.ready_for_pickup_at %}
+                                            <small class="text-muted">
+                                                {{ order.ready_for_pickup_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                                            </small>
+                                        {% elif status_type == 'pending' and order.created_at %}
+                                            <small class="text-muted">
+                                                {{ order.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                                            </small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('order_detail', order_id=order.id) }}" 
+                                               class="btn btn-sm btn-outline-primary" 
+                                               target="_blank"
+                                               title="View Detail">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            {% if status_type == 'picking' %}
+                                                <a href="{{ url_for('picking_interface', order_id=order.id) }}" 
+                                                   class="btn btn-sm btn-outline-warning" 
+                                                   target="_blank"
+                                                   title="Continue Picking">
+                                                    <i class="fas fa-hand-paper"></i>
+                                                </a>
+                                            {% elif status_type == 'packing' %}
+                                                <a href="{{ url_for('scan_packing_validation', order_id=order.id) }}" 
+                                                   class="btn btn-sm btn-outline-info" 
+                                                   target="_blank"
+                                                   title="Continue Packing">
+                                                    <i class="fas fa-box"></i>
+                                                </a>
+                                            {% elif status_type == 'pending' %}
+                                                <a href="{{ url_for('picking_interface', order_id=order.id) }}" 
+                                                   class="btn btn-sm btn-outline-success" 
+                                                   target="_blank"
+                                                   title="Start Picking">
+                                                    <i class="fas fa-play"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Summary Statistics -->
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card bg-dark border-secondary">
+                <div class="card-body">
+                    <h6 class="card-title text-light">Total Orders</h6>
+                    <h3 class="text-{{ 'warning' if status_type == 'picking' else 'info' if status_type == 'packing' else 'success' }}">
+                        {{ orders|length }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-dark border-secondary">
+                <div class="card-body">
+                    <h6 class="card-title text-light">Total Amount</h6>
+                    <h3 class="text-light">
+                        Rp {{ "{:,.0f}".format(orders|sum(attribute='total_amount')) }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-dark border-secondary">
+                <div class="card-body">
+                    <h6 class="card-title text-light">Total Items</h6>
+                    <h3 class="text-light">
+                        {% set total_items = 0 %}
+                        {% for order in orders %}
+                            {% set total_items = total_items + order.items|length %}
+                        {% endfor %}
+                        {{ total_items }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-dark border-secondary">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-{% if status_type == 'picking' %}hand-paper{% elif status_type == 'packing' %}box{% else %}truck{% endif %} fa-3x text-muted mb-3"></i>
+                    <h5 class="text-light">Tidak Ada Pesanan {{ status_label }}</h5>
+                    <p class="text-muted">Belum ada pesanan yang sedang dalam status {{ status_label.lower() }}.</p>
+                    <a href="{{ url_for('monitoring') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Kembali ke Monitoring
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto refresh every 2 minutes (120 seconds)
+setInterval(function() {
+    window.location.reload();
+}, 120000);
+</script>
+{% endblock %}

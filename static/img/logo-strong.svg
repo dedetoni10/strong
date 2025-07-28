@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Strong Logo SVG version -->
+  <defs>
+    <linearGradient id="orangeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF6B35;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF4500;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Box with checkmark -->
+  <g transform="translate(2, 3)">
+    <!-- Top box -->
+    <path d="M8 0 L20 0 L20 2 L18 2 L18 8 L8 8 Z" fill="url(#orangeGradient)"/>
+    <!-- Bottom box -->
+    <path d="M2 8 L8 8 L8 10 L6 10 L6 16 L2 16 Z" fill="url(#orangeGradient)"/>
+    <!-- Main box -->
+    <path d="M8 8 L20 8 L20 16 L8 16 Z" fill="url(#orangeGradient)"/>
+    
+    <!-- Checkmark -->
+    <path d="M10 11 L13 14 L18 9" stroke="#1A365D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+  
+  <!-- Strong text -->
+  <text x="28" y="28" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#1A365D">Strong</text>
+</svg>

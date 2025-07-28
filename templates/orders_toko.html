@@ -1,0 +1,524 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Daftar Pesanan Toko - Strong Order Management{% endblock %}
+
+{% block content %}
+<!-- Cache-busting timestamp to force JavaScript refresh -->
+<script>
+    // Force cache refresh - version 2025-07-23-orders-toko
+    localStorage.setItem('template_version', '2025-07-23-orders-toko');
+    console.log('Orders Toko template loaded with version:', localStorage.getItem('template_version'));
+</script>
+<style>
+.store-tabs {
+    border-bottom: 2px solid #e9ecef;
+    background: transparent;
+    padding: 0;
+    margin-bottom: 15px;
+    border-radius: 0;
+}
+
+.store-tab {
+    color: #6c757d !important;
+    border: none !important;
+    border-bottom: 3px solid transparent !important;
+    background: transparent !important;
+    padding: 15px 20px !important;
+    margin-bottom: 0 !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.store-tab:hover {
+    color: #495057 !important;
+    background: rgba(139, 92, 246, 0.1) !important;
+    border-bottom: 3px solid #8B5CF6 !important;
+}
+
+.store-tab.active {
+    color: #fff !important;
+    border-bottom: 3px solid #8B5CF6 !important;
+    background: #8B5CF6 !important;
+    font-weight: 600 !important;
+    border-radius: 20px 20px 0 0 !important;
+}
+
+.status-tabs {
+    border-bottom: 2px solid #e9ecef;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    border-radius: 0;
+}
+
+.status-tab {
+    color: #6c757d !important;
+    border: none !important;
+    border-bottom: 3px solid transparent !important;
+    background: transparent !important;
+    padding: 15px 20px !important;
+    margin-bottom: 0 !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.status-tab:hover {
+    color: #495057 !important;
+    background: rgba(139, 92, 246, 0.1) !important;
+    border-bottom: 3px solid #8B5CF6 !important;
+}
+
+.status-tab.active {
+    color: #fff !important;
+    border-bottom: 3px solid #8B5CF6 !important;
+    background: #8B5CF6 !important;
+    font-weight: 600 !important;
+    border-radius: 20px 20px 0 0 !important;
+}
+
+.badge-count {
+    background-color: rgba(255, 255, 255, 0.3) !important;
+    color: #fff !important;
+    font-size: 0.75rem !important;
+    padding: 0.25rem 0.5rem !important;
+    border-radius: 12px !important;
+    font-weight: 500 !important;
+}
+
+.store-tab:hover .badge-count,
+.status-tab:hover .badge-count {
+    background-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.store-tab.active .badge-count,
+.status-tab.active .badge-count {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    color: #fff !important;
+}
+
+.store-tab:not(.active) .badge-count,
+.status-tab:not(.active) .badge-count {
+    background-color: rgba(139, 92, 246, 0.2) !important;
+    color: #8B5CF6 !important;
+}
+
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+</style>
+
+<div class="content-header">
+    <h1><i class="fas fa-store"></i> Daftar Pesanan Toko</h1>
+    <p>Kelola pesanan berdasarkan toko</p>
+</div>
+
+<!-- Store Selection Dropdown -->
+<div class="card mb-3">
+    <div class="card-header bg-purple text-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-store me-2"></i>Pilih Toko
+            </h5>
+            <button type="button" class="btn btn-light btn-sm" onclick="showAddStoreModal()">
+                <i class="fas fa-plus me-1"></i>Tambah Toko
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <select class="form-select" id="storeSelector" onchange="switchStoreFromDropdown()">
+                    {% for store_code, store_info in store_data.items() %}
+                    <option value="{{ store_code }}" {% if store_code == current_store %}selected{% endif %}>
+                        {{ store_code }} - {{ store_info.name }} ({{ store_info.total_count }} pesanan)
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="button" class="btn btn-info w-100" onclick="refreshStoreData()">
+                    <i class="fas fa-sync-alt me-1"></i>Refresh Data
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Tabs -->
+<div class="card mb-3">
+    <div class="card-body p-0">
+        <div class="nav nav-tabs status-tabs" role="tablist">
+            <button class="status-tab {% if current_status == 'all' %}active{% endif %}" 
+                    data-status="all" 
+                    type="button">
+                Semua
+                <span class="badge badge-count ms-2">{{ tab_counts.get('all', 0) }}</span>
+            </button>
+            <button class="status-tab {% if current_status == 'perlu_dikirim' %}active{% endif %}" 
+                    data-status="perlu_dikirim" 
+                    type="button">
+                Perlu Dikirim
+                <span class="badge badge-count ms-2">{{ tab_counts.get('perlu_dikirim', 0) }}</span>
+            </button>
+            <button class="status-tab {% if current_status == 'siap_dikirim' %}active{% endif %}" 
+                    data-status="siap_dikirim" 
+                    type="button">
+                Siap Dikirim
+                <span class="badge badge-count ms-2">{{ tab_counts.get('siap_dikirim', 0) }}</span>
+            </button>
+            <button class="status-tab {% if current_status == 'dikirim' %}active{% endif %}" 
+                    data-status="dikirim" 
+                    type="button">
+                Dikirim
+                <span class="badge badge-count ms-2">{{ tab_counts.get('dikirim', 0) }}</span>
+            </button>
+            <button class="status-tab {% if current_status == 'selesai' %}active{% endif %}" 
+                    data-status="selesai" 
+                    type="button">
+                Selesai
+                <span class="badge badge-count ms-2">{{ tab_counts.get('selesai', 0) }}</span>
+            </button>
+            <button class="status-tab {% if current_status == 'pengembalian' %}active{% endif %}" 
+                    data-status="pengembalian" 
+                    type="button">
+                Pengembalian
+                <span class="badge badge-count ms-2">{{ tab_counts.get('pengembalian', 0) }}</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Controls -->
+<div class="card mb-4">
+    <div class="card-header bg-purple text-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-search me-2"></i>Pencarian Pesanan
+            </h5>
+        </div>
+        <p class="mb-0 mt-1">Cari berdasarkan nomor pesanan, resi, atau nama customer</p>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('orders_toko') }}" class="row">
+            <input type="hidden" name="store" value="{{ current_store }}">
+            <input type="hidden" name="status" value="{{ current_status }}">
+            <div class="col-md-8">
+                <input type="text" 
+                       class="form-control" 
+                       name="search" 
+                       value="{{ search_query }}" 
+                       placeholder="Ketik nomor pesanan, resi, atau nama customer..."
+                       style="border: 1px solid #ced4da; border-radius: 8px; padding: 12px;">
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-warning w-100" style="border-radius: 8px; padding: 12px;">
+                    <i class="fas fa-search me-2"></i>CARI
+                </button>
+            </div>
+        </form>
+        
+        {% if search_query %}
+        <div class="mt-3">
+            <span class="badge bg-info">
+                <i class="fas fa-info-circle me-1"></i>
+                Contoh: 250707HGQGABK6 | SP9999399191637 
+            </span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Orders Table -->
+<div class="card">
+    <div class="card-header bg-purple text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">{{ header_text }}</h5>
+        <div>
+            <button type="button" class="btn btn-light btn-sm me-2" onclick="showUploadModal()">
+                <i class="fas fa-upload me-1"></i>Upload Orders
+            </button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>No Pesanan</th>
+                        <th>Customer</th>
+                        <th>Status</th>
+                        <th>Total</th>
+                        <th>Tanggal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('order_detail', order_id=order.id) }}" target="_blank" class="text-decoration-none">
+                                {{ order.order_number }}
+                            </a>
+                        </td>
+                        <td>{{ order.customer_name }}</td>
+                        <td>
+                            {% if order.status == 'perlu_dikirim' %}
+                                <span class="badge bg-warning text-dark">Perlu Dikirim</span>
+                            {% elif order.status == 'siap_dikirim' %}
+                                <span class="badge bg-info">Siap Dikirim</span>
+                            {% elif order.status == 'dikirim' %}
+                                <span class="badge bg-primary">Dikirim</span>
+                            {% elif order.status == 'selesai' %}
+                                <span class="badge bg-success">Selesai</span>
+                            {% elif order.status == 'pengembalian' %}
+                                <span class="badge bg-danger">Pengembalian</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ order.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>Rp {{ "{:,.0f}".format(order.total_amount) }}</td>
+                        <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') if order.created_at else '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Tidak ada pesanan ditemukan untuk toko {{ current_store }}</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Pagination -->
+    {% if pagination and pagination.pages > 1 %}
+    <div class="card-footer">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <p class="mb-0 text-muted">
+                    Menampilkan {{ pagination.per_page * (pagination.page - 1) + 1 }} - 
+                    {{ pagination.per_page * (pagination.page - 1) + orders|length }} dari 
+                    {{ pagination.total }} pesanan
+                </p>
+            </div>
+            <div class="col-md-6">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-end mb-0">
+                        {% if pagination.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('orders_toko', store=current_store, status=current_status, page=pagination.prev_num, search=search_query) }}">Previous</a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for page_num in pagination.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != pagination.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('orders_toko', store=current_store, status=current_status, page=page_num, search=search_query) }}">{{ page_num }}</a>
+                                </li>
+                                {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                                {% endif %}
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if pagination.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('orders_toko', store=current_store, status=current_status, page=pagination.next_num, search=search_query) }}">Next</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Add Store Modal -->
+<div id="addStoreModal" class="modal" style="display: none;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-store me-2"></i>Tambah Toko Baru
+                </h5>
+                <button type="button" class="btn-close" onclick="document.getElementById('addStoreModal').style.display='none'"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addStoreForm">
+                    <div class="mb-3">
+                        <label for="store_name" class="form-label">Nama Toko <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="store_name" name="store_name" required 
+                               placeholder="Contoh: Mitra Jaya Parts">
+                        <div class="form-text">Nama lengkap toko yang akan ditampilkan</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="sku_code" class="form-label">Kode SKU Toko <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="sku_code" name="sku_code" required 
+                               placeholder="Contoh: MJP" style="text-transform: uppercase;">
+                        <div class="form-text">Kode yang muncul di awal SKU produk (sebelum tanda |)</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Deskripsi (Opsional)</label>
+                        <textarea class="form-control" id="description" name="description" rows="2" 
+                                  placeholder="Deskripsi singkat tentang toko..."></textarea>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Contoh:</strong> Jika SKU produk "MJP | BLD-GLSMY-PTH | SET GELAS", 
+                        maka kode SKU toko adalah "MJP"
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('addStoreModal').style.display='none'">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="saveStore()">
+                    <i class="fas fa-save me-2"></i>Simpan Toko
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal (same as orders_new.html) -->
+<div id="uploadModal" class="modal" style="display: none;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Excel Files</h5>
+                <button type="button" class="btn-close" onclick="document.getElementById('uploadModal').style.display='none'"></button>
+            </div>
+            <div class="modal-body">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="order_files" class="form-label">Select Excel Files</label>
+                        <input type="file" class="form-control" id="order_files" name="order_files" multiple accept=".xlsx,.xls" required>
+                        <div class="form-text">You can select multiple Excel files at once.</div>
+                    </div>
+                    <div id="progressContainer" style="display: none;">
+                        <div class="progress mb-3">
+                            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <div id="statusMessage" class="text-center"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('uploadModal').style.display='none'">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="startUpload()">
+                    <i class="fas fa-upload me-2"></i>Upload
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Use AJAX tab switching from base_sidebar.html - no need for duplicate implementation
+console.log('Template version: 2025-07-23-orders-toko');
+console.log('Orders Toko page loaded at:', new Date().toISOString());
+
+// Store management functions
+function showAddStoreModal() {
+    document.getElementById('addStoreModal').style.display = 'block';
+}
+
+function saveStore() {
+    const form = document.getElementById('addStoreForm');
+    const formData = new FormData(form);
+    
+    // Convert to uppercase for sku_code
+    const skuCode = formData.get('sku_code');
+    if (skuCode) {
+        formData.set('sku_code', skuCode.toUpperCase());
+    }
+    
+    fetch('/stores/create', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            document.getElementById('addStoreModal').style.display = 'none';
+            form.reset();
+            // Refresh page to show new store
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat menyimpan toko');
+    });
+}
+
+function switchStoreFromDropdown() {
+    const selector = document.getElementById('storeSelector');
+    const selectedStore = selector.value;
+    
+    if (selectedStore && window.switchStore) {
+        window.switchStore(selectedStore);
+    }
+}
+
+function refreshStoreData() {
+    location.reload();
+}
+
+// Upload functionality (same as orders_new.html)
+function showUploadModal() {
+    document.getElementById('uploadModal').style.display = 'block';
+}
+
+function startUpload() {
+    const form = document.getElementById('uploadForm');
+    const formData = new FormData(form);
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+    const statusMessage = document.getElementById('statusMessage');
+    
+    progressContainer.style.display = 'block';
+    progressBar.style.width = '0%';
+    statusMessage.textContent = 'Starting upload...';
+    
+    fetch('/upload_orders', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            progressBar.style.width = '100%';
+            statusMessage.textContent = 'Upload completed successfully!';
+            setTimeout(() => {
+                document.getElementById('uploadModal').style.display = 'none';
+                location.reload();
+            }, 2000);
+        } else {
+            throw new Error('Upload failed');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        statusMessage.textContent = 'Upload failed. Please try again.';
+        progressBar.classList.add('bg-danger');
+    });
+}
+</script>
+
+{% endblock %}

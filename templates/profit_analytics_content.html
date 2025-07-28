@@ -1,0 +1,230 @@
+<!-- Keuangan Content Only - for AJAX requests -->
+<div class="content-header">
+    <h1><i class="fas fa-chart-pie"></i> Keuangan</h1>
+    <p>Dashboard analisis keuangan dan profit management</p>
+</div>
+
+<style>
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+
+.content-header {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.content-header h1 {
+    margin: 0;
+    color: #333;
+    font-size: 1.5rem;
+}
+
+.content-header p {
+    margin: 5px 0 0 0;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    color: #495057;
+    font-weight: 600;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #6f42c1, #8b5cf6);
+    border: none;
+    border-radius: 5px;
+    padding: 8px 16px;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #5a359a, #7c3aed);
+}
+</style>
+
+<!-- Date Range Filter -->
+<div class="card mb-4">
+    <div class="card-header bg-purple text-white">
+        <h5 class="mb-0">Filter Periode</h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label for="start_date" class="form-label">Tanggal Mulai</label>
+                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date }}">
+            </div>
+            <div class="col-md-4">
+                <label for="end_date" class="form-label">Tanggal Selesai</label>
+                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary d-block">Update</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Analytics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="icon blue">
+                <i class="fas fa-money-bill-wave"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Rp {{ "{:,.0f}".format(analytics.total_revenue) }}</h3>
+                <p>Total Revenue</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="icon orange">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Rp {{ "{:,.0f}".format(analytics.total_cost) }}</h3>
+                <p>Total Cost</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="icon green">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Rp {{ "{:,.0f}".format(analytics.total_profit) }}</h3>
+                <p>Total Profit</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="icon cyan">
+                <i class="fas fa-percentage"></i>
+            </div>
+            <div class="stat-content">
+                <h3>{{ "{:.1f}".format(analytics.profit_margin) }}%</h3>
+                <p>Profit Margin</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Profit Analytics Table -->
+<div class="card">
+    <div class="card-header bg-purple text-white">
+        <h5 class="mb-0">Detail Analisa Profit</h5>
+    </div>
+    <div class="card-body">
+        {% if analytics.orders %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>No Pesanan</th>
+                            <th>Customer</th>
+                            <th>Revenue</th>
+                            <th>Cost</th>
+                            <th>Profit</th>
+                            <th>Margin</th>
+                            <th>Tanggal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in analytics.orders %}
+                        <tr>
+                            <td>{{ order.order_number }}</td>
+                            <td>{{ order.customer_name }}</td>
+                            <td>Rp {{ "{:,.0f}".format(order.revenue) }}</td>
+                            <td>Rp {{ "{:,.0f}".format(order.cost) }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if order.profit >= 0 else 'danger' }}">
+                                    Rp {{ "{:,.0f}".format(order.profit) }}
+                                </span>
+                            </td>
+                            <td>{{ "{:.1f}".format(order.margin) }}%</td>
+                            <td>{{ order.created_at.strftime('%Y-%m-%d') if order.created_at else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Tidak ada data profit untuk periode ini</h5>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.stat-card .icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    color: white;
+    font-size: 1.5rem;
+}
+
+.stat-card .icon.blue { background-color: #3498db; }
+.stat-card .icon.green { background-color: #27ae60; }
+.stat-card .icon.orange { background-color: #f39c12; }
+.stat-card .icon.cyan { background-color: #17a2b8; }
+
+.stat-card h3 {
+    font-size: 1.8rem;
+    margin: 0;
+    color: #333;
+}
+
+.stat-card p {
+    margin: 5px 0 0 0;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+</style>

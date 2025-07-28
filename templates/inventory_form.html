@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} Inventory Item - Shopee Order Management{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('warehouse') }}">Warehouse</a></li>
+                <li class="breadcrumb-item active">{{ action }} Item</li>
+            </ol>
+        </nav>
+        
+        <h1><i class="fas fa-box me-2"></i>{{ action }} Inventory Item</h1>
+        <p class="text-muted">{{ action }} inventory item information</p>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Item Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Product Name *</label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       value="{{ (form_data and form_data.name) or (item and item.name) or '' }}" 
+                                       required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="sku" class="form-label">SKU *</label>
+                                <input type="text" class="form-control" id="sku" name="sku" 
+                                       value="{{ (form_data and form_data.sku) or (item and item.sku) or '' }}" 
+                                       required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="category" class="form-label">Category</label>
+                                <input type="text" class="form-control" id="category" name="category" 
+                                       value="{{ (form_data and form_data.category) or (item and item.category) or '' }}" 
+                                       placeholder="e.g., Peralatan Makan, Peralatan Dapur">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="colour" class="form-label">Nama Variasi</label>
+                                <input type="text" class="form-control" id="colour" name="colour" 
+                                       value="{{ (form_data and form_data.colour) or (item and item.colour) or '' }}" 
+                                       placeholder="e.g., Hijau Daun, Putih Susu, Silver Glossy">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="quantity" class="form-label">Quantity *</label>
+                                <input type="number" class="form-control" id="quantity" name="quantity" 
+                                       value="{{ (form_data and form_data.quantity) or (item and item.quantity) or 0 }}" 
+                                       min="0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="price" class="form-label">Product Cost *</label>
+                                <input type="number" class="form-control" id="price" name="price" 
+                                       value="{{ (form_data and form_data.price) or (item and item.price) or 0 }}" 
+                                       step="0.01" min="0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="minimum_stock" class="form-label">Minimum Stock</label>
+                                <input type="number" class="form-control" id="minimum_stock" name="minimum_stock" 
+                                       value="{{ (form_data and form_data.minimum_stock) or (item and item.minimum_stock) or 10 }}" 
+                                       min="0">
+                                <div class="form-text">Alert when stock falls below this level</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="weight" class="form-label">Weight (grams)</label>
+                                <input type="number" class="form-control" id="weight" name="weight" 
+                                       value="{{ (form_data and form_data.weight) or (item and item.weight) or '' }}" 
+                                       min="0" placeholder="e.g., 230">
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label class="form-label">Dimensions (cm)</label>
+                                <div class="row">
+                                    <div class="col-4">
+                                        <input type="number" class="form-control" id="length" name="length" 
+                                               value="{{ (form_data and form_data.length) or (item and item.length) or '' }}" 
+                                               min="0" placeholder="Length">
+                                    </div>
+                                    <div class="col-4">
+                                        <input type="number" class="form-control" id="width" name="width" 
+                                               value="{{ (form_data and form_data.width) or (item and item.width) or '' }}" 
+                                               min="0" placeholder="Width">
+                                    </div>
+                                    <div class="col-4">
+                                        <input type="number" class="form-control" id="height" name="height" 
+                                               value="{{ (form_data and form_data.height) or (item and item.height) or '' }}" 
+                                               min="0" placeholder="Height">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label class="form-label">Storage Location</label>
+                                <div class="row">
+                                    <div class="col-4">
+                                        <input type="text" class="form-control" id="zone" name="zone" 
+                                               value="{{ (form_data and form_data.zone) or (item and item.zone) or '' }}" 
+                                               placeholder="Zone (e.g., A)">
+                                    </div>
+                                    <div class="col-4">
+                                        <input type="text" class="form-control" id="rack" name="rack" 
+                                               value="{{ (form_data and form_data.rack) or (item and item.rack) or '' }}" 
+                                               placeholder="Rack (e.g., R01)">
+                                    </div>
+                                    <div class="col-4">
+                                        <input type="text" class="form-control" id="bin" name="bin" 
+                                               value="{{ (form_data and form_data.bin) or (item and item.bin) or '' }}" 
+                                               placeholder="Bin (e.g., B3)">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="image_upload" class="form-label">
+                            <small class="text-muted">* Foto 1:1</small>
+                        </label>
+                        <div class="image-upload-container">
+                            <!-- Hidden file input -->
+                            <input type="file" id="image_upload" name="image_upload" 
+                                   accept="image/*" style="display: none;">
+                            
+                            <!-- Hidden field to store image URL -->
+                            <input type="hidden" id="image_url" name="image_url" 
+                                   value="{{ (form_data and form_data.image_url) or (item and item.image_url) or '' }}">
+                            
+                            <!-- Drag & Drop Area -->
+                            <div id="dropZone" class="drop-zone" onclick="document.getElementById('image_upload').click()">
+                                <div id="dropContent" class="drop-content">
+                                    <div class="small text-danger">Tambahkan Foto</div>
+                                </div>
+                                
+                                <!-- Image Preview -->
+                                <div id="imagePreview" class="image-preview" style="display: none;">
+                                    <img id="previewImg" src="" alt="Product Preview">
+                                    <div class="image-overlay">
+                                        <button type="button" class="btn btn-sm btn-outline-light" onclick="removeImage()">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Keterangan Produk</label>
+                        <textarea class="form-control" id="description" name="description" rows="3" 
+                                  placeholder="Deskripsi produk, spesifikasi, atau catatan khusus...">{{ (form_data and form_data.description) or (item and item.description) or '' }}</textarea>
+                        <div class="form-text">Informasi tambahan tentang produk yang akan membantu picker dan packer</div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>{{ action }} Item
+                        </button>
+                        <a href="{{ url_for('warehouse') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {% if item %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Item Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Product ID:</strong> {{ item.id }}</p>
+                        <p><strong>Created:</strong> {{ item.created_at.strftime('%Y-%m-%d %H:%M:%S') if item.created_at else 'N/A' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Last Updated:</strong> {{ item.updated_at.strftime('%Y-%m-%d %H:%M:%S') if item.updated_at else 'N/A' }}</p>
+                        <p><strong>Stock Status:</strong> 
+                            {% if item.is_low_stock %}
+                                <span class="badge bg-danger">Low Stock</span>
+                            {% else %}
+                                <span class="badge bg-success">In Stock</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.image-upload-container {
+    position: relative;
+}
+
+.drop-zone {
+    border: 1px dashed #dc3545;
+    border-radius: 4px;
+    padding: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #fff;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.drop-zone:hover {
+    border-color: #dc3545;
+    background: #fff5f5;
+}
+
+.drop-zone.dragover {
+    border-color: #dc3545;
+    background: #fff5f5;
+    transform: scale(1.02);
+}
+
+.drop-content {
+    pointer-events: none;
+}
+
+.image-preview {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #000;
+}
+
+.image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.image-preview:hover .image-overlay {
+    opacity: 1;
+}
+</style>
+
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('image_upload');
+const imagePreview = document.getElementById('imagePreview');
+const previewImg = document.getElementById('previewImg');
+const dropContent = document.getElementById('dropContent');
+const imageUrlInput = document.getElementById('image_url');
+
+// Handle file selection
+fileInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        handleFile(file);
+    }
+});
+
+// Handle drag & drop
+dropZone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+});
+
+dropZone.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+});
+
+dropZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+        handleFile(file);
+    }
+});
+
+function handleFile(file) {
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB');
+        return;
+    }
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+    }
+    
+    // Create FileReader to read the file
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        // Show preview
+        previewImg.src = e.target.result;
+        dropContent.style.display = 'none';
+        imagePreview.style.display = 'block';
+        
+        // Store the data URL in hidden field
+        imageUrlInput.value = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function removeImage() {
+    previewImg.src = '';
+    dropContent.style.display = 'block';
+    imagePreview.style.display = 'none';
+    imageUrlInput.value = '';
+    fileInput.value = '';
+}
+
+// Show existing image on page load
+window.addEventListener('load', function() {
+    const existingImageUrl = imageUrlInput.value;
+    if (existingImageUrl) {
+        previewImg.src = existingImageUrl;
+        dropContent.style.display = 'none';
+        imagePreview.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

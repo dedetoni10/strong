@@ -1,0 +1,833 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Orders - Strong Order Management{% endblock %}
+
+{% block content %}
+<!-- Cache-busting timestamp to force JavaScript refresh -->
+<script>
+    // Force cache refresh - version 2025-07-16-13:15
+    localStorage.setItem('template_version', '2025-07-16-13:15');
+    console.log('Orders template loaded with version:', localStorage.getItem('template_version'));
+</script>
+<style>
+.status-tabs {
+    border-bottom: 2px solid #e9ecef;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    border-radius: 0;
+}
+
+.status-tab {
+    color: #6c757d !important;
+    border: none !important;
+    border-bottom: 3px solid transparent !important;
+    background: transparent !important;
+    padding: 15px 20px !important;
+    margin-bottom: 0 !important;
+    text-decoration: none !important;
+    font-weight: 500 !important;
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.status-tab:hover {
+    color: #495057 !important;
+    background: rgba(139, 92, 246, 0.1) !important;
+    border-bottom: 3px solid #8B5CF6 !important;
+}
+
+.status-tab.active {
+    color: #fff !important;
+    border-bottom: 3px solid #8B5CF6 !important;
+    background: #8B5CF6 !important;
+    font-weight: 600 !important;
+    border-radius: 20px 20px 0 0 !important;
+}
+
+.badge-count {
+    background-color: rgba(255, 255, 255, 0.3) !important;
+    color: #fff !important;
+    font-size: 0.75rem !important;
+    padding: 0.25rem 0.5rem !important;
+    border-radius: 12px !important;
+    font-weight: 500 !important;
+}
+
+.status-tab:hover .badge-count {
+    background-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.status-tab.active .badge-count {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    color: #fff !important;
+}
+
+.status-tab:not(.active) .badge-count {
+    background-color: rgba(139, 92, 246, 0.2) !important;
+    color: #8B5CF6 !important;
+}
+
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+
+/* File progress status styling */
+.bg-light-success {
+    background-color: rgba(25, 135, 84, 0.1) !important;
+    border: 1px solid rgba(25, 135, 84, 0.2) !important;
+}
+
+.bg-light-danger {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+    border: 1px solid rgba(220, 53, 69, 0.2) !important;
+}
+
+.bg-light-primary {
+    background-color: rgba(13, 110, 253, 0.1) !important;
+    border: 1px solid rgba(13, 110, 253, 0.2) !important;
+}
+
+/* File progress monitor enhancements */
+#fileProgressMonitor {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+}
+
+#fileProgressList {
+    font-family: 'Courier New', monospace;
+}
+
+#currentFileStatus {
+    background-color: #e9ecef;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+}
+
+.progress-bar-striped {
+    animation: progress-bar-stripes 0.5s linear infinite;
+}
+</style>
+
+<div class="content-header">
+    <h1><i class="fas fa-shopping-cart"></i> Pesanan Saya</h1>
+    <p>Kelola dan monitor pesanan</p>
+</div>
+
+<!-- Status Tabs -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex status-tabs">
+            <button class="status-tab {% if status_filter == 'all' %}active{% endif %}" 
+                    data-status="all">
+                Semua <span class="badge badge-count">{{ (tab_counts.perlu_dikirim + tab_counts.siap_dikirim + tab_counts.dikirim + tab_counts.selesai + tab_counts.pengembalian) }}</span>
+            </button>
+            <button class="status-tab {% if status_filter == 'perlu_dikirim' %}active{% endif %}" 
+                    data-status="perlu_dikirim">
+                Perlu Dikirim <span class="badge badge-count">{{ tab_counts.perlu_dikirim }}</span>
+            </button>
+            <button class="status-tab {% if status_filter == 'siap_dikirim' %}active{% endif %}" 
+                    data-status="siap_dikirim">
+                Siap Dikirim <span class="badge badge-count">{{ tab_counts.siap_dikirim }}</span>
+            </button>
+            <button class="status-tab {% if status_filter == 'dikirim' %}active{% endif %}" 
+                    data-status="dikirim">
+                Dikirim <span class="badge badge-count">{{ tab_counts.dikirim }}</span>
+            </button>
+            <button class="status-tab {% if status_filter == 'selesai' %}active{% endif %}" 
+                    data-status="selesai">
+                Selesai <span class="badge badge-count">{{ tab_counts.selesai }}</span>
+            </button>
+            <button class="status-tab {% if status_filter == 'pengembalian' %}active{% endif %}" 
+                    data-status="pengembalian">
+                Pengembalian <span class="badge badge-count">{{ tab_counts.pengembalian }}</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Compact Elegant Search Box -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="search-card-compact" style="background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%); border-radius: 15px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3); padding: 1.25rem; transition: all 0.3s ease;">
+            <!-- Compact Header -->
+            <div class="d-flex align-items-center mb-3">
+                <div class="search-icon-small" style="background: rgba(255, 255, 255, 0.2); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                    <i class="fas fa-search" style="font-size: 16px; color: white;"></i>
+                </div>
+                <div>
+                    <h6 style="color: white; margin: 0; font-weight: 600;">Pencarian Pesanan</h6>
+                    <small style="color: rgba(255, 255, 255, 0.8);">Cari berdasarkan nomor pesanan, resi, atau nama</small>
+                </div>
+            </div>
+            
+            <!-- Compact Search Input -->
+            <div class="search-input-compact">
+                <div class="input-group">
+                    <div class="search-wrapper" style="position: relative; width: 100%; background: rgba(255, 255, 255, 0.95); border-radius: 25px; padding: 3px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);">
+                        <div class="input-group" style="border: none;">
+                            <span class="input-group-text" style="background: transparent; border: none; padding-left: 18px; color: #6c757d;">
+                                <i class="fas fa-barcode" style="font-size: 14px;"></i>
+                            </span>
+                            <input type="text" 
+                                   class="form-control search-field-compact" 
+                                   id="searchOrderInput" 
+                                   placeholder="Ketik nomor pesanan, resi, atau nama customer..."
+                                   style="border: none; background: transparent; font-size: 14px; padding: 12px 8px; box-shadow: none; color: #2c3e50; font-weight: 500;"
+                                   onkeypress="if(event.key==='Enter') searchOrders()"
+                                   value="{{ search_query }}">
+                            <button class="btn search-btn-compact" 
+                                    type="button" 
+                                    onclick="searchOrders()"
+                                    style="background: linear-gradient(45deg, #FF6B35, #F7931E); border: none; border-radius: 20px; padding: 8px 20px; color: white; font-weight: 600; font-size: 13px; margin-right: 5px; box-shadow: 0 2px 8px rgba(255, 107, 53, 0.4); transition: all 0.3s ease;">
+                                <i class="fas fa-search me-1"></i>
+                                CARI
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" 
+                                    type="button" 
+                                    onclick="clearOrderSearch()"
+                                    style="border-radius: 20px; border-width: 1px; font-size: 12px; padding: 8px 12px; margin-right: 3px;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Compact Examples -->
+            <div class="mt-2">
+                <small style="color: rgba(255, 255, 255, 0.8); font-size: 11px;">
+                    <i class="fas fa-info-circle me-1"></i>
+                    <strong>Contoh:</strong> 
+                    <span style="background: rgba(255, 255, 255, 0.15); padding: 2px 6px; border-radius: 8px; margin: 0 3px; font-size: 11px;">250707HGQGAJTM</span>
+                    <span style="background: rgba(255, 255, 255, 0.15); padding: 2px 6px; border-radius: 8px; margin: 0 3px; font-size: 11px;">SPXID059939191837</span>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Compact CSS Styles -->
+<style>
+.search-btn-compact:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.6) !important;
+    background: linear-gradient(45deg, #FF5722, #E65100) !important;
+}
+
+.search-field-compact:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.search-wrapper:focus-within {
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3) !important;
+    transform: translateY(-1px);
+}
+
+.search-card-compact:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4) !important;
+}
+
+.btn-outline-secondary:hover {
+    background: rgba(108, 117, 125, 0.1) !important;
+    border-color: #6c757d !important;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+    .search-card-compact {
+        padding: 1rem !important;
+        border-radius: 12px !important;
+    }
+    
+    .search-icon-small {
+        width: 35px !important;
+        height: 35px !important;
+        margin-right: 12px !important;
+    }
+    
+    .search-icon-small i {
+        font-size: 14px !important;
+    }
+    
+    .search-card-compact h6 {
+        font-size: 14px !important;
+    }
+    
+    .search-card-compact small {
+        font-size: 11px !important;
+    }
+    
+    .search-field-compact {
+        font-size: 13px !important;
+        padding: 10px 6px !important;
+    }
+    
+    .search-btn-compact {
+        padding: 6px 15px !important;
+        font-size: 12px !important;
+    }
+}
+</style>
+
+<!-- Action Buttons -->
+<div class="row mb-3">
+    <div class="col-md-6">
+        <button class="btn btn-danger me-2" onclick="deleteAllOrders()">
+            <i class="fas fa-trash"></i> Delete Semua Pesanan
+        </button>
+        <button class="btn btn-warning me-2" id="deleteSelectedBtn" onclick="deleteSelectedOrders()" style="display: none;">
+            <i class="fas fa-trash-alt"></i> Delete Selected
+        </button>
+    </div>
+    <div class="col-md-6 text-end">
+        <button class="btn btn-success" onclick="document.getElementById('uploadModal').style.display='block'">
+            <i class="fas fa-upload"></i> Upload Orders
+        </button>
+    </div>
+</div>
+
+<!-- Orders List -->
+<div class="card">
+    <div class="card-header bg-purple text-white">
+        <h5 class="mb-0">{{ header_text }}</h5>
+    </div>
+    <div class="card-body">
+        {% if orders %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th width="50">
+                                <input type="checkbox" class="form-check-input" id="selectAll" onchange="toggleSelectAll()">
+                            </th>
+                            <th>No Pesanan</th>
+                            <th>Customer</th>
+                            <th>Status</th>
+                            <th>Total</th>
+                            <th>Tanggal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="form-check-input order-checkbox" 
+                                       value="{{ order.id }}" onchange="toggleDeleteButton()">
+                            </td>
+                            <td>
+                                <a href="{{ url_for('order_detail', order_id=order.id) }}" target="_blank">
+                                    {{ order.order_number }}
+                                </a>
+                            </td>
+                            <td>{{ order.customer_name }}</td>
+                            <td>
+                                {% if order.status == 'perlu_dikirim' %}
+                                    <span class="badge bg-warning">Perlu Dikirim</span>
+                                {% elif order.status == 'siap_dikirim' %}
+                                    <span class="badge bg-info">Siap Dikirim</span>
+                                {% elif order.status == 'dikirim' %}
+                                    <span class="badge bg-primary">Dikirim</span>
+                                {% elif order.status == 'selesai' %}
+                                    <span class="badge bg-success">Selesai</span>
+                                {% elif order.status == 'pengembalian' %}
+                                    <span class="badge bg-danger">Pengembalian</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ order.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>Rp {{ "{:,.0f}".format(order.total_amount) }}</td>
+                            <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') if order.created_at else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if pagination.pages > 1 %}
+                <div class="card-footer">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <small class="text-muted">
+                                Menampilkan {{ pagination.per_page * (pagination.page - 1) + 1 }} - {{ pagination.per_page * pagination.page if pagination.page < pagination.pages else pagination.total }} dari {{ pagination.total }} pesanan
+                            </small>
+                        </div>
+                        <div class="col-auto">
+                            <nav aria-label="Pagination">
+                                <ul class="pagination pagination-sm mb-0">
+                                    {% if pagination.has_prev %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ pagination.prev_num }}&status={{ status_filter }}">Previous</a>
+                                        </li>
+                                    {% endif %}
+                                    {% for page_num in pagination.iter_pages() %}
+                                        {% if page_num %}
+                                            <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                                                <a class="page-link" href="?page={{ page_num }}&status={{ status_filter }}">{{ page_num }}</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% if pagination.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ pagination.next_num }}&status={{ status_filter }}">Next</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Tidak ada pesanan ditemukan</h5>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div id="uploadModal" class="modal" style="display: none;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Excel Orders</h5>
+                <button type="button" class="btn-close" onclick="document.getElementById('uploadModal').style.display='none'"></button>
+            </div>
+            <div class="modal-body">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="order_files" class="form-label">Pilih file Excel:</label>
+                        <input type="file" class="form-control" id="order_files" name="order_files" 
+                               accept=".xlsx,.xls" multiple required>
+                    </div>
+                    <div class="progress mb-3" id="uploadProgress" style="display: none;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" 
+                             style="width: 0%"
+                             aria-valuenow="0" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            <span id="progressText">0%</span>
+                        </div>
+                    </div>
+                    
+
+                    
+                    <div id="uploadStatus"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('uploadModal').style.display='none'">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="startUpload()">
+                    <i class="fas fa-upload me-2"></i>Upload
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Use AJAX tab switching from base_sidebar.html - no need for duplicate implementation
+console.log('Template version: 2025-07-22-search-enhanced');
+console.log('Orders page loaded at:', new Date().toISOString());
+
+// Select all functionality
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const orderCheckboxes = document.querySelectorAll('.order-checkbox');
+    
+    orderCheckboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+    
+    toggleDeleteButton();
+}
+
+// Update delete button visibility
+function toggleDeleteButton() {
+    const selectedCheckboxes = document.querySelectorAll('.order-checkbox:checked');
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    
+    if (selectedCheckboxes.length > 0) {
+        deleteSelectedBtn.style.display = 'inline-block';
+    } else {
+        deleteSelectedBtn.style.display = 'none';
+    }
+}
+
+// Delete all orders
+function deleteAllOrders() {
+    if (confirm('Apakah Anda yakin ingin menghapus SEMUA pesanan? Tindakan ini tidak dapat dibatalkan.')) {
+        fetch('/orders/delete_all', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat menghapus pesanan');
+        });
+    }
+}
+
+// Delete selected orders
+function deleteSelectedOrders() {
+    const selectedCheckboxes = document.querySelectorAll('.order-checkbox:checked');
+    const orderIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+    
+    if (orderIds.length === 0) {
+        alert('Pilih pesanan yang ingin dihapus');
+        return;
+    }
+    
+    if (confirm(`Apakah Anda yakin ingin menghapus ${orderIds.length} pesanan yang dipilih?`)) {
+        fetch('/orders/delete_selected', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                order_ids: orderIds
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat menghapus pesanan');
+        });
+    }
+}
+
+// FILE-BY-FILE PROGRESS UPLOAD FUNCTION
+function startUpload() {
+    const fileInput = document.getElementById('order_files');
+    if (!fileInput.files.length) {
+        alert('Pilih file Excel terlebih dahulu');
+        return;
+    }
+    
+    const files = Array.from(fileInput.files);
+    const totalFiles = files.length;
+    let processedFiles = 0;
+    let successfulFiles = 0;
+    let failedFiles = 0;
+    
+    const progressBar = document.querySelector('.progress-bar');
+    const progressText = document.getElementById('progressText');
+    const progress = document.querySelector('.progress');
+    const uploadStatus = document.getElementById('uploadStatus');
+    const uploadButton = document.querySelector('.modal-footer .btn-primary');
+    
+    // Show progress elements
+    progress.style.display = 'block';
+    progressBar.style.width = '0%';
+    progressText.textContent = '0%';
+    uploadButton.disabled = true;
+    uploadButton.textContent = 'Processing...';
+    
+    uploadStatus.innerHTML = `<div class="alert alert-info">Memproses ${totalFiles} file... 0/${totalFiles}</div>`;
+    
+    // Process files one by one
+    function processNextFile(fileIndex) {
+        if (fileIndex >= totalFiles) {
+            // All files processed
+            const successPercent = Math.round((successfulFiles / totalFiles) * 100);
+            progressBar.style.width = '100%';
+            progressText.textContent = '100%';
+            
+            if (successfulFiles === totalFiles) {
+                uploadStatus.innerHTML = `<div class="alert alert-success">
+                    <strong>Semua file berhasil!</strong><br>
+                    ${totalFiles} file diproses dengan sukses
+                </div>`;
+            } else if (successfulFiles > 0) {
+                uploadStatus.innerHTML = `<div class="alert alert-warning">
+                    <strong>Proses selesai!</strong><br>
+                    ${successfulFiles} berhasil, ${failedFiles} gagal dari ${totalFiles} file
+                </div>`;
+            } else {
+                uploadStatus.innerHTML = `<div class="alert alert-danger">
+                    <strong>Semua file gagal!</strong><br>
+                    Tidak ada file yang berhasil diproses
+                </div>`;
+            }
+            
+            setTimeout(() => {
+                document.getElementById('uploadModal').style.display = 'none';
+                location.reload();
+            }, 3000);
+            return;
+        }
+        
+        const file = files[fileIndex];
+        const formData = new FormData();
+        formData.append('order_files', file);
+        
+        const xhr = new XMLHttpRequest();
+        
+        xhr.addEventListener('load', function() {
+            processedFiles++;
+            const currentPercent = Math.round((processedFiles / totalFiles) * 100);
+            progressBar.style.width = currentPercent + '%';
+            progressText.textContent = currentPercent + '%';
+            
+            try {
+                const data = JSON.parse(xhr.responseText);
+                if (data && data.success) {
+                    successfulFiles++;
+                    uploadStatus.innerHTML = `<div class="alert alert-info">
+                        ✓ ${file.name} berhasil!<br>
+                        Progress: ${processedFiles}/${totalFiles} file (${successfulFiles} sukses, ${failedFiles} gagal)
+                    </div>`;
+                } else {
+                    failedFiles++;
+                    uploadStatus.innerHTML = `<div class="alert alert-warning">
+                        ✗ ${file.name} gagal!<br>
+                        Progress: ${processedFiles}/${totalFiles} file (${successfulFiles} sukses, ${failedFiles} gagal)
+                    </div>`;
+                }
+            } catch (error) {
+                failedFiles++;
+                uploadStatus.innerHTML = `<div class="alert alert-warning">
+                    ✗ ${file.name} error!<br>
+                    Progress: ${processedFiles}/${totalFiles} file (${successfulFiles} sukses, ${failedFiles} gagal)
+                </div>`;
+            }
+            
+            // Process next file after short delay
+            setTimeout(() => processNextFile(fileIndex + 1), 500);
+        });
+        
+        xhr.addEventListener('error', function() {
+            processedFiles++;
+            failedFiles++;
+            const currentPercent = Math.round((processedFiles / totalFiles) * 100);
+            progressBar.style.width = currentPercent + '%';
+            progressText.textContent = currentPercent + '%';
+            
+            uploadStatus.innerHTML = `<div class="alert alert-warning">
+                ✗ ${file.name} gagal upload!<br>
+                Progress: ${processedFiles}/${totalFiles} file (${successfulFiles} sukses, ${failedFiles} gagal)
+            </div>`;
+            
+            // Process next file after short delay
+            setTimeout(() => processNextFile(fileIndex + 1), 500);
+        });
+        
+        xhr.open('POST', '/orders/import');
+        xhr.send(formData);
+    }
+    
+    // Start processing from first file
+    processNextFile(0);
+}
+
+// Old function kept for compatibility
+function uploadOrdersSimple() {
+    const form = document.getElementById('uploadForm');
+    const formData = new FormData(form);
+    const progressBar = document.querySelector('.progress-bar');
+    const progressText = document.getElementById('progressText');
+    const progress = document.querySelector('.progress');
+    const uploadStatus = document.getElementById('uploadStatus');
+    const uploadButton = document.querySelector('.modal-footer .btn-primary');
+    
+
+    
+    // Validate file selection
+    const fileInput = document.getElementById('order_files');
+    if (!fileInput.files.length) {
+        alert('Pilih file Excel terlebih dahulu');
+        return;
+    }
+    
+    const fileCount = fileInput.files.length;
+    
+    // Show progress elements
+    progress.style.display = 'block';
+    progressBar.style.width = '0%';
+    progressText.textContent = '0%';
+    
+    uploadStatus.innerHTML = `<div class="alert alert-info">Memulai upload ${fileCount} file...</div>`;
+    uploadButton.disabled = true;
+    uploadButton.textContent = 'Uploading...';
+    
+    // Use XMLHttpRequest for progress tracking - simple version
+    const xhr = new XMLHttpRequest();
+    
+    // Track upload progress
+    xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+            const percentComplete = Math.round((e.loaded / e.total) * 100);
+            progressBar.style.width = percentComplete + '%';
+            progressBar.setAttribute('aria-valuenow', percentComplete);
+            progressText.textContent = percentComplete + '%';
+            uploadStatus.innerHTML = `<div class="alert alert-info">Mengupload ${fileCount} file... ${percentComplete}%</div>`;
+        }
+    });
+    
+    // Handle response
+    xhr.addEventListener('load', function() {
+        progressBar.style.width = '100%';
+        progressText.textContent = '100%';
+        
+        try {
+            // Check if response is valid
+            if (!xhr.responseText || xhr.responseText.trim() === '') {
+                throw new Error('Empty response from server');
+            }
+            
+            const data = JSON.parse(xhr.responseText);
+            
+            if (data && data.success) {
+                let statusHtml = `<div class="alert alert-success">
+                    <strong>Upload selesai!</strong><br>
+                    ${data.message || 'Upload berhasil!'}
+                </div>`;
+                
+                uploadStatus.innerHTML = statusHtml;
+                
+                // Auto close modal and reload after 3 seconds
+                setTimeout(() => {
+                    document.getElementById('uploadModal').style.display = 'none';
+                    location.reload();
+                }, 3000);
+            } else {
+                uploadStatus.innerHTML = `<div class="alert alert-danger">
+                    <strong>Upload gagal!</strong><br>
+                    ${data && data.message ? data.message : 'Unknown error occurred'}
+                </div>`;
+                resetUploadButton();
+            }
+        } catch (error) {
+            console.error('Error parsing response:', error);
+            console.log('Raw response:', xhr.responseText);
+            
+            // Handle different types of responses
+            if (xhr.status === 200) {
+                // Success but parsing failed - probably HTML error page
+                uploadStatus.innerHTML = `<div class="alert alert-warning">
+                    <strong>Upload mungkin berhasil!</strong><br>
+                    Server merespons tapi format tidak sesuai. Silakan refresh halaman untuk melihat hasil.
+                </div>`;
+                setTimeout(() => {
+                    document.getElementById('uploadModal').style.display = 'none';
+                    location.reload();
+                }, 5000);
+            } else {
+                uploadStatus.innerHTML = `<div class="alert alert-danger">
+                    <strong>Error!</strong><br>
+                    Terjadi kesalahan saat memproses respons server (Status: ${xhr.status})
+                </div>`;
+                resetUploadButton();
+            }
+        }
+    });
+    
+    // Handle error
+    xhr.addEventListener('error', function() {
+        uploadStatus.innerHTML = `<div class="alert alert-danger">
+            <strong>Error!</strong><br>
+            Terjadi kesalahan saat mengupload file. Periksa koneksi internet Anda.
+        </div>`;
+        resetUploadButton();
+    });
+    
+    // Handle timeout
+    xhr.addEventListener('timeout', function() {
+        uploadStatus.innerHTML = `<div class="alert alert-warning">
+            <strong>Timeout!</strong><br>
+            Upload memakan waktu terlalu lama. File mungkin terlalu besar.
+        </div>`;
+        resetUploadButton();
+    });
+    
+    // Configure and send request
+    xhr.timeout = 600000; // 10 minutes timeout for many files
+    xhr.open('POST', '/orders/import');
+    xhr.send(formData);
+    
+    function resetUploadButton() {
+        uploadButton.disabled = false;
+        uploadButton.textContent = 'Upload';
+        progress.style.display = 'none';
+    }
+}
+
+// Search orders functionality
+function searchOrders() {
+    const searchInput = document.getElementById('searchOrderInput');
+    const searchQuery = searchInput.value.trim();
+    
+    if (!searchQuery) {
+        alert('Masukkan nomor pesanan atau resi untuk dicari');
+        return;
+    }
+    
+    // Navigate to search URL
+    window.location.href = `/orders/new?search=${encodeURIComponent(searchQuery)}`;
+}
+
+// Clear search functionality
+function clearOrderSearch() {
+    const searchInput = document.getElementById('searchOrderInput');
+    searchInput.value = '';
+    
+    // Reload orders without search filter
+    window.location.href = '/orders/new';
+}
+
+// Refresh orders functionality
+function refreshOrders() {
+    location.reload();
+}
+
+// Initialize page and ensure all functions are available
+document.addEventListener('DOMContentLoaded', function() {
+    toggleDeleteButton();
+    
+    // Add click event listeners to all status tabs
+    document.querySelectorAll('.status-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const status = this.getAttribute('data-status');
+            window.location.href = `/orders/new?status=${status}`;
+        });
+    });
+    
+    // Add cache-busting info to console for debugging
+    console.log('Orders page loaded at:', new Date().toISOString());
+    
+    // Initialize other functionality
+    console.log('Orders page loaded successfully with event delegation');
+});
+
+// Add versioning to force cache refresh
+console.log('Template version: 2025-07-22-search-enhanced');
+</script>
+{% endblock %}

@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Shopee Setup - Strong Order Management{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card bg-dark text-light">
+                <div class="card-header">
+                    <h3 class="mb-0">
+                        <i class="fab fa-shopify me-2"></i>
+                        Shopee Integration Setup
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <!-- API Status -->
+                    <div class="alert alert-success mb-4">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>Status API:</strong> Live dan siap digunakan
+                        <br>
+                        <small class="text-muted">
+                            Partner ID: 2011911 | Aplikasi sudah diapprove oleh Shopee
+                        </small>
+                    </div>
+
+                    <!-- Flash Messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else 'info' }} alert-dismissible fade show">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <!-- Authorization Section -->
+                    <div class="mb-4">
+                        <h5>Langkah 1: Authorize Toko Shopee</h5>
+                        <p class="text-muted">
+                            Klik tombol di bawah ini untuk mengauthorize toko Shopee Anda dengan sistem Strong.
+                        </p>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                            <a href="/shopee-auth" class="btn btn-warning btn-lg">
+                                <i class="fas fa-key me-2"></i>
+                                Authorize Shopee Store
+                            </a>
+                            <button type="button" class="btn btn-outline-info" onclick="testConnection()">
+                                <i class="fas fa-link me-2"></i>
+                                Test Connection
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Sync Orders Section -->
+                    <div class="mb-4">
+                        <h5>Langkah 2: Sync Data Pesanan</h5>
+                        <p class="text-muted">
+                            Setelah authorization berhasil, sync pesanan dari Shopee ke sistem Strong.
+                        </p>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-start">
+                            <button type="button" class="btn btn-success" onclick="syncOrders()">
+                                <i class="fas fa-sync me-2"></i>
+                                Sync Orders Now
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="showSyncHistory()">
+                                <i class="fas fa-history me-2"></i>
+                                Sync History
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Current Status -->
+                    <div class="card bg-secondary">
+                        <div class="card-header">
+                            <h6 class="mb-0">Connection Status</h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="connectionStatus">
+                                <div class="text-center">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>
+                                    Checking connection...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function testConnection() {
+    document.getElementById('connectionStatus').innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin me-2"></i>Testing connection...</div>';
+    
+    fetch('/shopee-test-connection', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('connectionStatus').innerHTML = `
+                <div class="text-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Connection successful!
+                    <br>
+                    <small class="text-muted">Shop ID: ${data.shop_id || 'Not set'}</small>
+                </div>
+            `;
+        } else {
+            document.getElementById('connectionStatus').innerHTML = `
+                <div class="text-danger">
+                    <i class="fas fa-times-circle me-2"></i>
+                    Connection failed: ${data.error}
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        document.getElementById('connectionStatus').innerHTML = `
+            <div class="text-danger">
+                <i class="fas fa-times-circle me-2"></i>
+                Error: ${error.message}
+            </div>
+        `;
+    });
+}
+
+function syncOrders() {
+    if (!confirm('Are you sure you want to sync orders from Shopee?')) {
+        return;
+    }
+    
+    document.getElementById('connectionStatus').innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin me-2"></i>Syncing orders...</div>';
+    
+    fetch('/sync-shopee-orders', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('connectionStatus').innerHTML = `
+                <div class="text-success">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Successfully synced ${data.orders_synced} orders!
+                </div>
+            `;
+        } else {
+            document.getElementById('connectionStatus').innerHTML = `
+                <div class="text-danger">
+                    <i class="fas fa-times-circle me-2"></i>
+                    Sync failed: ${data.error}
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        document.getElementById('connectionStatus').innerHTML = `
+            <div class="text-danger">
+                <i class="fas fa-times-circle me-2"></i>
+                Error: ${error.message}
+            </div>
+        `;
+    });
+}
+
+// Auto-check connection on page load
+document.addEventListener('DOMContentLoaded', function() {
+    testConnection();
+});
+</script>
+{% endblock %}

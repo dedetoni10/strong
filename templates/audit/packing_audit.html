@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block head %}
+<style>
+.audit-header {
+    background: linear-gradient(135deg, #ffc107 0%, #e09600 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+.audit-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.user-badge {
+    background: #FF6B35;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 25px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.action-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 25px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.action-started {
+    background: #ffc107;
+    color: black;
+}
+
+.action-completed {
+    background: #28a745;
+    color: white;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 25px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.status-success {
+    background: #28a745;
+    color: white;
+}
+
+.status-pending {
+    background: #ffc107;
+    color: black;
+}
+
+.status-failed {
+    background: #dc3545;
+    color: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="audit-header text-center">
+    <div class="container">
+        <h1><i class="fas fa-box-check me-3"></i>Audit Trail - Packing</h1>
+        <p class="lead">Riwayat proses packing validation dengan informasi user yang melakukan operasi</p>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-list me-2"></i>Riwayat Packing
+                                <span class="badge bg-warning ms-2">{{ audits.total }} Total</span>
+                            </h5>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="search-container">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="searchInput" placeholder="Cari nomor order atau nama customer..." value="{{ request.args.get('search', '') }}">
+                                    <button class="btn btn-outline-light" type="button" id="searchBtn">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                    {% if request.args.get('search') %}
+                                    <a href="{{ url_for('packing_audit_trail') }}" class="btn btn-outline-danger" title="Clear Search">
+                                        <i class="fas fa-times"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if audits.items %}
+                        {% for audit in audits.items %}
+                        <div class="audit-card">
+                            <div class="row align-items-center">
+                                <div class="col-md-2">
+                                    <div class="text-center">
+                                        <i class="fas fa-box-check text-warning fa-2x"></i>
+                                        <div class="mt-2">
+                                            <span class="action-badge {% if audit.action == 'validation_started' %}action-started{% else %}action-completed{% endif %}">
+                                                {% if audit.action == 'validation_started' %}
+                                                    <i class="fas fa-play me-1"></i>Dimulai
+                                                {% else %}
+                                                    <i class="fas fa-check me-1"></i>Selesai
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <h6 class="text-white mb-1">{{ audit.order_number }}</h6>
+                                    <p class="text-muted mb-1">{{ audit.customer_name }}</p>
+                                    <small class="text-muted">{{ audit.items_validated }} items validated</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="text-center">
+                                        <span class="status-badge status-{{ audit.validation_status }}">
+                                            {% if audit.validation_status == 'success' %}
+                                                <i class="fas fa-check me-1"></i>Berhasil
+                                            {% elif audit.validation_status == 'pending' %}
+                                                <i class="fas fa-clock me-1"></i>Pending
+                                            {% else %}
+                                                <i class="fas fa-times me-1"></i>Gagal
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="text-center">
+                                        <span class="user-badge">
+                                            <i class="fas fa-user me-1"></i>{{ audit.user_name }}
+                                        </span>
+                                        <div class="mt-1">
+                                            <small class="text-muted">{{ audit.user_role|title }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="text-center">
+                                        <small class="text-muted">
+                                            {{ audit.created_at.strftime('%d/%m/%Y') }}<br>
+                                            {{ audit.created_at.strftime('%H:%M:%S') }}
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-1">
+                                    <div class="text-center">
+                                        {% if audit.notes %}
+                                        <button class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip" title="{{ audit.notes }}">
+                                            <i class="fas fa-info-circle"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        <!-- Pagination -->
+                        {% if audits.pages > 1 %}
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination justify-content-center">
+                                {% if audits.has_prev %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('packing_audit_trail', page=audits.prev_num, search=request.args.get('search', '')) }}">Previous</a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for page_num in audits.iter_pages() %}
+                                    {% if page_num %}
+                                        {% if page_num != audits.page %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ url_for('packing_audit_trail', page=page_num, search=request.args.get('search', '')) }}">{{ page_num }}</a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ page_num }}</span>
+                                            </li>
+                                        {% endif %}
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">...</span>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if audits.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('packing_audit_trail', page=audits.next_num, search=request.args.get('search', '')) }}">Next</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-box-check fa-4x text-muted mb-4"></i>
+                            <h4 class="text-muted">Belum ada riwayat packing</h4>
+                            <p class="text-muted">Riwayat packing akan muncul disini setelah user melakukan packing validation</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+    
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    
+    function performSearch() {
+        const searchTerm = searchInput.value.trim();
+        const url = new URL(window.location.href);
+        
+        if (searchTerm) {
+            url.searchParams.set('search', searchTerm);
+        } else {
+            url.searchParams.delete('search');
+        }
+        
+        url.searchParams.delete('page'); // Reset to first page
+        window.location.href = url.toString();
+    }
+    
+    searchBtn.addEventListener('click', performSearch);
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            performSearch();
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block head %}
+<style>
+.audit-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+.audit-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.user-badge {
+    background: #FF6B35;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 25px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.scan-type-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 25px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.scan-type-picking {
+    background: #007bff;
+    color: white;
+}
+
+.scan-type-packing {
+    background: #ffc107;
+    color: black;
+}
+
+.scan-type-ready_pickup {
+    background: #28a745;
+    color: white;
+}
+
+.success-badge {
+    background: #28a745;
+    color: white;
+}
+
+.error-badge {
+    background: #dc3545;
+    color: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="audit-header text-center">
+    <div class="container">
+        <h1><i class="fas fa-history me-3"></i>Audit Trail - Scan History</h1>
+        <p class="lead">Riwayat scanning dengan informasi user yang melakukan operasi</p>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-list me-2"></i>Riwayat Scanning
+                                <span class="badge bg-primary ms-2">{{ history.total }} Total</span>
+                            </h5>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="search-container">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="searchInput" placeholder="Cari nomor order atau nomor resi..." value="{{ request.args.get('search', '') }}">
+                                    <button class="btn btn-outline-light" type="button" id="searchBtn">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                    {% if request.args.get('search') %}
+                                    <a href="{{ url_for('scan_history_audit') }}" class="btn btn-outline-danger" title="Clear Search">
+                                        <i class="fas fa-times"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if history.items %}
+                        {% for scan in history.items %}
+                        <div class="audit-card">
+                            <div class="row align-items-center">
+                                <div class="col-md-2">
+                                    <div class="text-center">
+                                        {% if scan.success %}
+                                            <i class="fas fa-check-circle text-success fa-2x"></i>
+                                        {% else %}
+                                            <i class="fas fa-times-circle text-danger fa-2x"></i>
+                                        {% endif %}
+                                        <div class="mt-2">
+                                            <span class="badge {% if scan.success %}success-badge{% else %}error-badge{% endif %}">
+                                                {% if scan.success %}Berhasil{% else %}Gagal{% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <h6 class="text-white mb-1">{{ scan.order_number }}</h6>
+                                    <p class="text-muted mb-1">{{ scan.customer_name }}</p>
+                                    <small class="text-muted">{{ scan.barcode }}</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="scan-type-badge scan-type-{{ scan.scan_type }}">
+                                        {% if scan.scan_type == 'picking' %}
+                                            <i class="fas fa-hand-paper me-1"></i>Picking
+                                        {% elif scan.scan_type == 'packing' %}
+                                            <i class="fas fa-box-check me-1"></i>Packing
+                                        {% elif scan.scan_type == 'ready_pickup' %}
+                                            <i class="fas fa-truck me-1"></i>Ready Pickup
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="text-center">
+                                        <span class="user-badge">
+                                            <i class="fas fa-user me-1"></i>{{ scan.user_name or 'Unknown' }}
+                                        </span>
+                                        <div class="mt-1">
+                                            <small class="text-muted">{{ scan.user_role|title or 'Unknown' }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="text-center">
+                                        <small class="text-muted">
+                                            {{ scan.scanned_at.strftime('%d/%m/%Y') }}<br>
+                                            {{ scan.scanned_at.strftime('%H:%M:%S') }}
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-1">
+                                    <div class="text-center">
+                                        <button class="btn btn-sm btn-outline-info" data-bs-toggle="tooltip" title="{{ scan.message }}">
+                                            <i class="fas fa-info-circle"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        <!-- Pagination -->
+                        {% if history.pages > 1 %}
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination justify-content-center">
+                                {% if history.has_prev %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('scan_history_audit', page=history.prev_num, search=request.args.get('search', '')) }}">Previous</a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for page_num in history.iter_pages() %}
+                                    {% if page_num %}
+                                        {% if page_num != history.page %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ url_for('scan_history_audit', page=page_num, search=request.args.get('search', '')) }}">{{ page_num }}</a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ page_num }}</span>
+                                            </li>
+                                        {% endif %}
+                                    {% else %}
+                                        <li class="page-item disabled">
+                                            <span class="page-link">...</span>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if history.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('scan_history_audit', page=history.next_num, search=request.args.get('search', '')) }}">Next</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-history fa-4x text-muted mb-4"></i>
+                            <h4 class="text-muted">Belum ada riwayat scanning</h4>
+                            <p class="text-muted">Riwayat scanning akan muncul disini setelah user melakukan scanning</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+    
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    
+    function performSearch() {
+        const searchTerm = searchInput.value.trim();
+        const url = new URL(window.location.href);
+        
+        if (searchTerm) {
+            url.searchParams.set('search', searchTerm);
+        } else {
+            url.searchParams.delete('search');
+        }
+        
+        url.searchParams.delete('page'); // Reset to first page
+        window.location.href = url.toString();
+    }
+    
+    searchBtn.addEventListener('click', performSearch);
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            performSearch();
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,270 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Pesanan Saya - Strong Order Management{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-0">Pesanan Saya</h1>
+        <p class="text-muted">Integrated dashboard sistem order management</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                            <i class="fas fa-shopping-cart text-primary"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ stats.total_orders or 0 }}</h3>
+                        <p class="text-muted mb-0">Total Orders</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                            <i class="fas fa-box text-success"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ stats.processing_orders or 0 }}</h3>
+                        <p class="text-muted mb-0">Processing</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                            <i class="fas fa-clock text-warning"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ stats.pending_orders or 0 }}</h3>
+                        <p class="text-muted mb-0">Pending</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-info bg-opacity-10 p-3">
+                            <i class="fas fa-check-circle text-info"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ stats.completed_orders or 0 }}</h3>
+                        <p class="text-muted mb-0">Completed</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">
+            <i class="fas fa-lightning-bolt me-2"></i>Quick Actions
+        </h5>
+        <div class="row">
+            <div class="col-md-3">
+                <a href="#" class="btn btn-primary w-100 mb-2" onclick="document.getElementById('uploadModal').style.display='block';">
+                    <i class="fas fa-upload me-2"></i>Upload Orders
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{{ url_for('orders') }}" class="btn btn-success w-100 mb-2">
+                    <i class="fas fa-list me-2"></i>View All Orders
+                </a>
+            </div>
+            <div class="col-md-3">
+                <a href="{{ url_for('scan_center') }}" class="btn btn-info w-100 mb-2">
+                    <i class="fas fa-qrcode me-2"></i>Scan Center
+                </a>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-warning w-100 mb-2" onclick="refreshData()">
+                    <i class="fas fa-refresh me-2"></i>Refresh Data
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Orders -->
+<div class="card">
+    <div class="card-header bg-purple text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-shopping-cart me-2"></i>Recent Orders
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Order Number</th>
+                        <th>Customer</th>
+                        <th>Status</th>
+                        <th>Total</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in recent_orders %}
+                    <tr>
+                        <td>{{ order.order_number }}</td>
+                        <td>{{ order.customer_name }}</td>
+                        <td>
+                            {% if order.status == 'pending' %}
+                            <span class="badge bg-warning">Pending</span>
+                            {% elif order.status == 'processing' %}
+                            <span class="badge bg-info">Processing</span>
+                            {% elif order.status == 'completed' %}
+                            <span class="badge bg-success">Completed</span>
+                            {% else %}
+                            <span class="badge bg-primary">{{ order.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>Rp {{ "{:,.0f}".format(order.total_amount) }}</td>
+                        <td>{{ order.created_at.strftime('%d/%m/%Y') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div id="uploadModal" class="modal" style="display: none;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Orders</h5>
+                <button type="button" class="btn-close" onclick="document.getElementById('uploadModal').style.display='none';">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="orderFiles" class="form-label">Select Excel files:</label>
+                        <input type="file" class="form-control" id="orderFiles" name="order_files" multiple accept=".xlsx,.xls">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 1000;
+}
+
+.modal-dialog {
+    position: relative;
+    width: 500px;
+    margin: 100px auto;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+}
+</style>
+
+<script>
+function refreshData() {
+    location.reload();
+}
+
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('/orders/import', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Upload berhasil: ' + data.message);
+            location.reload();
+        } else {
+            alert('Upload gagal: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    });
+});
+
+// Auto-refresh every 30 seconds
+setInterval(function() {
+    fetch('/api/monitoring/stats')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update statistics without full page reload
+                // This would update the numbers in the cards
+            }
+        })
+        .catch(error => {
+            console.log('Auto-refresh failed:', error);
+        });
+}, 30000);
+</script>
+{% endblock %}

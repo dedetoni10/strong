@@ -1,0 +1,953 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics & Reports - STRONG Order Management{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<style>
+    .analytics-container {
+        background: linear-gradient(135deg, rgba(255, 107, 53, 0.05) 0%, rgba(247, 147, 30, 0.05) 100%);
+        min-height: 100vh;
+        padding: 1.5rem 0;
+    }
+    
+    .page-header {
+        background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+        border-radius: 20px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(255, 107, 53, 0.3);
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        z-index: 1;
+    }
+    
+    .page-header-content {
+        position: relative;
+        z-index: 2;
+    }
+    
+    .kpi-cards {
+        margin-bottom: 2.5rem;
+    }
+    
+    .kpi-card {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 107, 53, 0.2);
+        border-radius: 20px;
+        padding: 2rem;
+        height: 100%;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(255, 107, 53, 0.2);
+        border-color: rgba(255, 107, 53, 0.4);
+    }
+    
+    .kpi-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #FF6B35, #F7931E, #FFB84D);
+        border-radius: 20px 20px 0 0;
+    }
+    
+    .kpi-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #FF6B35, #F7931E);
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        margin-bottom: 1rem;
+        box-shadow: 0 5px 15px rgba(255, 107, 53, 0.3);
+    }
+    
+    .kpi-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, #FF6B35, #F7931E);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .kpi-label {
+        font-size: 1rem;
+        color: var(--bs-gray-300);
+        margin-bottom: 0.5rem;
+    }
+    
+    .kpi-growth {
+        font-size: 0.875rem;
+        color: #28a745;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .chart-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 107, 53, 0.15);
+        border-radius: 20px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    
+    .chart-card:hover {
+        border-color: rgba(255, 107, 53, 0.3);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .chart-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(255, 107, 53, 0.2);
+    }
+    
+    .chart-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #FF6B35, #F7931E);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+    
+    .chart-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin: 0;
+        color: white;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 350px;
+    }
+    
+    .filters-card {
+        background: linear-gradient(135deg, rgba(33, 37, 41, 0.9) 0%, rgba(52, 58, 64, 0.9) 100%);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 107, 53, 0.3);
+        border-radius: 20px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+    
+    .filters-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        color: white;
+    }
+    
+    .filter-icon {
+        width: 35px;
+        height: 35px;
+        background: linear-gradient(135deg, #FF6B35, #F7931E);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.875rem;
+    }
+    
+    .export-controls {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+    
+    .export-btn {
+        background: linear-gradient(135deg, #FF6B35, #F7931E);
+        border: none;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+    }
+    
+    .export-btn:hover {
+        background: linear-gradient(135deg, #E55A2E, #E8831A);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
+    }
+    
+    .data-table-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 107, 53, 0.15);
+        border-radius: 20px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .table-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(255, 107, 53, 0.2);
+    }
+    
+    .table-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #FF6B35, #F7931E);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+    
+    .modern-table {
+        background: transparent;
+        border-radius: 15px;
+        overflow: hidden;
+    }
+    
+    .modern-table thead th {
+        background: linear-gradient(135deg, rgba(255, 107, 53, 0.2), rgba(247, 147, 30, 0.2));
+        border: none;
+        color: white;
+        font-weight: 600;
+        padding: 1rem;
+    }
+    
+    .modern-table tbody tr {
+        border-bottom: 1px solid rgba(255, 107, 53, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .modern-table tbody tr:hover {
+        background: rgba(255, 107, 53, 0.1);
+    }
+    
+    .modern-table tbody td {
+        padding: 1rem;
+        border: none;
+        vertical-align: middle;
+    }
+    
+    .form-control, .form-select {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 107, 53, 0.3);
+        border-radius: 10px;
+        color: white;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: #FF6B35;
+        box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25);
+        color: white;
+    }
+    
+    .form-control::placeholder {
+        color: rgba(255, 255, 255, 0.6);
+    }
+    
+    .form-label {
+        color: white;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    @media (max-width: 768px) {
+        .page-header {
+            padding: 1.5rem;
+            text-align: center;
+        }
+        
+        .export-controls {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .chart-container {
+            height: 300px;
+        }
+        
+        .kpi-card {
+            margin-bottom: 1rem;
+        }
+    }
+    
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 2rem;
+    }
+    
+    .metric-trend {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 20px;
+        font-weight: 500;
+    }
+    
+    .trend-up {
+        background: rgba(40, 167, 69, 0.2);
+        color: #28a745;
+    }
+    
+    .trend-down {
+        background: rgba(220, 53, 69, 0.2);
+        color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="analytics-container">
+    <div class="container">
+        <!-- Modern Page Header -->
+        <div class="page-header">
+            <div class="page-header-content">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="chart-icon me-3">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div>
+                                <h1 class="mb-2">Analytics & Business Intelligence</h1>
+                                <p class="mb-0 opacity-75">Insight mendalam untuk pertumbuhan bisnis Strong Order Management</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 text-lg-end">
+                        <div class="export-controls">
+                            <button type="button" class="btn export-btn" onclick="exportReport('excel')">
+                                <i class="fas fa-file-excel"></i>Export Excel
+                            </button>
+                            <button type="button" class="btn export-btn" onclick="exportReport('pdf')">
+                                <i class="fas fa-file-pdf"></i>Export PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Filters -->
+        <div class="filters-card">
+            <div class="filters-header">
+                <div class="filter-icon">
+                    <i class="fas fa-sliders-h"></i>
+                </div>
+                <h4 class="mb-0">Filter & Periode Analisis</h4>
+            </div>
+            <form method="GET" class="row align-items-end">
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <label class="form-label">
+                        <i class="fas fa-calendar-alt me-2"></i>Dari Tanggal
+                    </label>
+                    <input type="date" class="form-control" name="date_from" value="{{ date_from }}">
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <label class="form-label">
+                        <i class="fas fa-calendar-check me-2"></i>Sampai Tanggal
+                    </label>
+                    <input type="date" class="form-control" name="date_to" value="{{ date_to }}">
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <label class="form-label">
+                        <i class="fas fa-clock me-2"></i>Quick Select
+                    </label>
+                    <select class="form-select" name="period" onchange="setPeriod(this.value)">
+                        <option value="custom" {{ 'selected' if period == 'custom' }}>Custom Range</option>
+                        <option value="today" {{ 'selected' if period == 'today' }}>Hari Ini</option>
+                        <option value="week" {{ 'selected' if period == 'week' }}>7 Hari Terakhir</option>
+                        <option value="month" {{ 'selected' if period == 'month' }}>30 Hari Terakhir</option>
+                        <option value="quarter" {{ 'selected' if period == 'quarter' }}>3 Bulan Terakhir</option>
+                    </select>
+                </div>
+                <div class="col-lg-3 col-md-6 mb-3">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn export-btn w-100">
+                        <i class="fas fa-search me-2"></i>Analisis Data
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Enhanced KPI Cards -->
+        <div class="kpi-cards">
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-6">
+                    <div class="kpi-card">
+                        <div class="kpi-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="kpi-value">{{ analytics.total_orders }}</div>
+                        <div class="kpi-label">Total Order</div>
+                        <div class="kpi-growth">
+                            <i class="fas fa-arrow-up"></i>
+                            <span class="metric-trend trend-up">+{{ analytics.orders_growth }}%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="kpi-card">
+                        <div class="kpi-icon">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="kpi-value">{{ "{:,.0f}".format(analytics.total_revenue) }}</div>
+                        <div class="kpi-label">Total Revenue (Rp)</div>
+                        <div class="kpi-growth">
+                            <i class="fas fa-arrow-up"></i>
+                            <span class="metric-trend trend-up">+{{ analytics.revenue_growth }}%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="kpi-card">
+                        <div class="kpi-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="kpi-value">{{ analytics.avg_fulfillment_time }}h</div>
+                        <div class="kpi-label">Avg Fulfillment</div>
+                        <div class="kpi-growth">
+                            <i class="fas fa-arrow-down"></i>
+                            <span class="metric-trend trend-up">-{{ analytics.fulfillment_improvement }}%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="kpi-card">
+                        <div class="kpi-icon">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                        <div class="kpi-value">{{ analytics.total_items_sold }}</div>
+                        <div class="kpi-label">Items Terjual</div>
+                        <div class="kpi-growth">
+                            <i class="fas fa-arrow-up"></i>
+                            <span class="metric-trend trend-up">+{{ analytics.items_growth }}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Charts Grid -->
+        <div class="row g-4 mb-4">
+            <!-- Sales Trend Chart -->
+            <div class="col-lg-8">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h4 class="chart-title">Trend Penjualan & Revenue</h4>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="salesTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Order Status Distribution -->
+            <div class="col-lg-4">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-icon">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        <h4 class="chart-title">Status Pesanan</h4>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="orderStatusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Secondary Charts Row -->
+        <div class="row g-4 mb-4">
+            <!-- Top Products -->
+            <div class="col-lg-6">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <h4 class="chart-title">Top Produk Terlaris</h4>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="topProductsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Revenue by Hour -->
+            <div class="col-lg-6">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <h4 class="chart-title">Revenue per Jam</h4>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="hourlyRevenueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Tables Section -->
+        <div class="row g-4">
+            <!-- Best Performing Products -->
+            <div class="col-lg-6">
+                <div class="data-table-card">
+                    <div class="table-header">
+                        <div class="table-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <h4 class="mb-0">Top Produk Terlaris</h4>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table modern-table">
+                            <thead>
+                                <tr>
+                                    <th>Produk</th>
+                                    <th>Qty Terjual</th>
+                                    <th>Revenue</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in analytics.top_products %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="kpi-icon me-2" style="width: 30px; height: 30px; font-size: 0.75rem;">
+                                                <i class="fas fa-cube"></i>
+                                            </div>
+                                            {{ product.name }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ product.quantity_sold }}</span>
+                                    </td>
+                                    <td>
+                                        <strong>Rp {{ "{:,.0f}".format(product.revenue) }}</strong>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent High Value Orders -->
+            <div class="col-lg-6">
+                <div class="data-table-card">
+                    <div class="table-header">
+                        <div class="table-icon">
+                            <i class="fas fa-gem"></i>
+                        </div>
+                        <h4 class="mb-0">Pesanan High Value</h4>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table modern-table">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer</th>
+                                    <th>Nilai</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in analytics.high_value_orders %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="kpi-icon me-2" style="width: 30px; height: 30px; font-size: 0.75rem;">
+                                                <i class="fas fa-receipt"></i>
+                                            </div>
+                                            {{ order.order_number }}
+                                        </div>
+                                    </td>
+                                    <td>{{ order.customer_name }}</td>
+                                    <td>
+                                        <strong>Rp {{ "{:,.0f}".format(order.total_amount) }}</strong>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Loading Spinner -->
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner-border text-warning" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Sedang memuat data analytics...</p>
+        </div>
+        
+    </div>
+</div>
+
+<script>
+// Wait for DOM and Chart.js to load
+document.addEventListener('DOMContentLoaded', function() {
+    // Chart Data from Backend
+    const chartData = {{ chart_data|tojsonfilter }};
+
+    // Check if Chart.js is loaded
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js not loaded');
+        return;
+    }
+
+    // Modern Chart Configuration
+    Chart.defaults.color = '#ffffff';
+    Chart.defaults.borderColor = 'rgba(255, 107, 53, 0.2)';
+    Chart.defaults.backgroundColor = 'rgba(255, 107, 53, 0.1)';
+
+// Sales Trend Chart
+const salesCtx = document.getElementById('salesTrendChart').getContext('2d');
+new Chart(salesCtx, {
+    type: 'line',
+    data: {
+        labels: chartData.sales_trend.labels,
+        datasets: [{
+            label: 'Revenue (Rp)',
+            data: chartData.sales_trend.revenue,
+            borderColor: '#FF6B35',
+            backgroundColor: 'rgba(255, 107, 53, 0.1)',
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: '#FF6B35',
+            pointBorderColor: '#ffffff',
+            pointHoverBackgroundColor: '#F7931E',
+            pointHoverRadius: 8,
+        }, {
+            label: 'Jumlah Order',
+            data: chartData.sales_trend.orders,
+            borderColor: '#F7931E',
+            backgroundColor: 'rgba(247, 147, 30, 0.1)',
+            tension: 0.4,
+            fill: false,
+            pointBackgroundColor: '#F7931E',
+            pointBorderColor: '#ffffff',
+            pointHoverBackgroundColor: '#FFB84D',
+            pointHoverRadius: 8,
+            yAxisID: 'y1'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
+        plugins: {
+            legend: {
+                position: 'top',
+                labels: { 
+                    color: 'white',
+                    usePointStyle: true,
+                    padding: 20
+                }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                titleColor: '#FF6B35',
+                bodyColor: 'white',
+                borderColor: '#FF6B35',
+                borderWidth: 1
+            }
+        },
+        scales: {
+            x: { 
+                ticks: { color: 'white' }, 
+                grid: { color: 'rgba(255,255,255,0.1)' },
+                title: {
+                    display: true,
+                    text: 'Periode',
+                    color: 'white'
+                }
+            },
+            y: { 
+                ticks: { color: 'white' }, 
+                grid: { color: 'rgba(255,255,255,0.1)' },
+                title: {
+                    display: true,
+                    text: 'Revenue (Rp)',
+                    color: 'white'
+                }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                ticks: { color: 'white' },
+                grid: { drawOnChartArea: false },
+                title: {
+                    display: true,
+                    text: 'Jumlah Order',
+                    color: 'white'
+                }
+            }
+        }
+    }
+});
+
+// Order Status Chart
+const statusCtx = document.getElementById('orderStatusChart').getContext('2d');
+new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: chartData.order_status.labels,
+        datasets: [{
+            data: chartData.order_status.data,
+            backgroundColor: ['#FF6B35', '#F7931E', '#FFB84D', '#28a745', '#dc3545'],
+            borderColor: ['#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff'],
+            borderWidth: 2,
+            hoverOffset: 4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: { 
+                    color: 'white',
+                    usePointStyle: true,
+                    padding: 15
+                }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                titleColor: '#FF6B35',
+                bodyColor: 'white',
+                borderColor: '#FF6B35',
+                borderWidth: 1
+            }
+        }
+    }
+});
+
+// Top Products Chart
+const productsCtx = document.getElementById('topProductsChart').getContext('2d');
+new Chart(productsCtx, {
+    type: 'bar',
+    data: {
+        labels: chartData.top_products.labels,
+        datasets: [{
+            label: 'Qty Terjual',
+            data: chartData.top_products.data,
+            backgroundColor: 'rgba(255, 107, 53, 0.8)',
+            borderColor: '#FF6B35',
+            borderWidth: 2,
+            borderRadius: 8,
+            borderSkipped: false,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                labels: { 
+                    color: 'white',
+                    usePointStyle: true
+                }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                titleColor: '#FF6B35',
+                bodyColor: 'white',
+                borderColor: '#FF6B35',
+                borderWidth: 1
+            }
+        },
+        scales: {
+            x: { 
+                ticks: { color: 'white' }, 
+                grid: { color: 'rgba(255,255,255,0.1)' },
+                title: {
+                    display: true,
+                    text: 'Produk',
+                    color: 'white'
+                }
+            },
+            y: { 
+                ticks: { color: 'white' }, 
+                grid: { color: 'rgba(255,255,255,0.1)' },
+                title: {
+                    display: true,
+                    text: 'Quantity',
+                    color: 'white'
+                }
+            }
+        }
+    }
+});
+
+// Hourly Revenue Chart
+const hourlyCtx = document.getElementById('hourlyRevenueChart').getContext('2d');
+new Chart(hourlyCtx, {
+    type: 'bar',
+    data: {
+        labels: chartData.hourly_revenue.labels,
+        datasets: [{
+            label: 'Revenue (Rp)',
+            data: chartData.hourly_revenue.data,
+            backgroundColor: 'rgba(247, 147, 30, 0.8)',
+            borderColor: '#F7931E',
+            borderWidth: 2,
+            borderRadius: 8,
+            borderSkipped: false,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                labels: { 
+                    color: 'white',
+                    usePointStyle: true
+                }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                titleColor: '#F7931E',
+                bodyColor: 'white',
+                borderColor: '#F7931E',
+                borderWidth: 1
+            }
+        },
+        scales: {
+            x: { 
+                ticks: { color: 'white' }, 
+                grid: { color: 'rgba(255,255,255,0.1)' },
+                title: {
+                    display: true,
+                    text: 'Jam',
+                    color: 'white'
+                }
+            },
+            y: { 
+                ticks: { color: 'white' }, 
+                grid: { color: 'rgba(255,255,255,0.1)' },
+                title: {
+                    display: true,
+                    text: 'Revenue (Rp)',
+                    color: 'white'
+                }
+            }
+        }
+    }
+});
+
+    // Show loading spinner during page load
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    if (loadingSpinner) {
+        setTimeout(() => {
+            loadingSpinner.style.display = 'none';
+        }, 1000);
+    }
+
+    // Initialize with current week
+    setTimeout(() => {
+        setPeriod('week');
+    }, 100);
+});
+
+// Global utility functions (outside DOMContentLoaded)
+function setPeriod(period) {
+    const today = new Date();
+    let fromDate, toDate;
+    
+    switch(period) {
+        case 'today':
+            fromDate = toDate = today.toISOString().split('T')[0];
+            break;
+        case 'week':
+            fromDate = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            toDate = today.toISOString().split('T')[0];
+            break;
+        case 'month':
+            fromDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            toDate = today.toISOString().split('T')[0];
+            break;
+        case 'quarter':
+            fromDate = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            toDate = today.toISOString().split('T')[0];
+            break;
+        default:
+            return;
+    }
+    
+    document.querySelector('input[name="date_from"]').value = fromDate;
+    document.querySelector('input[name="date_to"]').value = toDate;
+}
+
+function exportReport(format) {
+    const dateFrom = document.querySelector('input[name="date_from"]').value;
+    const dateTo = document.querySelector('input[name="date_to"]').value;
+    
+    const url = `/analytics/export?format=${format}&date_from=${dateFrom}&date_to=${dateTo}`;
+    window.open(url, '_blank');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Hasil Import{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-check-circle text-success me-2"></i>Hasil Import Excel</h2>
+                <a href="{{ url_for('orders') }}" class="btn btn-primary">
+                    <i class="fas fa-list me-2"></i>Lihat Semua Pesanan
+                </a>
+            </div>
+
+            <!-- Success Message -->
+            {% if success %}
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>Import Berhasil!</strong> {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endif %}
+
+            <!-- Error Message -->
+            {% if not success %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <strong>Import Gagal!</strong> {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endif %}
+
+            <!-- Statistics -->
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="fas fa-shopping-cart me-2"></i>Pesanan Import
+                            </h5>
+                            <h3 class="mb-0">{{ imported_count }}</h3>
+                        </div>
+                    </div>
+                </div>
+                {% if errors %}
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Error
+                            </h5>
+                            <h3 class="mb-0">{{ errors|length }}</h3>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Errors -->
+            {% if errors %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Detail Error</h5>
+                </div>
+                <div class="card-body">
+                    {% for error in errors %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Actions -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5>Langkah Selanjutnya:</h5>
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('orders') }}" class="btn btn-primary">
+                            <i class="fas fa-list me-2"></i>Lihat Pesanan
+                        </a>
+                        <a href="{{ url_for('import_orders') }}" class="btn btn-secondary">
+                            <i class="fas fa-upload me-2"></i>Import Lagi
+                        </a>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-home me-2"></i>Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,183 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Analisis Keuntungan{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0 text-gray-800">
+                    <i class="fas fa-chart-line me-2"></i>
+                    Analisis Keuntungan
+                </h1>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('analytics') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Analytics Lainnya
+                    </a>
+                    <a href="{{ url_for('orders') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Kembali ke Orders
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Total Keuntungan
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                Rp {{ "{:,.0f}".format(total_profit) }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Total Pendapatan
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                Rp {{ "{:,.0f}".format(total_revenue) }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-money-bill-wave fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Total Modal
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                Rp {{ "{:,.0f}".format(total_cost) }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-shopping-cart fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Margin Keuntungan
+                            </div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                {{ "{:.1f}%".format(overall_profit_margin) }}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profit by Order Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-table me-2"></i>
+                        Keuntungan per Pesanan
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>No. Pesanan</th>
+                                    <th>Customer</th>
+                                    <th>Total Pendapatan</th>
+                                    <th>Total Modal</th>
+                                    <th>Keuntungan</th>
+                                    <th>Margin</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in profit_by_order %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('order_detail', order_id=item.order.id) }}" class="text-decoration-none">
+                                            {{ item.order.order_number }}
+                                        </a>
+                                    </td>
+                                    <td>{{ item.order.customer_name }}</td>
+                                    <td>Rp {{ "{:,.0f}".format(item.profit_data.total_revenue) }}</td>
+                                    <td>Rp {{ "{:,.0f}".format(item.profit_data.total_cost) }}</td>
+                                    <td>
+                                        <span class="badge badge-{{ 'success' if item.profit_data.total_profit > 0 else 'danger' }} px-3 py-2">
+                                            Rp {{ "{:,.0f}".format(item.profit_data.total_profit) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{{ 'success' if item.profit_data.profit_margin > 0 else 'danger' }} px-3 py-2">
+                                            {{ "{:.1f}%".format(item.profit_data.profit_margin) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-info px-3 py-2">
+                                            {{ item.order.status.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('order_detail', order_id=item.order.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Add any additional JavaScript for profit analytics here
+</script>
+{% endblock %}

@@ -1,0 +1,652 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Warehouse - Shopee Order Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid modern-dark">
+    <!-- Modern Header Section -->
+    <div class="modern-header-section animate-slide-down">
+        <div class="modern-header-content">
+            <div class="modern-header-text">
+                <h1 class="modern-header-title text-gradient">
+                    <i class="fas fa-warehouse me-2"></i>Produk Saya
+                </h1>
+                <p class="modern-header-subtitle">Kelola inventory dan lacak level stok produk</p>
+            </div>
+            <div class="modern-header-badge">
+                <span class="modern-badge modern-badge-info">
+                    <i class="fas fa-boxes"></i>
+                    {{ pagination.total if pagination else 0 }} Items
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modern Actions and Filters -->
+    <div class="modern-toolbar-section animate-slide-up">
+        <div class="modern-toolbar-content">
+            <div class="modern-toolbar-actions">
+                <a href="{{ url_for('add_inventory') }}" class="modern-btn modern-btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add Item
+                </a>
+                <a href="{{ url_for('import_inventory') }}" class="modern-btn modern-btn-secondary">
+                    <i class="fas fa-upload me-2"></i>Mass Upload
+                </a>
+                <button type="button" class="modern-btn modern-btn-outline modern-btn-danger" id="deleteSelectedBtn" style="display: none;">
+                    <i class="fas fa-trash me-2"></i>Delete Selected
+                </button>
+                <button type="button" class="modern-btn modern-btn-outline modern-btn-accent" id="printQRSelectedBtn" style="display: none;">
+                    <i class="fas fa-qrcode me-2"></i>Print QR
+                </button>
+                <a href="/qr-codes-multiple?ids=637,639,638" target="_blank" class="modern-btn modern-btn-outline modern-btn-success">
+                    <i class="fas fa-qrcode me-2"></i>Mass Print QR (3 Products)
+                </a>
+            </div>
+            
+            <div class="modern-toolbar-filters">
+                <form method="GET" class="modern-filter-form">
+                    <div class="modern-search-input">
+                        <input type="text" name="search" class="modern-form-input" 
+                               placeholder="Search inventory..." value="{{ search_query }}">
+                        <button type="submit" class="modern-search-btn">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    <div class="modern-filter-checkbox">
+                        <input class="modern-checkbox" type="checkbox" name="low_stock" 
+                               value="true" id="lowStockFilter" {% if low_stock_only %}checked{% endif %}>
+                        <label class="modern-checkbox-label" for="lowStockFilter">
+                            Low Stock Only
+                        </label>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modern Inventory Table -->
+    <div class="modern-table-wrapper animate-fade-in">
+        <div class="modern-table-header">
+            <h3 class="modern-table-title">
+                <i class="fas fa-list me-2"></i>Inventory List
+            </h3>
+            <div class="modern-table-meta">
+                {% if inventory %}
+                    <span class="modern-badge modern-badge-secondary">{{ inventory|length }} items</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="modern-table-content">
+            {% if inventory %}
+                <div class="modern-table-responsive">
+                    <table class="modern-data-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" class="modern-checkbox" id="selectAll">
+                                </th>
+                                <th>Image</th>
+                                <th>SKU</th>
+                                <th>Product Name</th>
+                                <th>Category</th>
+                                <th>Nama Variasi</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Dimensions</th>
+                                <th>Location</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in inventory %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" class="modern-checkbox product-checkbox" value="{{ item.id }}">
+                                </td>
+                                <td>
+                                    <div class="product-image-cell">
+                                        {% if item.image_url %}
+                                            <img src="{{ item.image_url }}" alt="{{ item.name }}" class="product-thumbnail" loading="lazy">
+                                        {% else %}
+                                            <div class="product-placeholder">
+                                                <i class="fas fa-image"></i>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="product-sku">{{ item.sku }}</span>
+                                </td>
+                                <td>
+                                    <div class="product-name-cell">
+                                        <a href="{{ url_for('product_detail', product_id=item.id) }}" class="product-name-link">
+                                            {{ item.name }}
+                                        </a>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if item.category %}
+                                        <span class="modern-badge modern-badge-info">{{ item.category }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.colour %}
+                                        <span class="variation-badge">{{ item.colour }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="quantity-cell">
+                                        <input type="number" 
+                                               class="quantity-input" 
+                                               value="{{ item.quantity }}" 
+                                               min="0" 
+                                               max="999999"
+                                               data-item-id="{{ item.id }}"
+                                               data-original-value="{{ item.quantity }}">
+                                        {% if item.quantity <= item.minimum_stock %}
+                                            <span class="stock-indicator low-stock">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                            </span>
+                                        {% else %}
+                                            <span class="stock-indicator good-stock">
+                                                <i class="fas fa-check-circle"></i>
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="price-cell">
+                                        <span class="price-prefix">Rp</span>
+                                        <input type="number" 
+                                               class="price-input" 
+                                               value="{{ item.price }}" 
+                                               min="0" 
+                                               step="1000"
+                                               data-item-id="{{ item.id }}"
+                                               data-original-value="{{ item.price }}">
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if item.length and item.width and item.height %}
+                                        <span class="dimensions-text">{{ item.length }}×{{ item.width }}×{{ item.height }}cm</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.zone or item.rack or item.bin %}
+                                        <span class="location-badge">
+                                            {% if item.zone %}{{ item.zone }}{% endif %}{% if item.rack %}-{{ item.rack }}{% endif %}{% if item.bin %}-{{ item.bin }}{% endif %}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <a href="/qr-code/{{ item.sku }}" 
+                                           target="_blank" 
+                                           class="modern-btn modern-btn-sm modern-btn-outline">
+                                            <i class="fas fa-qrcode"></i>
+                                        </a>
+                                        <a href="{{ url_for('edit_inventory', id=item.id) }}" 
+                                           class="modern-btn modern-btn-sm modern-btn-secondary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" 
+                                                class="modern-btn modern-btn-sm modern-btn-danger delete-btn" 
+                                                data-item-id="{{ item.id }}"
+                                                data-item-name="{{ item.name }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Modern Pagination -->
+                <div class="modern-pagination-wrapper">
+                    <div class="modern-pagination-info">
+                        Showing {{ pagination.per_page * (pagination.page - 1) + 1 }} to 
+                        {{ pagination.per_page * (pagination.page - 1) + inventory|length }} of 
+                        {{ pagination.total }} items
+                    </div>
+                    
+                    <div class="modern-pagination-nav">
+                        {% if pagination.has_prev %}
+                            <a href="{{ url_for('warehouse', page=pagination.prev_num, search=search_query, low_stock=low_stock_only) }}" 
+                               class="modern-pagination-btn">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        {% endif %}
+                        
+                        {% for page_num in pagination.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != pagination.page %}
+                                    <a href="{{ url_for('warehouse', page=page_num, search=search_query, low_stock=low_stock_only) }}" 
+                                       class="modern-pagination-btn">{{ page_num }}</a>
+                                {% else %}
+                                    <span class="modern-pagination-btn active">{{ page_num }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="modern-pagination-btn" style="cursor: default;">...</span>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if pagination.has_next %}
+                            <a href="{{ url_for('warehouse', page=pagination.next_num, search=search_query, low_stock=low_stock_only) }}" 
+                               class="modern-pagination-btn">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <div class="modern-empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-boxes"></i>
+                    </div>
+                    <div class="empty-state-content">
+                        <h3>No inventory items found</h3>
+                        <p>Start by adding your first product to the warehouse</p>
+                        <a href="{{ url_for('add_inventory') }}" class="modern-btn modern-btn-primary">
+                            <i class="fas fa-plus me-2"></i>Add First Product
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Warehouse specific CSS -->
+<style>
+.btn-group {
+    display: inline-flex;
+    gap: 5px;
+}
+
+.btn-group .modern-btn {
+    min-width: 60px;
+    text-align: center;
+}
+/* Product image styling */
+.product-image-cell {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.product-thumbnail {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-secondary);
+}
+
+.product-placeholder {
+    width: 50px;
+    height: 50px;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+}
+
+/* Product name styling */
+.product-name-cell {
+    max-width: 250px;
+}
+
+.product-name-link {
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.product-name-link:hover {
+    color: var(--primary-color);
+}
+
+/* SKU styling */
+.product-sku {
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--border-radius-sm);
+}
+
+/* Variation badge */
+.variation-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border-radius: var(--border-radius-sm);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+/* Quantity and price inputs */
+.quantity-cell, .price-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.quantity-input, .price-input {
+    width: 80px;
+    padding: 0.5rem;
+    border: 1px solid var(--border-glass);
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-glass);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    transition: var(--transition);
+}
+
+.quantity-input:focus, .price-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+}
+
+.price-prefix {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Stock indicators */
+.stock-indicator {
+    font-size: 0.875rem;
+}
+
+.stock-indicator.low-stock {
+    color: #EF4444;
+}
+
+.stock-indicator.good-stock {
+    color: #10B981;
+}
+
+/* Dimensions and location */
+.dimensions-text, .location-badge {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.location-badge {
+    background: var(--bg-tertiary);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--border-radius-sm);
+    font-family: 'Courier New', monospace;
+}
+
+/* Action buttons */
+.action-buttons {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.modern-btn-sm {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    min-width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Empty state */
+.modern-empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-secondary);
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state-content h3 {
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .modern-toolbar-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .modern-toolbar-actions {
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+    
+    .modern-toolbar-filters {
+        justify-content: center;
+    }
+    
+    .modern-search-input .modern-form-input {
+        min-width: 200px;
+    }
+    
+    .modern-data-table {
+        font-size: 0.8rem;
+    }
+    
+    .modern-data-table th, .modern-data-table td {
+        padding: 0.5rem;
+    }
+    
+    .product-thumbnail {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .product-placeholder {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .quantity-input, .price-input {
+        width: 70px;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+}
+
+/* Animation for table rows */
+.modern-data-table tbody tr {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+
+<!-- Warehouse JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+        new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Handle quantity and price updates
+    let updateTimeout;
+    
+    document.querySelectorAll('.quantity-input, .price-input').forEach(input => {
+        input.addEventListener('input', function() {
+            clearTimeout(updateTimeout);
+            
+            const originalValue = this.dataset.originalValue;
+            const currentValue = this.value;
+            
+            if (currentValue !== originalValue) {
+                this.style.borderColor = '#FF6B35';
+                this.style.backgroundColor = 'rgba(255, 107, 53, 0.1)';
+                
+                updateTimeout = setTimeout(() => {
+                    updateItemValue(this);
+                }, 1000);
+            } else {
+                this.style.borderColor = '';
+                this.style.backgroundColor = '';
+            }
+        });
+    });
+    
+    function updateItemValue(input) {
+        const itemId = input.dataset.itemId;
+        const isQuantity = input.classList.contains('quantity-input');
+        const endpoint = isQuantity ? '/adjust_inventory_quantity' : '/adjust_inventory_price';
+        const fieldName = isQuantity ? 'quantity' : 'price';
+        
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                item_id: itemId,
+                [fieldName]: input.value
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                input.style.borderColor = '#10B981';
+                input.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
+                input.dataset.originalValue = input.value;
+                
+                setTimeout(() => {
+                    input.style.borderColor = '';
+                    input.style.backgroundColor = '';
+                }, 2000);
+            } else {
+                input.style.borderColor = '#EF4444';
+                input.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                console.error('Update failed:', data.message);
+            }
+        })
+        .catch(error => {
+            input.style.borderColor = '#EF4444';
+            input.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+            console.error('Error updating value:', error);
+        });
+    }
+    
+    // Handle checkbox selection
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const productCheckboxes = document.querySelectorAll('.product-checkbox');
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    const printQRSelectedBtn = document.getElementById('printQRSelectedBtn');
+    
+    function updateButtonVisibility() {
+        const selectedCount = document.querySelectorAll('.product-checkbox:checked').length;
+        const display = selectedCount > 0 ? 'inline-block' : 'none';
+        
+        if (deleteSelectedBtn) deleteSelectedBtn.style.display = display;
+        if (printQRSelectedBtn) printQRSelectedBtn.style.display = display;
+    }
+    
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            productCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+            updateButtonVisibility();
+        });
+    }
+    
+    productCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateButtonVisibility);
+    });
+    
+    // Handle print QR selected
+    if (printQRSelectedBtn) {
+        printQRSelectedBtn.addEventListener('click', function() {
+            // Debug: show all checkboxes
+            const allCheckboxes = document.querySelectorAll('.product-checkbox');
+            console.log('All checkboxes found:', allCheckboxes.length);
+            
+            const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
+            console.log('Checked boxes:', checkedBoxes.length);
+            
+            const selectedIds = Array.from(checkedBoxes).map(checkbox => checkbox.value);
+            
+            console.log('Selected IDs:', selectedIds);
+            console.log('URL:', `/qr-codes-multiple?ids=${selectedIds.join(',')}`);
+            
+            // Debug: Show alert with selected IDs
+            alert(`DEBUG: Found ${allCheckboxes.length} checkboxes total, ${checkedBoxes.length} checked. Selected ${selectedIds.length} products with IDs: ${selectedIds.join(', ')}`);
+            
+            if (selectedIds.length > 0) {
+                // Add timestamp to prevent caching
+                const timestamp = new Date().getTime();
+                const url = `/qr-codes-multiple?ids=${selectedIds.join(',')}&t=${timestamp}`;
+                console.log('Opening URL:', url);
+                // Open multiple QR codes in single tab
+                window.open(url, '_blank');
+            } else {
+                alert('Please select at least one product to print QR codes');
+            }
+        });
+    }
+    
+    // Function to open multiple QR codes in separate tabs
+    window.openMultipleQRTabs = function() {
+        const testIds = ['637', '639', '638'];
+        const skus = ['BLD-GLSMY-HIJ', 'BLD-GLS-CB-MY-HIJ', 'BLD-GLSMY-PTH'];
+        
+        // Open each QR code in a separate tab with delay
+        testIds.forEach((id, index) => {
+            setTimeout(() => {
+                const url = `/qr-code/${skus[index]}`;
+                window.open(url, '_blank');
+            }, index * 300); // 300ms delay between each tab
+        });
+        
+        // Show confirmation
+        alert(`Opening 3 QR codes in separate tabs:\n1. ${skus[0]}\n2. ${skus[1]}\n3. ${skus[2]}`);
+    };
+});
+</script>
+{% endblock %}

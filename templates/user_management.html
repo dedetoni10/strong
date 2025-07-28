@@ -1,0 +1,859 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Management User - Strong Order Management{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-0">Management User</h1>
+        <p class="text-muted">Integrated dashboard sistem order management</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                            <i class="fas fa-user-shield text-primary"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ users|selectattr('role', 'equalto', 'admin')|list|length }}</h3>
+                        <p class="text-muted mb-0">Admin</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                            <i class="fas fa-hand-paper text-success"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ users|selectattr('role', 'equalto', 'picker')|list|length }}</h3>
+                        <p class="text-muted mb-0">Picker</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                            <i class="fas fa-box text-warning"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ users|selectattr('role', 'equalto', 'packer')|list|length }}</h3>
+                        <p class="text-muted mb-0">Packer</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-info bg-opacity-10 p-3">
+                            <i class="fas fa-truck text-info"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ users|selectattr('role', 'equalto', 'shipper')|list|length }}</h3>
+                        <p class="text-muted mb-0">Shipper</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">
+            <i class="fas fa-lightning-bolt me-2"></i>Quick Actions
+        </h5>
+        <div class="row">
+            <div class="col-md-3">
+                <button type="button" class="btn btn-primary w-100 mb-2" data-bs-toggle="modal" data-bs-target="#createUserModal">
+                    <i class="fas fa-plus me-2"></i>Tambah User Baru
+                </button>
+            </div>
+            <div class="col-md-3">
+                <a href="{{ url_for('user_management') }}" class="btn btn-success w-100 mb-2">
+                    <i class="fas fa-refresh me-2"></i>Refresh Data
+                </a>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-info w-100 mb-2" onclick="exportUserData()">
+                    <i class="fas fa-download me-2"></i>Export Data
+                </button>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-warning w-100 mb-2" onclick="showUserStatistics()">
+                    <i class="fas fa-chart-bar me-2"></i>Show Statistics
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Management Table -->
+<div class="card">
+    <div class="card-header bg-purple text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-users me-2"></i>Daftar User
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Username</th>
+                            <th>Nama</th>
+                            <th>Email</th>
+                            <th>Password</th>
+                            <th>Role</th>
+                            <th>Access</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>
+                                <input type="text" class="form-control form-control-sm" 
+                                       value="{{ user.username }}" 
+                                       id="username_{{ user.id }}"
+                                       onblur="updateUsername({{ user.id }})"
+                                       style="width: 120px;">
+                            </td>
+                            <td>
+                                <input type="text" class="form-control form-control-sm" 
+                                       value="{{ user.name or '' }}" 
+                                       id="name_{{ user.id }}"
+                                       onblur="updateUserName({{ user.id }})"
+                                       style="width: 150px;"
+                                       placeholder="Masukkan nama">
+                            </td>
+                            <td>
+                                <input type="email" class="form-control form-control-sm" 
+                                       value="{{ user.email or '' }}" 
+                                       id="email_{{ user.id }}"
+                                       onblur="updateUserEmail({{ user.id }})"
+                                       style="width: 180px;"
+                                       placeholder="user@email.com">
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-warning" 
+                                        onclick="changePassword({{ user.id }}, '{{ user.username }}')">
+                                    <i class="fas fa-key"></i> Ganti Password
+                                </button>
+                            </td>
+                            <td>
+                                <!-- Role Checkboxes -->
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% set user_roles = user.role.split(',') if ',' in user.role else [user.role] %}
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="admin_{{ user.id }}" 
+                                               onchange="updateUserRoleAccess({{ user.id }})" 
+                                               {% if 'admin' in user_roles %}checked{% endif %}>
+                                        <label class="form-check-label" for="admin_{{ user.id }}" style="font-size: 11px;">
+                                            <span class="badge bg-primary">Admin</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="picker_{{ user.id }}" 
+                                               onchange="updateUserRoleAccess({{ user.id }})" 
+                                               {% if 'picker' in user_roles %}checked{% endif %}>
+                                        <label class="form-check-label" for="picker_{{ user.id }}" style="font-size: 11px;">
+                                            <span class="badge bg-success">Picker</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="packer_{{ user.id }}" 
+                                               onchange="updateUserRoleAccess({{ user.id }})" 
+                                               {% if 'packer' in user_roles %}checked{% endif %}>
+                                        <label class="form-check-label" for="packer_{{ user.id }}" style="font-size: 11px;">
+                                            <span class="badge bg-warning">Packer</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="shipper_{{ user.id }}" 
+                                               onchange="updateUserRoleAccess({{ user.id }})" 
+                                               {% if 'shipper' in user_roles %}checked{% endif %}>
+                                        <label class="form-check-label" for="shipper_{{ user.id }}" style="font-size: 11px;">
+                                            <span class="badge bg-secondary">Shipper</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="order_staff_{{ user.id }}" 
+                                               onchange="updateUserRoleAccess({{ user.id }})" 
+                                               {% if 'order staff' in user_roles %}checked{% endif %}>
+                                        <label class="form-check-label" for="order_staff_{{ user.id }}" style="font-size: 11px;">
+                                            <span class="badge bg-success">Order Staff</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <!-- Access Checkboxes -->
+                                <div class="d-flex flex-wrap gap-2">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="pick_{{ user.id }}" 
+                                               onchange="updateUserRoleAccess({{ user.id }})" 
+                                               {% if 'picking' in user.access or user.access == 'all' %}checked{% endif %}>
+                                        <label class="form-check-label" for="pick_{{ user.id }}" style="font-size: 11px;">
+                                            <span class="badge bg-info">Picking</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="pack_{{ user.id }}" 
+                                               onchange="updateUserRoleAccess({{ user.id }})" 
+                                               {% if 'packing' in user.access or user.access == 'all' %}checked{% endif %}>
+                                        <label class="form-check-label" for="pack_{{ user.id }}" style="font-size: 11px;">
+                                            <span class="badge bg-warning">Packing</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="ship_{{ user.id }}" 
+                                               onchange="updateUserRoleAccess({{ user.id }})" 
+                                               {% if 'shipping' in user.access or user.access == 'all' %}checked{% endif %}>
+                                        <label class="form-check-label" for="ship_{{ user.id }}" style="font-size: 11px;">
+                                            <span class="badge bg-secondary">Shipping</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="retur_{{ user.id }}" 
+                                               onchange="updateUserRoleAccess({{ user.id }})" 
+                                               {% if 'retur' in user.access or user.access == 'all' %}checked{% endif %}>
+                                        <label class="form-check-label" for="retur_{{ user.id }}" style="font-size: 11px;">
+                                            <span class="badge bg-danger">Scan Retur</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="pesanan_{{ user.id }}" 
+                                               onchange="updateUserRoleAccess({{ user.id }})" 
+                                               {% if 'pesanan' in user.access or user.access == 'all' %}checked{% endif %}>
+                                        <label class="form-check-label" for="pesanan_{{ user.id }}" style="font-size: 11px;">
+                                            <span class="badge bg-success">Menu Pesanan</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="checkbox" id="all_{{ user.id }}" 
+                                               onchange="updateUserRoleAccess({{ user.id }})" 
+                                               {% if user.access == 'all' %}checked{% endif %}>
+                                        <label class="form-check-label" for="all_{{ user.id }}" style="font-size: 11px;">
+                                            <span class="badge bg-dark">All</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if user.is_active %}
+                                    <span class="badge bg-success">Aktif</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Nonaktif</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" onclick="alert('Feature sedang dalam pengembangan')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <a href="{{ url_for('toggle_user', user_id=user.id) }}" class="btn btn-outline-warning">
+                                        <i class="fas fa-toggle-on"></i>
+                                    </a>
+                                    <a href="{{ url_for('delete_user', user_id=user.id) }}" class="btn btn-outline-danger" onclick="return confirm('Yakin hapus user {{ user.username }}?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create User Modal -->
+<div class="modal fade" id="createUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tambah User Baru</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('create_user') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" name="username" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Nama Lengkap</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" name="email">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Role (Pilih Satu atau Lebih)</label>
+                        <div class="d-flex flex-wrap gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="role[]" id="role_admin" value="admin" onchange="validateRoleSelection()">
+                                <label class="form-check-label" for="role_admin">
+                                    <span class="badge bg-primary">Admin</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="role[]" id="role_picker" value="picker" onchange="validateRoleSelection()">
+                                <label class="form-check-label" for="role_picker">
+                                    <span class="badge bg-success">Picker</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="role[]" id="role_packer" value="packer" onchange="validateRoleSelection()">
+                                <label class="form-check-label" for="role_packer">
+                                    <span class="badge bg-warning">Packer</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="role[]" id="role_shipper" value="shipper" onchange="validateRoleSelection()">
+                                <label class="form-check-label" for="role_shipper">
+                                    <span class="badge bg-secondary">Shipper</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="role[]" id="role_scan_retur" value="scan retur" onchange="validateRoleSelection()">
+                                <label class="form-check-label" for="role_scan_retur">
+                                    <span class="badge bg-danger">Scan Retur</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="role[]" id="role_order_staff" value="order staff" onchange="validateRoleSelection()">
+                                <label class="form-check-label" for="role_order_staff">
+                                    <span class="badge bg-success">Order Staff</span>
+                                </label>
+                            </div>
+                        </div>
+                        <small class="text-muted">Pilih minimal satu role. User dengan multiple roles akan memiliki akses gabungan.</small>
+                        <div id="roleValidationMessage" class="text-danger" style="display: none;">
+                            Minimal pilih satu role!
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Access Permission (Pilih Satu atau Lebih)</label>
+                        <div class="d-flex flex-wrap gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="access[]" id="access_picking" value="picking">
+                                <label class="form-check-label" for="access_picking">
+                                    <span class="badge bg-info">Picking</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="access[]" id="access_packing" value="packing">
+                                <label class="form-check-label" for="access_packing">
+                                    <span class="badge bg-warning">Packing</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="access[]" id="access_shipping" value="shipping">
+                                <label class="form-check-label" for="access_shipping">
+                                    <span class="badge bg-secondary">Shipping</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="access[]" id="access_retur" value="retur">
+                                <label class="form-check-label" for="access_retur">
+                                    <span class="badge bg-danger">Scan Retur</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="access[]" id="access_pesanan" value="pesanan">
+                                <label class="form-check-label" for="access_pesanan">
+                                    <span class="badge bg-success">Menu Pesanan Saya</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="access[]" id="access_all" value="all">
+                                <label class="form-check-label" for="access_all">
+                                    <span class="badge bg-dark">All Access</span>
+                                </label>
+                            </div>
+                        </div>
+                        <small class="text-muted">Jika pilih "All Access", permissions lain akan diabaikan</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" name="password" minlength="6" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Buat User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+
+.page-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    font-size: 24px;
+    color: white;
+}
+
+.stat-content h3 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+}
+
+.stat-content p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px 15px 0 0;
+    padding: 20px;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #333;
+}
+
+.btn-group-sm .btn {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.badge {
+    font-size: 11px;
+    padding: 4px 8px;
+}
+
+/* Success notification styling */
+.alert-success {
+    background-color: #d1e7dd;
+    border-color: #badbcc;
+    color: #0f5132;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+</style>
+
+<script>
+// Update user role
+function updateUserRole(userId, newRole) {
+    fetch('/api/update_user_role', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user_id: userId,
+            role: newRole
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Role berhasil diperbarui!', 'success');
+            // Update statistics
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            showNotification('Error: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Terjadi kesalahan saat memperbarui role', 'danger');
+    });
+}
+
+// Update user access
+function updateUserAccess(userId, newAccess) {
+    fetch('/api/update_user_access', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user_id: userId,
+            access: newAccess
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Akses berhasil diperbarui!', 'success');
+        } else {
+            showNotification('Error: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Terjadi kesalahan saat memperbarui akses', 'danger');
+    });
+}
+
+// Update user role and access with new checkbox system
+function updateUserRoleAccess(userId) {
+    // Get role checkboxes
+    const adminCheck = document.getElementById(`admin_${userId}`);
+    const pickerCheck = document.getElementById(`picker_${userId}`);
+    const packerCheck = document.getElementById(`packer_${userId}`);
+    const shipperCheck = document.getElementById(`shipper_${userId}`);
+    
+    // Get access checkboxes
+    const pickingCheck = document.getElementById(`pick_${userId}`);
+    const packingCheck = document.getElementById(`pack_${userId}`);
+    const shippingCheck = document.getElementById(`ship_${userId}`);
+    const returCheck = document.getElementById(`retur_${userId}`);
+    const allCheck = document.getElementById(`all_${userId}`);
+    
+    // Build array of selected roles
+    let selectedRoles = [];
+    if (adminCheck && adminCheck.checked) selectedRoles.push('admin');
+    if (pickerCheck && pickerCheck.checked) selectedRoles.push('picker');
+    if (packerCheck && packerCheck.checked) selectedRoles.push('packer');
+    if (shipperCheck && shipperCheck.checked) selectedRoles.push('shipper');
+    
+    // If no roles selected, default to picker
+    if (selectedRoles.length === 0) {
+        selectedRoles = ['picker'];
+        if (pickerCheck) pickerCheck.checked = true;
+    }
+    
+    // Convert roles array to string
+    const role = selectedRoles.join(',');
+    
+    // Determine access
+    let accessArray = [];
+    
+    if (allCheck && allCheck.checked) {
+        accessArray = ['all'];
+        if (pickingCheck) pickingCheck.checked = true;
+        if (packingCheck) packingCheck.checked = true;
+        if (shippingCheck) shippingCheck.checked = true;
+        if (returCheck) returCheck.checked = true;
+    } else {
+        // Auto-assign access based on roles
+        if (selectedRoles.includes('admin')) {
+            accessArray = ['all'];
+            if (allCheck) allCheck.checked = true;
+        } else {
+            // Manual access selection or auto-assign based on roles
+            if (pickingCheck && pickingCheck.checked) accessArray.push('picking');
+            if (packingCheck && packingCheck.checked) accessArray.push('packing');
+            if (shippingCheck && shippingCheck.checked) accessArray.push('shipping');
+            if (returCheck && returCheck.checked) accessArray.push('retur');
+            
+            // Auto-assign if no manual selection
+            if (accessArray.length === 0) {
+                if (selectedRoles.includes('picker')) {
+                    accessArray.push('picking');
+                    if (pickingCheck) pickingCheck.checked = true;
+                }
+                if (selectedRoles.includes('packer')) {
+                    accessArray.push('packing');
+                    if (packingCheck) packingCheck.checked = true;
+                }
+                if (selectedRoles.includes('shipper')) {
+                    accessArray.push('shipping');
+                    if (shippingCheck) shippingCheck.checked = true;
+                }
+            }
+        }
+    }
+    
+    // If no access selected, default based on role
+    if (accessArray.length === 0) {
+        if (role === 'picker') accessArray = ['picking'];
+        else if (role === 'packer') accessArray = ['packing'];
+        else if (role === 'admin') accessArray = ['all'];
+    }
+    
+    const accessString = accessArray.length === 1 && accessArray[0] === 'all' ? 'all' : accessArray.join(',');
+    
+    // Send update request
+    fetch('/update_user_role_access', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user_id: userId,
+            role: role,
+            access: accessString
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`Role: ${role}, Akses: ${accessString}`, 'success');
+        } else {
+            showNotification('Error: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Terjadi kesalahan saat memperbarui role & akses', 'danger');
+    });
+}
+
+// Delete user function - Fixed to use correct URL pattern
+window.deleteUser = function(userId, username) {
+    if (confirm(`Yakin ingin menghapus user "${username}"? Tindakan ini tidak dapat dibatalkan.`)) {
+        window.location.href = `/delete_user/${userId}`;
+    }
+}
+
+// Role validation function for new user form
+function validateRoleSelection() {
+    const roleCheckboxes = document.querySelectorAll('input[name="role[]"]');
+    const checked = Array.from(roleCheckboxes).some(cb => cb.checked);
+    const validationMessage = document.getElementById('roleValidationMessage');
+    
+    if (!checked) {
+        validationMessage.style.display = 'block';
+        return false;
+    } else {
+        validationMessage.style.display = 'none';
+        
+        // Auto-assign access based on roles
+        const adminCheck = document.getElementById('role_admin');
+        const pickerCheck = document.getElementById('role_picker');
+        const packerCheck = document.getElementById('role_packer');
+        const shipperCheck = document.getElementById('role_shipper');
+        
+        const accessPicking = document.getElementById('access_picking');
+        const accessPacking = document.getElementById('access_packing');
+        const accessShipping = document.getElementById('access_shipping');
+        const accessAll = document.getElementById('access_all');
+        
+        // Clear all access first
+        if (accessPicking) accessPicking.checked = false;
+        if (accessPacking) accessPacking.checked = false;
+        if (accessShipping) accessShipping.checked = false;
+        if (accessAll) accessAll.checked = false;
+        
+        // Auto-assign access based on selected roles
+        if (adminCheck && adminCheck.checked) {
+            if (accessAll) accessAll.checked = true;
+        } else {
+            if (pickerCheck && pickerCheck.checked && accessPicking) accessPicking.checked = true;
+            if (packerCheck && packerCheck.checked && accessPacking) accessPacking.checked = true;
+            if (shipperCheck && shipperCheck.checked && accessShipping) accessShipping.checked = true;
+        }
+        
+        return true;
+    }
+}
+
+// Update user multi-access with checkboxes (legacy function)
+function updateUserMultiAccess(userId) {
+    const pickingCheck = document.getElementById(`pick_${userId}`);
+    const packingCheck = document.getElementById(`pack_${userId}`);
+    const shippingCheck = document.getElementById(`ship_${userId}`);
+    const allCheck = document.getElementById(`all_${userId}`);
+    
+    let accessArray = [];
+    
+    // If "All" is checked, set all to true and disable others
+    if (allCheck.checked) {
+        accessArray = ['all'];
+        pickingCheck.checked = true;
+        packingCheck.checked = true;
+        shippingCheck.checked = true;
+        pickingCheck.disabled = true;
+        packingCheck.disabled = true;
+        shippingCheck.disabled = true;
+    } else {
+        // Enable individual checkboxes
+        pickingCheck.disabled = false;
+        packingCheck.disabled = false;
+        shippingCheck.disabled = false;
+        
+        // Build access array based on checked boxes
+        if (pickingCheck.checked) accessArray.push('picking');
+        if (packingCheck.checked) accessArray.push('packing');
+        if (shippingCheck.checked) accessArray.push('shipping');
+    }
+    
+    // If no individual access is selected, default to picking
+    if (accessArray.length === 0 && !allCheck.checked) {
+        accessArray = ['picking'];
+        pickingCheck.checked = true;
+    }
+    
+    // Convert to string format
+    const accessString = accessArray.length === 1 && accessArray[0] === 'all' ? 'all' : accessArray.join(',');
+    
+    // Send update request
+    fetch('/api/update_user_access', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            user_id: userId,
+            access: accessString
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`Akses berhasil diperbarui: ${accessString}`, 'success');
+        } else {
+            showNotification('Error: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Terjadi kesalahan saat memperbarui akses', 'danger');
+    });
+}
+
+// Show notification
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 3000);
+}
+
+function validateRoleSelection() {
+    const roleCheckboxes = document.querySelectorAll('input[name="role[]"]');
+    const isAnyRoleSelected = Array.from(roleCheckboxes).some(checkbox => checkbox.checked);
+    const validationMessage = document.getElementById('roleValidationMessage');
+    const submitButton = document.querySelector('#createUserModal button[type="submit"]');
+    
+    if (!isAnyRoleSelected) {
+        validationMessage.style.display = 'block';
+        if (submitButton) submitButton.disabled = true;
+    } else {
+        validationMessage.style.display = 'none';
+        if (submitButton) submitButton.disabled = false;
+    }
+}
+
+// Auto-assign access permissions based on selected roles
+document.addEventListener('DOMContentLoaded', function() {
+    const roleCheckboxes = document.querySelectorAll('input[name="role[]"]');
+    
+    roleCheckboxes.forEach(roleCheckbox => {
+        roleCheckbox.addEventListener('change', function() {
+            // If admin is selected, auto-check "All Access"
+            if (this.value === 'admin' && this.checked) {
+                const allAccessCheckbox = document.getElementById('access_all');
+                if (allAccessCheckbox) allAccessCheckbox.checked = true;
+            }
+            
+            // Auto-assign corresponding access permissions
+            const roleAccessMap = {
+                'picker': 'access_picking',
+                'packer': 'access_packing',
+                'shipper': 'access_shipping'
+            };
+            
+            if (roleAccessMap[this.value]) {
+                const accessCheckbox = document.getElementById(roleAccessMap[this.value]);
+                if (accessCheckbox) {
+                    accessCheckbox.checked = this.checked;
+                }
+            }
+        });
+    });
+});
+
+</script>
+
+{% endblock %}

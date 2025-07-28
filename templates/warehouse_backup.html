@@ -1,0 +1,402 @@
+{% extends "base.html" %}
+
+{% block title %}Produk Saya - Strong Order Management{% endblock %}
+
+{% block content %}
+<div class="container-fluid modern-dark">
+    <!-- Modern Header Section -->
+    <div class="modern-header-section animate-slide-down">
+        <div class="modern-header-content">
+            <div class="modern-header-text">
+                <h1 class="modern-header-title text-gradient">
+                    <i class="fas fa-box me-2"></i>Produk Saya
+                </h1>
+                <p class="modern-header-subtitle">Kelola inventory dan stok produk dengan mudah</p>
+            </div>
+            <div class="modern-header-badge">
+                <span class="modern-badge modern-badge-primary">
+                    <i class="fas fa-cube animate-pulse"></i>
+                    {{ products|length }} Produk
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modern Action Cards -->
+    <div class="modern-action-cards animate-slide-up">
+        <div class="modern-action-card hover-lift" onclick="window.location.href='/warehouse/add'">
+            <div class="action-card-icon primary-gradient">
+                <i class="fas fa-plus"></i>
+            </div>
+            <div class="action-card-content">
+                <h3 class="action-card-title">Tambah Produk</h3>
+                <p class="action-card-description">Tambahkan produk baru ke inventory</p>
+            </div>
+        </div>
+        
+        <div class="modern-action-card hover-lift" onclick="window.location.href='/mass-upload-inventory'">
+            <div class="action-card-icon success-gradient">
+                <i class="fas fa-upload"></i>
+            </div>
+            <div class="action-card-content">
+                <h3 class="action-card-title">Upload CSV</h3>
+                <p class="action-card-description">Import produk dari file CSV</p>
+            </div>
+        </div>
+        
+        <div class="modern-action-card hover-lift" onclick="downloadTemplate()">
+            <div class="action-card-icon warning-gradient">
+                <i class="fas fa-download"></i>
+            </div>
+            <div class="action-card-content">
+                <h3 class="action-card-title">Download Template</h3>
+                <p class="action-card-description">Unduh template CSV untuk import</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modern Toolbar -->
+    <div class="modern-toolbar animate-slide-up">
+        <div class="toolbar-left">
+            <div class="modern-search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Cari produk, SKU, atau kategori..." 
+                       onkeyup="searchProducts()">
+            </div>
+            <div class="modern-filter-group">
+                <select id="categoryFilter" onchange="filterProducts()" class="modern-select">
+                    <option value="">Semua Kategori</option>
+                    {% for category in categories %}
+                        <option value="{{ category }}">{{ category }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <div class="toolbar-right">
+            <div class="modern-view-toggle">
+                <button class="modern-btn modern-btn-sm active" onclick="setView('table')">
+                    <i class="fas fa-table"></i>
+                </button>
+                <button class="modern-btn modern-btn-sm" onclick="setView('grid')">
+                    <i class="fas fa-th-large"></i>
+                </button>
+            </div>
+            <button class="modern-btn modern-btn-primary" onclick="printSelectedQR()">
+                <i class="fas fa-print me-2"></i>Print QR
+            </button>
+        </div>
+    </div>
+
+    <!-- Modern Data Table -->
+    <div class="modern-data-table animate-fade-in">
+        <div class="table-container">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>
+                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                        </th>
+                        <th>Gambar</th>
+                        <th>SKU</th>
+                        <th>Nama Produk</th>
+                        <th>Kategori</th>
+                        <th>Stok</th>
+                        <th>Harga Modal</th>
+                        <th>Lokasi</th>
+                        <th>Dimensi</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="productTableBody">
+                    {% for item in products %}
+                    <tr class="table-row" data-category="{{ item.category or '' }}">
+                        <td>
+                            <input type="checkbox" class="product-checkbox" value="{{ item.sku }}">
+                        </td>
+                        <td>
+                            <div class="product-image">
+                                {% if item.image_url %}
+                                    <img src="{{ item.image_url }}" alt="{{ item.name }}" loading="lazy">
+                                {% else %}
+                                    <div class="image-placeholder">
+                                        <i class="fas fa-image"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="product-sku">{{ item.sku }}</span>
+                        </td>
+                        <td>
+                            <div class="product-name-cell">
+                                <a href="/product/{{ item.id }}" class="product-name-link">
+                                    {{ item.name }}
+                                </a>
+                            </div>
+                        </td>
+                        <td>
+                            {% if item.category %}
+                                <span class="category-badge">{{ item.category }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="quantity-container">
+                                <input type="number" 
+                                       class="quantity-input" 
+                                       value="{{ item.quantity }}" 
+                                       min="0" 
+                                       onchange="updateQuantity({{ item.id }}, this.value)">
+                                {% if item.quantity <= item.minimum_stock %}
+                                    <span class="stock-warning">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="price-container">
+                                <span class="price-prefix">Rp</span>
+                                <input type="number" 
+                                       class="price-input" 
+                                       value="{{ item.price }}" 
+                                       min="0" 
+                                       step="1000"
+                                       onchange="updatePrice({{ item.id }}, this.value)">
+                            </div>
+                        </td>
+                        <td>
+                            <div class="location-info">
+                                {% if item.zone or item.rack or item.bin %}
+                                    <span class="location-badge">
+                                        {{ item.zone or '-' }}-{{ item.rack or '-' }}-{{ item.bin or '-' }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="dimension-info">
+                                {% if item.length and item.width and item.height %}
+                                    <span class="dimension-text">{{ item.length }}×{{ item.width }}×{{ item.height }}cm</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="/qr-code/{{ item.sku }}" 
+                                   target="_blank" 
+                                   class="modern-btn modern-btn-sm modern-btn-outline">
+                                    <i class="fas fa-qrcode"></i>
+                                </a>
+                                <a href="/warehouse/edit/{{ item.id }}" 
+                                   class="modern-btn modern-btn-sm modern-btn-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button onclick="deleteProduct({{ item.id }})" 
+                                        class="modern-btn modern-btn-sm modern-btn-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modern Pagination -->
+    {% if pagination %}
+    <div class="modern-pagination animate-fade-in">
+        <div class="pagination-info">
+            Showing {{ pagination.page_start }} to {{ pagination.page_end }} of {{ pagination.total }} products
+        </div>
+        <div class="pagination-controls">
+            {% if pagination.has_prev %}
+                <a href="?page={{ pagination.prev_num }}" class="modern-btn modern-btn-sm">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            {% endif %}
+            
+            {% for page_num in pagination.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num != pagination.page %}
+                        <a href="?page={{ page_num }}" class="modern-btn modern-btn-sm">{{ page_num }}</a>
+                    {% else %}
+                        <span class="modern-btn modern-btn-sm modern-btn-primary">{{ page_num }}</span>
+                    {% endif %}
+                {% else %}
+                    <span class="pagination-ellipsis">...</span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+                <a href="?page={{ pagination.next_num }}" class="modern-btn modern-btn-sm">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Empty State -->
+    {% if not products %}
+    <div class="modern-empty-state animate-fade-in">
+        <div class="empty-state-icon">
+            <i class="fas fa-box-open"></i>
+        </div>
+        <h3 class="empty-state-title">Belum ada produk</h3>
+        <p class="empty-state-description">Mulai dengan menambahkan produk pertama Anda</p>
+        <a href="/warehouse/add" class="modern-btn modern-btn-primary">
+            <i class="fas fa-plus me-2"></i>Tambah Produk
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Search functionality
+function searchProducts() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const rows = document.querySelectorAll('#productTableBody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+}
+
+// Filter functionality
+function filterProducts() {
+    const category = document.getElementById('categoryFilter').value;
+    const rows = document.querySelectorAll('#productTableBody tr');
+    
+    rows.forEach(row => {
+        const rowCategory = row.getAttribute('data-category');
+        row.style.display = (!category || rowCategory === category) ? '' : 'none';
+    });
+}
+
+// Select all functionality
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.product-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+}
+
+// Print QR codes
+function printSelectedQR() {
+    const selectedSkus = [];
+    const checkboxes = document.querySelectorAll('.product-checkbox:checked');
+    
+    checkboxes.forEach(checkbox => {
+        selectedSkus.push(checkbox.value);
+    });
+    
+    if (selectedSkus.length === 0) {
+        alert('Pilih produk yang ingin dicetak QR code-nya');
+        return;
+    }
+    
+    // Open multiple QR codes with delay
+    selectedSkus.forEach((sku, index) => {
+        setTimeout(() => {
+            window.open(`/qr-code/${sku}`, '_blank');
+        }, index * 300);
+    });
+}
+
+// Update quantity
+function updateQuantity(productId, newQuantity) {
+    fetch('/api/update-quantity', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            product_id: productId,
+            quantity: parseInt(newQuantity)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success feedback
+            const input = event.target;
+            input.classList.add('success-flash');
+            setTimeout(() => input.classList.remove('success-flash'), 1000);
+        } else {
+            alert('Error updating quantity: ' + data.message);
+        }
+    });
+}
+
+// Update price
+function updatePrice(productId, newPrice) {
+    fetch('/api/update-price', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            product_id: productId,
+            price: parseFloat(newPrice)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success feedback
+            const input = event.target;
+            input.classList.add('success-flash');
+            setTimeout(() => input.classList.remove('success-flash'), 1000);
+        } else {
+            alert('Error updating price: ' + data.message);
+        }
+    });
+}
+
+// Delete product
+function deleteProduct(productId) {
+    if (confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
+        fetch('/api/delete-product', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                product_id: productId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting product: ' + data.message);
+            }
+        });
+    }
+}
+
+// Download template
+function downloadTemplate() {
+    window.location.href = '/download-template';
+}
+
+// View toggle
+function setView(viewType) {
+    // Implementation for grid/table view toggle
+    console.log('Set view:', viewType);
+}
+</script>
+{% endblock %}

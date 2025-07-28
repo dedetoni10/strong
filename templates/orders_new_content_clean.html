@@ -1,0 +1,214 @@
+<!-- Orders Content Only - for AJAX requests -->
+<div class="content-header">
+    <h1><i class="fas fa-shopping-cart"></i> Pesanan Saya</h1>
+    <p>Kelola dan monitor pesanan</p>
+</div>
+
+<style>
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+
+.tab-navigation {
+    margin-bottom: 20px;
+}
+
+.nav-tabs {
+    border-bottom: 2px solid #dee2e6;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    color: #6c757d;
+    font-weight: 500;
+    padding: 12px 20px;
+    margin-right: 5px;
+    border-radius: 8px 8px 0 0;
+    transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link.active {
+    background-color: #8B5CF6;
+    color: white;
+    border-bottom: 2px solid #8B5CF6;
+}
+
+.nav-tabs .nav-link:hover {
+    background-color: rgba(139, 92, 246, 0.1);
+    color: #8B5CF6;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    color: #495057;
+    font-weight: 600;
+}
+
+.pagination {
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.pagination .page-link {
+    color: #8B5CF6;
+    border-color: #8B5CF6;
+}
+
+.pagination .page-link:hover {
+    background-color: #8B5CF6;
+    border-color: #8B5CF6;
+    color: white;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #8B5CF6;
+    border-color: #8B5CF6;
+}
+</style>
+
+<!-- Tab Navigation -->
+<div class="tab-navigation mb-3">
+    <div class="nav nav-tabs" id="statusTabs" role="tablist">
+        <button class="nav-link status-tab {% if status_filter == 'all' %}active{% endif %}" 
+                onclick="switchTab('all')" type="button">
+            Semua ({{ (tab_counts.perlu_dikirim + tab_counts.siap_dikirim + tab_counts.dikirim + tab_counts.selesai + tab_counts.pengembalian) }})
+        </button>
+        <button class="nav-link status-tab {% if status_filter == 'perlu_dikirim' %}active{% endif %}" 
+                onclick="switchTab('perlu_dikirim')" type="button">
+            Perlu Dikirim ({{ tab_counts.perlu_dikirim }})
+        </button>
+        <button class="nav-link status-tab {% if status_filter == 'siap_dikirim' %}active{% endif %}" 
+                onclick="switchTab('siap_dikirim')" type="button">
+            Siap Dikirim ({{ tab_counts.siap_dikirim }})
+        </button>
+        <button class="nav-link status-tab {% if status_filter == 'dikirim' %}active{% endif %}" 
+                onclick="switchTab('dikirim')" type="button">
+            Dikirim ({{ tab_counts.dikirim }})
+        </button>
+        <button class="nav-link status-tab {% if status_filter == 'selesai' %}active{% endif %}" 
+                onclick="switchTab('selesai')" type="button">
+            Selesai ({{ tab_counts.selesai }})
+        </button>
+        <button class="nav-link status-tab {% if status_filter == 'pengembalian' %}active{% endif %}" 
+                onclick="switchTab('pengembalian')" type="button">
+            Pengembalian ({{ tab_counts.pengembalian }})
+        </button>
+    </div>
+</div>
+
+<!-- Orders List -->
+<div class="card">
+    <div class="card-header bg-purple text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">{{ header_text }}</h5>
+        <button class="btn btn-light btn-sm" onclick="document.getElementById('uploadModal').style.display='block'">
+            <i class="fas fa-upload"></i> Upload Orders
+        </button>
+    </div>
+    <div class="card-body">
+        {% if orders %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>No Pesanan</th>
+                            <th>Customer</th>
+                            <th>Status</th>
+                            <th>Total</th>
+                            <th>Tanggal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('order_detail', order_id=order.id) }}" target="_blank">
+                                    {{ order.order_number }}
+                                </a>
+                            </td>
+                            <td>{{ order.customer_name }}</td>
+                            <td>
+                                {% if order.status == 'perlu_dikirim' %}
+                                    <span class="badge bg-warning">Perlu Dikirim</span>
+                                {% elif order.status == 'siap_dikirim' %}
+                                    <span class="badge bg-info">Siap Dikirim</span>
+                                {% elif order.status == 'dikirim' %}
+                                    <span class="badge bg-primary">Dikirim</span>
+                                {% elif order.status == 'selesai' %}
+                                    <span class="badge bg-success">Selesai</span>
+                                {% elif order.status == 'pengembalian' %}
+                                    <span class="badge bg-danger">Pengembalian</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ order.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>Rp {{ "{:,.0f}".format(order.total_amount) }}</td>
+                            <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') if order.created_at else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if pagination.pages > 1 %}
+                <nav aria-label="Pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if pagination.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ pagination.prev_num }}&status={{ status_filter }}">Previous</a>
+                            </li>
+                        {% endif %}
+                        {% for page_num in pagination.iter_pages() %}
+                            {% if page_num %}
+                                <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                                    <a class="page-link" href="?page={{ page_num }}&status={{ status_filter }}">{{ page_num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if pagination.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ pagination.next_num }}&status={{ status_filter }}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Tidak ada pesanan ditemukan</h5>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Simple tab switching with page reload - stable and fast
+function switchTab(status) {
+    // Show loading
+    document.body.style.opacity = '0.7';
+    
+    // Navigate to URL with status filter
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.set('status', status);
+    currentUrl.searchParams.set('page', '1'); // Reset to first page
+    
+    // Use loadPage for AJAX navigation if available, otherwise redirect
+    if (typeof loadPage === 'function') {
+        const ajaxUrl = currentUrl.pathname + currentUrl.search + '&ajax=1';
+        loadPage(ajaxUrl);
+    } else {
+        window.location.href = currentUrl.href;
+    }
+}
+</script>

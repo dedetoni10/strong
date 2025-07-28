@@ -1,0 +1,314 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Order {{ order.order_number[:8] }}... - STRONG Order Management{% endblock %}
+
+{% block content %}
+<div class="container-lg">
+    <div class="row mb-4">
+        <div class="col">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('orders') }}">Orders</a></li>
+                    <li class="breadcrumb-item active">{{ order.order_number[:8] }}...</li>
+                </ol>
+            </nav>
+            
+            <h1><i class="fas fa-shopping-cart me-2"></i>Order Details</h1>
+            <p class="text-muted">Complete information about order {{ order.order_number }}</p>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-xl-10">
+            <div class="row">
+                <!-- Order Information -->
+                <div class="col-lg-8">
+                    <div class="card mb-4">
+                        <div class="card-header bg-purple text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-info-circle me-2"></i>Order Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td><strong>Order Number:</strong></td>
+                                            <td>{{ order.order_number }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Tracking Number:</strong></td>
+                                            <td>{{ order.tracking_number or '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Status:</strong></td>
+                                            <td>
+                                                {% set status_colors = {
+                                                    'pending': 'warning',
+                                                    'processing': 'info',
+                                                    'shipped': 'success',
+                                                    'delivered': 'primary',
+                                                    'cancelled': 'danger'
+                                                } %}
+                                                <span class="badge bg-{{ status_colors.get(order.status, 'secondary') }}">
+                                                    {{ order.status.title() }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Total Amount:</strong></td>
+                                            <td>Rp {{ "{:,.0f}".format(order.total_amount) }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td><strong>Created:</strong></td>
+                                            <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M:%S') if order.created_at else '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Updated:</strong></td>
+                                            <td>{{ order.updated_at.strftime('%Y-%m-%d %H:%M:%S') if order.updated_at else '-' }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Profit Analysis -->
+                    {% if profit_data %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-purple text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-chart-line me-2"></i>Analisis Keuntungan
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h6 class="text-muted">Total Pendapatan</h6>
+                                        <h5 class="text-info">Rp {{ "{:,.0f}".format(profit_data.total_revenue) }}</h5>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h6 class="text-muted">Total Modal</h6>
+                                        <h5 class="text-warning">Rp {{ "{:,.0f}".format(profit_data.total_cost) }}</h5>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h6 class="text-muted">Keuntungan</h6>
+                                        <h5 class="text-{{ 'success' if profit_data.total_profit > 0 else 'danger' }}">
+                                            Rp {{ "{:,.0f}".format(profit_data.total_profit) }}
+                                        </h5>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h6 class="text-muted">Margin</h6>
+                                        <h5 class="text-{{ 'success' if profit_data.profit_margin > 0 else 'danger' }}">
+                                            {{ "{:.1f}%".format(profit_data.profit_margin) }}
+                                        </h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Customer Information -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-purple text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-user me-2"></i>Customer Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Name:</strong> {{ order.customer_name }}</p>
+                                    <p><strong>Phone:</strong> {{ order.customer_phone }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Address:</strong></p>
+                                    <p class="text-muted">{{ order.customer_address }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Order Items -->
+                    <div class="card">
+                        <div class="card-header bg-purple text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-box me-2"></i>Order Items
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if items %}
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Product</th>
+                                                <th>Quantity</th>
+                                                <th>Price</th>
+                                                <th>Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in items %}
+                                                <tr>
+                                                    <td>
+                                                        <div>
+                                                            <strong>{{ item.product_name }}</strong>
+                                                        </div>
+                                                        <div class="text-muted small">SKU: {{ item.sku }}</div>
+                                                    </td>
+                                                    <td>{{ item.quantity }}</td>
+                                                    <td>Rp {{ "{:,.0f}".format(item.price) }}</td>
+                                                    <td>Rp {{ "{:,.0f}".format(item.price * item.quantity) }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="3" class="text-end">Total:</th>
+                                                <th>Rp {{ "{:,.0f}".format(order.total_amount) }}</th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center text-muted py-3">
+                                    <i class="fas fa-box-open fa-2x mb-2"></i>
+                                    <p>No items found for this order.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Order Actions -->
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header bg-purple text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-cogs me-2"></i>Order Actions
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('update_order_status', order_id=order.id) }}">
+                                <div class="mb-3">
+                                    <label for="status" class="form-label">Update Status</label>
+                                    <select name="status" id="status" class="form-select" required>
+                                        <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>Pending</option>
+                                        <option value="processing" {% if order.status == 'processing' %}selected{% endif %}>Processing</option>
+                                        <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>Shipped</option>
+                                        <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>Delivered</option>
+                                        <option value="cancelled" {% if order.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-save me-2"></i>Update Status
+                                </button>
+                            </form>
+                            
+                            <hr>
+                            
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('orders') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Back to Orders
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Order Timeline -->
+                    <div class="card mt-4">
+                        <div class="card-header bg-purple text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-history me-2"></i>Order Timeline
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="timeline">
+                                <div class="timeline-item">
+                                    <div class="timeline-marker bg-success"></div>
+                                    <div class="timeline-content">
+                                        <h6>Order Created</h6>
+                                        <p class="text-muted small">{{ order.created_at.strftime('%Y-%m-%d %H:%M:%S') if order.created_at else '-' }}</p>
+                                    </div>
+                                </div>
+                                
+                                {% if order.status != 'pending' %}
+                                <div class="timeline-item">
+                                    <div class="timeline-marker bg-info"></div>
+                                    <div class="timeline-content">
+                                        <h6>Status: {{ order.status.title() }}</h6>
+                                        <p class="text-muted small">{{ order.updated_at.strftime('%Y-%m-%d %H:%M:%S') if order.updated_at else '-' }}</p>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -35px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.timeline-content h6 {
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.timeline-content p {
+    margin-bottom: 0;
+    font-size: 0.875rem;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: -29px;
+    top: 17px;
+    width: 2px;
+    height: calc(100% - 12px);
+    background-color: #dee2e6;
+}
+</style>
+{% endblock %}

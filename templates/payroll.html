@@ -1,0 +1,384 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Gaji{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1><i class="fas fa-money-check-alt me-2"></i>Gaji</h1>
+    <p>Manajemen gaji dan perhitungan payroll otomatis</p>
+</div>
+
+<!-- Statistics Cards -->
+<div class="stats-cards">
+    <div class="stat-card">
+        <div class="stat-icon" style="background-color: #28a745;">
+            <i class="fas fa-money-bill-wave text-white"></i>
+        </div>
+        <div class="stat-info">
+            <h3>Rp {{ "{:,.0f}".format(total_payroll_month) }}</h3>
+            <p>Total Gaji Bulan Ini</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background-color: #007bff;">
+            <i class="fas fa-users text-white"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ employees_paid }}</h3>
+            <p>Karyawan Dibayar</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background-color: #ffc107;">
+            <i class="fas fa-clock text-white"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ total_overtime_hours }}</h3>
+            <p>Total Jam Lembur</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background-color: #17a2b8;">
+            <i class="fas fa-percentage text-white"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ average_attendance }}%</h3>
+            <p>Rata-rata Kehadiran</p>
+        </div>
+    </div>
+</div>
+
+<!-- Controls -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-calculator me-2"></i>Kalkulasi Gaji
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="calculatePayrollForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Bulan</label>
+                                <select class="form-select" name="month" required>
+                                    {% for month_num, month_name in months %}
+                                    <option value="{{ month_num }}" {% if month_num == current_month %}selected{% endif %}>
+                                        {{ month_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Tahun</label>
+                                <select class="form-select" name="year" required>
+                                    {% for year in years %}
+                                    <option value="{{ year }}" {% if year == current_year %}selected{% endif %}>
+                                        {{ year }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-calculator me-1"></i>Hitung Gaji
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-export me-2"></i>Laporan
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" onclick="exportPayroll('excel')">
+                        <i class="fas fa-file-excel me-1"></i>Export Excel
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="exportPayroll('pdf')">
+                        <i class="fas fa-file-pdf me-1"></i>Export PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Monthly Payroll Table -->
+<div class="card">
+    <div class="card-header bg-purple text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-table me-2"></i>Daftar Gaji - {{ current_month_name }} {{ current_year }}
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-purple">
+                    <tr>
+                        <th>No</th>
+                        <th>Nama</th>
+                        <th>Posisi</th>
+                        <th>Hari Kerja</th>
+                        <th>Gaji Pokok</th>
+                        <th>Lembur</th>
+                        <th>Total Gaji</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payroll in monthly_payrolls %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <img src="{{ payroll.employee.photo_url or '/static/img/default-avatar.png' }}" 
+                                     class="rounded-circle me-2" width="32" height="32" alt="Foto">
+                                <div>
+                                    <strong>{{ payroll.employee.name }}</strong>
+                                    <br><small class="text-muted">{{ payroll.employee.user.username if payroll.employee.user else '-' }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary">{{ payroll.employee.position }}</span>
+                        </td>
+                        <td>
+                            <strong>{{ payroll.days_worked }}</strong> hari
+                            <br><small class="text-muted">dari {{ payroll.working_days_total }} hari</small>
+                        </td>
+                        <td>
+                            <strong>Rp {{ "{:,.0f}".format(payroll.basic_salary) }}</strong>
+                            <br><small class="text-muted">{{ "%.1f"|format(payroll.attendance_percentage) }}% kehadiran</small>
+                        </td>
+                        <td>
+                            {% if payroll.overtime_hours > 0 %}
+                                <strong>{{ payroll.overtime_hours }} jam</strong>
+                                <br><small class="text-success">+Rp {{ "{:,.0f}".format(payroll.overtime_pay) }}</small>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <h5 class="text-success mb-0">Rp {{ "{:,.0f}".format(payroll.total_salary) }}</h5>
+                        </td>
+                        <td>
+                            {% if payroll.is_paid %}
+                                <span class="badge bg-success">Sudah Dibayar</span>
+                                <br><small class="text-muted">{{ payroll.paid_date.strftime('%d/%m/%Y') if payroll.paid_date else '' }}</small>
+                            {% else %}
+                                <span class="badge bg-warning">Belum Dibayar</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-info" onclick="viewPayrollDetail({{ payroll.id }})" title="Detail">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                {% if not payroll.is_paid %}
+                                <button class="btn btn-success" onclick="markAsPaid({{ payroll.id }})" title="Bayar">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                {% endif %}
+                                <button class="btn btn-primary" onclick="printSlip({{ payroll.id }})" title="Slip Gaji">
+                                    <i class="fas fa-print"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="fas fa-money-check-alt fa-3x mb-3"></i>
+                                <h5>Belum ada data gaji untuk bulan ini</h5>
+                                <p>Klik "Hitung Gaji" untuk memproses payroll</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if monthly_payrolls %}
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title">Ringkasan Payroll</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">Total Karyawan:</small>
+                                <br><strong>{{ monthly_payrolls|length }} orang</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Total Payroll:</small>
+                                <br><strong class="text-success">Rp {{ "{:,.0f}".format(total_payroll_amount) }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-light">
+                    <div class="card-body text-end">
+                        <button class="btn btn-success btn-lg" onclick="payAllEmployees()" 
+                                {% if all_paid %}disabled{% endif %}>
+                            <i class="fas fa-money-bill-wave me-1"></i>
+                            {% if all_paid %}Semua Sudah Dibayar{% else %}Bayar Semua{% endif %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Payroll Detail Modal -->
+<div class="modal fade" id="payrollDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-invoice-dollar me-2"></i>Detail Gaji
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="payrollDetailContent">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Calculate payroll
+document.getElementById('calculatePayrollForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Show loading
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Menghitung...';
+    submitBtn.disabled = true;
+    
+    fetch('/payroll/calculate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Gaji berhasil dihitung untuk ${data.employees_count} karyawan`);
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat menghitung gaji');
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+
+// View payroll detail
+function viewPayrollDetail(payrollId) {
+    fetch(`/payroll/detail/${payrollId}`)
+    .then(response => response.text())
+    .then(html => {
+        document.getElementById('payrollDetailContent').innerHTML = html;
+        const modal = new bootstrap.Modal(document.getElementById('payrollDetailModal'));
+        modal.show();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat memuat detail');
+    });
+}
+
+// Mark as paid
+function markAsPaid(payrollId) {
+    if (confirm('Tandai gaji ini sebagai sudah dibayar?')) {
+        fetch(`/payroll/${payrollId}/mark_paid`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Gaji berhasil ditandai sebagai sudah dibayar');
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat mengupdate status');
+        });
+    }
+}
+
+// Pay all employees
+function payAllEmployees() {
+    if (confirm('Tandai semua gaji bulan ini sebagai sudah dibayar?')) {
+        fetch('/payroll/pay_all', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`${data.count} gaji berhasil ditandai sebagai sudah dibayar`);
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat mengupdate status');
+        });
+    }
+}
+
+// Print salary slip
+function printSlip(payrollId) {
+    window.open(`/payroll/slip/${payrollId}`, '_blank');
+}
+
+// Export payroll
+function exportPayroll(format) {
+    const month = document.querySelector('select[name="month"]').value;
+    const year = document.querySelector('select[name="year"]').value;
+    
+    window.open(`/payroll/export/${format}?month=${month}&year=${year}`, '_blank');
+}
+</script>
+{% endblock %}

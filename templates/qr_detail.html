@@ -1,0 +1,137 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Detail QR Code - {{ employee_name }}{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1><i class="fas fa-qrcode me-2"></i>Detail QR Code</h1>
+    <p>Detail QR code untuk karyawan {{ employee_name }}</p>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-purple text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2"></i>Informasi Karyawan
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td width="30%"><strong>Nama:</strong></td>
+                                <td>{{ employee_name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Posisi:</strong></td>
+                                <td>{{ employee_position }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Cabang:</strong></td>
+                                <td><span class="badge bg-info">{{ employee_branch }}</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>ID Karyawan:</strong></td>
+                                <td><code>{{ employee_id }}</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Expired:</strong></td>
+                                <td><span class="text-warning">{{ expiry_date }}</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-center">
+                            <div class="bg-light p-3 rounded border">
+                                <img src="data:image/png;base64,{{ qr_code_base64 }}" 
+                                     width="200" height="200" 
+                                     class="img-fluid" 
+                                     alt="QR Code {{ employee_name }}">
+                            </div>
+                            <p class="text-muted mt-2">QR Code untuk {{ employee_name }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>Aksi QR Code
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" onclick="printQR()">
+                        <i class="fas fa-print me-2"></i>Print QR Code
+                    </button>
+                    <button class="btn btn-success" onclick="downloadQR()">
+                        <i class="fas fa-download me-2"></i>Download PNG
+                    </button>
+                    <button class="btn btn-info" onclick="copyQRData()">
+                        <i class="fas fa-copy me-2"></i>Copy QR Data
+                    </button>
+                    <a href="{{ url_for('employee_qr_generator') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Kembali
+                    </a>
+                </div>
+                
+                <hr>
+                
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle me-2"></i>QR Data:</h6>
+                    <code id="qrData" style="font-size: 11px; word-break: break-all;">{{ qr_data }}</code>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-exclamation-triangle me-2"></i>Petunjuk:</h6>
+                    <ul class="mb-0" style="font-size: 12px;">
+                        <li>QR code ini untuk attendance karyawan</li>
+                        <li>Scan dengan barcode scanner atau HP</li>
+                        <li>Valid sampai {{ expiry_date }}</li>
+                        <li>Cetak di sticker tahan air</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function printQR() {
+    window.open('{{ url_for("print_qr", employee_id=employee_id) }}', '_blank');
+}
+
+function downloadQR() {
+    const qrImage = document.querySelector('img[alt*="QR Code"]');
+    if (qrImage) {
+        const link = document.createElement('a');
+        link.download = 'QR_{{ employee_name|replace(" ", "_") }}_{{ employee_id }}.png';
+        link.href = qrImage.src;
+        link.click();
+    }
+}
+
+function copyQRData() {
+    const qrData = document.getElementById('qrData').textContent;
+    navigator.clipboard.writeText(qrData).then(function() {
+        alert('QR data berhasil dicopy ke clipboard!');
+    }, function(err) {
+        console.error('Could not copy text: ', err);
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = qrData;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('QR data berhasil dicopy ke clipboard!');
+    });
+}
+</script>
+{% endblock %}

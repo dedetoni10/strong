@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}Beranda - Strong Order Management{% endblock %}
+
+{% block content %}
+<style>
+/* Modern Dashboard Styling */
+.dashboard-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem 0;
+    margin: -1rem -1rem 2rem -1rem;
+    border-radius: 0 0 20px 20px;
+}
+
+.modern-stat-card {
+    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+    border: none;
+    border-radius: 15px;
+    color: white;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.modern-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+    pointer-events: none;
+}
+
+.modern-stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+}
+
+.modern-stat-card.orders {
+    --gradient-start: #667eea;
+    --gradient-end: #764ba2;
+}
+
+.modern-stat-card.products {
+    --gradient-start: #f093fb;
+    --gradient-end: #f5576c;
+}
+
+.modern-stat-card.pending {
+    --gradient-start: #ffecd2;
+    --gradient-end: #fcb69f;
+    color: #333;
+}
+
+.modern-stat-card.low-stock {
+    --gradient-start: #a8edea;
+    --gradient-end: #fed6e3;
+    color: #333;
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    opacity: 0.8;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0.5rem 0;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.modern-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+}
+
+.modern-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.modern-card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 15px 15px 0 0;
+    padding: 1.25rem 1.5rem;
+}
+
+.modern-btn {
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.modern-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.modern-btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.modern-btn-success {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.modern-btn-warning {
+    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+    color: #333;
+}
+
+.quick-action-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.list-group-item {
+    border: none;
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(5px);
+}
+
+.badge {
+    border-radius: 10px;
+    padding: 0.5rem 0.75rem;
+}
+
+.dashboard-welcome {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.dashboard-time {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+</style>
+
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="dashboard-header">
+        <div class="container">
+            <div class="dashboard-welcome">
+                <h1 class="h2 mb-2">🎯 Strong Order Management</h1>
+                <p class="dashboard-time">
+                    <i class="fas fa-clock"></i> Dashboard Overview - Real-time Monitoring
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="modern-stat-card orders">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="stat-label">Total Orders</div>
+                            <div class="stat-number">{{ stats.total_orders }}</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="modern-stat-card products">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="stat-label">Total Products</div>
+                            <div class="stat-number">{{ stats.total_products }}</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-box"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="modern-stat-card pending">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="stat-label">Pending Orders</div>
+                            <div class="stat-number">{{ stats.pending_orders }}</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-3">
+            <div class="modern-stat-card low-stock">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="stat-label">Low Stock Items</div>
+                            <div class="stat-number">{{ stats.low_stock_products }}</div>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions & Information Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-rocket me-2" style="color: #667eea;"></i>Quick Actions
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="quick-action-grid">
+                        <a href="{{ url_for('orders') }}" class="modern-btn modern-btn-primary">
+                            <i class="fas fa-list me-2"></i>View Orders
+                        </a>
+                        <a href="{{ url_for('warehouse') }}" class="modern-btn modern-btn-success">
+                            <i class="fas fa-warehouse me-2"></i>Manage Inventory
+                        </a>
+                        <a href="{{ url_for('scan_center') }}" class="modern-btn modern-btn-warning">
+                            <i class="fas fa-qrcode me-2"></i>Scan Center
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history me-2" style="color: #f5576c;"></i>Recent Orders
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if recent_orders %}
+                        <div class="list-group list-group-flush">
+                            {% for order in recent_orders[:5] %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-bold">{{ order.order_number }}</div>
+                                        <div class="text-muted small">{{ order.customer_name }}</div>
+                                    </div>
+                                    <span class="badge" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">{{ order.status }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-inbox fa-2x mb-2" style="color: #dee2e6;"></i>
+                            <p>No recent orders</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="modern-card">
+                <div class="modern-card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-exclamation-triangle me-2" style="color: #fcb69f;"></i>Low Stock Alert
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if low_stock_items %}
+                        <div class="list-group list-group-flush">
+                            {% for item in low_stock_items[:5] %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-bold">{{ item.name }}</div>
+                                        <div class="text-muted small">SKU: {{ item.sku }}</div>
+                                    </div>
+                                    <span class="badge" style="background: linear-gradient(135deg, #ffecd2, #fcb69f); color: #333;">{{ item.quantity }} left</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if low_stock_items|length > 5 %}
+                            <div class="text-center mt-3">
+                                <a href="{{ url_for('warehouse') }}?low_stock=true" class="btn btn-sm" style="background: linear-gradient(135deg, #a8edea, #fed6e3); color: #333; border: none; border-radius: 10px;">
+                                    View All Low Stock Items
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-check-circle fa-2x mb-2" style="color: #28a745;"></i>
+                            <p>All items are well stocked!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,305 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Kelola Kelompok Gaji - {{ location.location_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-users-cog"></i> Kelola Kelompok Gaji</h2>
+                    <p class="text-muted mb-0">Konfigurasi gaji untuk lokasi: <strong>{{ location.location_name }}</strong></p>
+                </div>
+                <div>
+                    <span class="badge bg-info me-2">{{ salary_groups|length }} Kelompok</span>
+                    <button class="btn btn-primary" onclick="addNewGroup()">
+                        <i class="fas fa-plus me-1"></i>Tambah Kelompok
+                    </button>
+                </div>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Salary Groups Grid -->
+            <div class="row">
+                {% for group in salary_groups %}
+                {% set group_names = group.employee_names|default('[]')|from_json %}
+                <div class="col-lg-6 col-xl-4 mb-4">
+                    <div class="card h-100 {% if group.group_level == 1 %}border-warning{% elif group.group_level <= 3 %}border-success{% else %}border-info{% endif %}">
+                        <div class="card-header {% if group.group_level == 1 %}bg-warning{% elif group.group_level <= 3 %}bg-success{% else %}bg-info{% endif %} text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-crown me-1"></i>
+                                    {{ group.group_name }} (Level {{ group.group_level }})
+                                </h6>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-light" onclick="editGroup({{ group.id }})">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Salary Details -->
+                            <div class="salary-details mb-3">
+                                <div class="row text-center">
+                                    <div class="col-6 mb-2">
+                                        <strong>Gaji Harian</strong><br>
+                                        <span class="text-primary h6">Rp {{ "{:,.0f}".format(group.daily_wage) }}</span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <strong>Lembur Minggu</strong><br>
+                                        <span class="text-success h6">Rp {{ "{:,.0f}".format(group.sunday_rate) }}</span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <strong>Lembur Malam</strong><br>
+                                        <span class="text-warning h6">Rp {{ "{:,.0f}".format(group.night_rate) }}</span>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <strong>Uang Makan</strong><br>
+                                        <span class="text-info h6">
+                                            {% if group.meal_rate > 0 %}
+                                                Rp {{ "{:,.0f}".format(group.meal_rate) }}
+                                            {% else %}
+                                                <span class="text-muted">Tidak Ada</span>
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="text-center mb-3">
+                                    <strong>Bonus Absensi Full</strong><br>
+                                    <span class="text-danger h5">Rp {{ "{:,.0f}".format(group.attendance_bonus) }}</span>
+                                </div>
+                                <div class="text-center">
+                                    <strong>Karyawan ({{ group_names|length }} orang):</strong><br>
+                                    {% if group_names %}
+                                        {% for employee in group_names %}
+                                            <span class="badge {% if group.group_level == 1 %}bg-warning{% elif group.group_level <= 3 %}bg-success{% else %}bg-info{% endif %} me-1">{{ employee|title }}</span>
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">Belum ada karyawan</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-outline-primary btn-sm w-100" onclick="editGroup({{ group.id }})">
+                                <i class="fas fa-edit me-1"></i>Edit Group
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="row mt-4">
+                <div class="col-12 text-center">
+                    <a href="{{ url_for('employee_salary_dashboard', location_name=location.location_name) }}" class="btn btn-success btn-lg me-3">
+                        <i class="fas fa-arrow-left me-2"></i>Kembali ke Payroll
+                    </a>
+                    <button class="btn btn-primary btn-lg" onclick="saveAllChanges()">
+                        <i class="fas fa-save me-2"></i>Simpan Semua Perubahan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Group Modal -->
+<div class="modal fade" id="editGroupModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Kelompok Gaji</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editGroupForm">
+                    <input type="hidden" id="edit_group_id">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nama Kelompok</label>
+                            <input type="text" class="form-control" id="edit_group_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Level Kelompok</label>
+                            <select class="form-select" id="edit_group_level" required>
+                                <option value="1">Level 1 (Tertinggi)</option>
+                                <option value="2">Level 2</option>
+                                <option value="3">Level 3</option>
+                                <option value="4">Level 4</option>
+                                <option value="5">Level 5</option>
+                                <option value="6">Level 6</option>
+                                <option value="7">Level 7 (Terendah)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Gaji Harian (Rp)</label>
+                            <input type="number" class="form-control" id="edit_daily_wage" step="1000" min="0" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Lembur Minggu (Rp)</label>
+                            <input type="number" class="form-control" id="edit_sunday_rate" step="1000" min="0" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Lembur Malam (Rp)</label>
+                            <input type="number" class="form-control" id="edit_night_rate" step="1000" min="0" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Uang Makan (Rp)</label>
+                            <input type="number" class="form-control" id="edit_meal_rate" step="1000" min="0">
+                            <small class="text-muted">Kosongkan jika tidak ada</small>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Bonus Absensi (Rp)</label>
+                            <input type="number" class="form-control" id="edit_attendance_bonus" step="10000" min="0">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Daftar Karyawan</label>
+                            <textarea class="form-control" id="edit_employee_names" rows="3" placeholder="Masukkan nama karyawan, pisahkan dengan koma. Contoh: andre, ari, dani"></textarea>
+                            <small class="text-muted">Pisahkan dengan koma untuk multiple nama</small>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="saveGroup()">Simpan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function editGroup(groupId) {
+    // Find group data from page
+    fetch(`/expense/{{ location.location_name }}/salary-groups/get/${groupId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const group = data.group;
+                document.getElementById('edit_group_id').value = group.id;
+                document.getElementById('edit_group_name').value = group.group_name;
+                document.getElementById('edit_group_level').value = group.group_level;
+                document.getElementById('edit_daily_wage').value = group.daily_wage;
+                document.getElementById('edit_sunday_rate').value = group.sunday_rate;
+                document.getElementById('edit_night_rate').value = group.night_rate;
+                document.getElementById('edit_meal_rate').value = group.meal_rate;
+                document.getElementById('edit_attendance_bonus').value = group.attendance_bonus;
+                
+                // Parse employee names from JSON
+                const employees = JSON.parse(group.employee_names || '[]');
+                document.getElementById('edit_employee_names').value = employees.join(', ');
+                
+                new bootstrap.Modal(document.getElementById('editGroupModal')).show();
+            } else {
+                alert('Error loading group data: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading group data');
+        });
+}
+
+function saveGroup() {
+    const formData = new FormData();
+    formData.append('group_id', document.getElementById('edit_group_id').value);
+    formData.append('group_name', document.getElementById('edit_group_name').value);
+    formData.append('group_level', document.getElementById('edit_group_level').value);
+    formData.append('daily_wage', document.getElementById('edit_daily_wage').value);
+    formData.append('sunday_rate', document.getElementById('edit_sunday_rate').value);
+    formData.append('night_rate', document.getElementById('edit_night_rate').value);
+    formData.append('meal_rate', document.getElementById('edit_meal_rate').value || 0);
+    formData.append('attendance_bonus', document.getElementById('edit_attendance_bonus').value || 0);
+    
+    // Parse employee names
+    const employeeNames = document.getElementById('edit_employee_names').value
+        .split(',')
+        .map(name => name.trim().toLowerCase())
+        .filter(name => name.length > 0);
+    formData.append('employee_names', JSON.stringify(employeeNames));
+    
+    fetch(`/expense/{{ location.location_name }}/salary-groups/update`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('editGroupModal')).hide();
+            location.reload(); // Refresh page to show changes
+        } else {
+            alert('Error saving group: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving group');
+    });
+}
+
+function addNewGroup() {
+    alert('Fitur tambah kelompok baru akan segera ditambahkan!\n\nUntuk saat ini, Anda dapat mengedit kelompok yang sudah ada.');
+}
+
+function saveAllChanges() {
+    alert('Semua perubahan disimpan otomatis saat Anda edit setiap kelompok.\n\nSistem sudah menggunakan database terpisah per lokasi.');
+}
+</script>
+
+<style>
+.salary-details {
+    font-size: 0.9rem;
+}
+
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.badge {
+    font-size: 0.8rem;
+    margin-bottom: 2px;
+}
+
+.card-header.bg-warning {
+    background-color: #ffc107 !important;
+}
+
+.card-header.bg-success {
+    background-color: #198754 !important;
+}
+
+.card-header.bg-info {
+    background-color: #0dcaf0 !important;
+}
+</style>
+
+{% endblock %}

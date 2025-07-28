@@ -1,0 +1,187 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Pesanan Saya - Strong Order Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="page-title">
+            <i class="fas fa-shopping-cart me-2"></i>Pesanan Saya
+        </h1>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.total_orders }}</div>
+            <div class="stats-label">
+                <i class="fas fa-shopping-cart me-1"></i>Total Orders
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.picking_orders }}</div>
+            <div class="stats-label">
+                <i class="fas fa-hand-paper me-1"></i>Picking
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.packing_orders }}</div>
+            <div class="stats-label">
+                <i class="fas fa-box me-1"></i>Packing
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.ready_pickup_orders }}</div>
+            <div class="stats-label">
+                <i class="fas fa-check-circle me-1"></i>Ready Pickup
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.perlu_dikirim_orders }}</div>
+            <div class="stats-label">
+                <i class="fas fa-clock me-1"></i>Perlu Dikirim
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.completed_orders }}</div>
+            <div class="stats-label">
+                <i class="fas fa-check-double me-1"></i>Completed
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <a href="{{ url_for('orders') }}" class="btn btn-primary">
+            <i class="fas fa-list me-2"></i>Lihat Semua Orders
+        </a>
+        <a href="{{ url_for('import_orders') }}" class="btn btn-success ms-2">
+            <i class="fas fa-upload me-2"></i>Upload Orders
+        </a>
+        <button class="btn btn-secondary ms-2" onclick="toggleAutoRefresh()">
+            <i class="fas fa-sync me-2"></i>Auto Refresh: <span id="autoRefreshStatus">ON</span>
+        </button>
+    </div>
+    <div class="col-md-4 text-end">
+        <button class="btn btn-primary" onclick="refreshStats()">
+            <i class="fas fa-refresh me-2"></i>Refresh
+        </button>
+    </div>
+</div>
+
+<!-- Recent Orders -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-clock me-2"></i>Recent Orders
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Order Number</th>
+                        <th>Customer</th>
+                        <th>Status</th>
+                        <th>Total</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="recentOrdersTable">
+                    {% for order in recent_orders %}
+                    <tr>
+                        <td>{{ order.order_number }}</td>
+                        <td>{{ order.customer_name }}</td>
+                        <td>
+                            <span class="badge 
+                                {% if order.status == 'completed' %}bg-success
+                                {% elif order.status == 'pending' %}bg-warning
+                                {% elif order.status == 'perlu_dikirim' %}bg-info
+                                {% elif order.status == 'siap_dikirim' %}bg-primary
+                                {% else %}bg-secondary
+                                {% endif %}">
+                                {{ order.status|title }}
+                            </span>
+                        </td>
+                        <td>Rp {{ "{:,.0f}".format(order.total_amount) }}</td>
+                        <td>{{ order.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let autoRefreshInterval;
+let isAutoRefreshEnabled = true;
+
+// Auto refresh functionality
+function startAutoRefresh() {
+    autoRefreshInterval = setInterval(refreshStats, 15000); // 15 seconds
+}
+
+function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+}
+
+function toggleAutoRefresh() {
+    if (isAutoRefreshEnabled) {
+        stopAutoRefresh();
+        document.getElementById('autoRefreshStatus').textContent = 'OFF';
+        isAutoRefreshEnabled = false;
+    } else {
+        startAutoRefresh();
+        document.getElementById('autoRefreshStatus').textContent = 'ON';
+        isAutoRefreshEnabled = true;
+    }
+}
+
+function refreshStats() {
+    fetch('{{ url_for("api_monitoring_stats") }}')
+        .then(response => response.json())
+        .then(data => {
+            // Update stats cards
+            document.querySelectorAll('.stats-card .stats-number')[0].textContent = data.total_orders;
+            document.querySelectorAll('.stats-card .stats-number')[1].textContent = data.picking_orders;
+            document.querySelectorAll('.stats-card .stats-number')[2].textContent = data.packing_orders;
+            document.querySelectorAll('.stats-card .stats-number')[3].textContent = data.ready_pickup_orders;
+            document.querySelectorAll('.stats-card .stats-number')[4].textContent = data.perlu_dikirim_orders;
+            document.querySelectorAll('.stats-card .stats-number')[5].textContent = data.completed_orders;
+            
+            console.log('Stats refreshed successfully');
+        })
+        .catch(error => {
+            console.error('Error refreshing stats:', error);
+        });
+}
+
+// Start auto refresh on page load
+document.addEventListener('DOMContentLoaded', function() {
+    if (isAutoRefreshEnabled) {
+        startAutoRefresh();
+    }
+});
+</script>
+{% endblock %}

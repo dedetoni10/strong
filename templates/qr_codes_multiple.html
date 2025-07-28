@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Codes - Multiple Products</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            
+            /* Custom page size for thermal label */
+            @page {
+                size: 151px 113px; /* 40mm x 30mm in pixels (96 DPI) */
+                margin: 0;
+            }
+            
+            * {
+                margin: 0 !important;
+                padding: 0 !important;
+                box-sizing: border-box !important;
+            }
+            
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                font-family: Arial, sans-serif !important;
+                overflow: visible !important;
+            }
+            
+            .container {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .qr-codes-container {
+                display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .qr-code-item {
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: center !important;
+                align-items: center !important;
+                width: 151px !important;
+                height: 113px !important;
+                margin: 0 !important;
+                padding: 4px !important;
+                text-align: center !important;
+                border: none !important;
+                box-shadow: none !important;
+                background: white !important;
+                box-sizing: border-box !important;
+                position: relative !important;
+            }
+            
+            .qr-code-item:not(:first-child) {
+                page-break-before: always !important;
+                break-before: page !important;
+            }
+            
+            .qr-code-item img {
+                width: 75px !important; /* 20mm */
+                height: 75px !important; /* 20mm */
+                margin-bottom: 2px !important;
+                display: block !important;
+            }
+            
+            .qr-code-item h6 {
+                font-size: 9px !important;
+                margin: 1px 0 !important;
+                font-weight: bold !important;
+                line-height: 1.1 !important;
+                width: 100% !important;
+                max-width: 143px !important;
+                word-wrap: break-word !important;
+                overflow-wrap: break-word !important;
+                hyphens: auto !important;
+                white-space: normal !important;
+                display: block !important;
+                text-align: center !important;
+                max-height: 22px !important;
+                overflow: hidden !important;
+            }
+            
+            .qr-code-item p {
+                font-size: 8px !important;
+                margin: 0.5px 0 !important;
+                line-height: 1 !important;
+                width: 100% !important;
+                max-width: 143px !important;
+                word-wrap: break-word !important;
+                overflow-wrap: break-word !important;
+                hyphens: auto !important;
+                white-space: normal !important;
+                display: block !important;
+                text-align: center !important;
+                max-height: 16px !important;
+                overflow: hidden !important;
+            }
+            
+            /* Responsive font sizing untuk nama produk panjang */
+            .qr-code-item h6:has-text-length-long {
+                font-size: 7px !important;
+                line-height: 1.0 !important;
+            }
+            
+            .qr-code-item p:has-text-length-long {
+                font-size: 6px !important;
+                line-height: 1.0 !important;
+            }
+        }
+        
+        .qr-code-item {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px;
+            text-align: center;
+            display: inline-block;
+            width: 280px;
+            height: 320px;
+            vertical-align: top;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .qr-code-item img {
+            width: 200px;
+            height: 200px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .qr-code-item h6 {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #333;
+        }
+        
+        .qr-code-item p {
+            font-size: 14px;
+            margin: 5px 0;
+            color: #666;
+        }
+        
+        .qr-codes-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+        }
+        
+        .container {
+            max-width: 1200px;
+        }
+        
+        .print-preview-info {
+            background-color: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .print-preview-info h6 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        
+        .print-preview-info ul {
+            margin-bottom: 0;
+            padding-left: 20px;
+        }
+        
+        .print-preview-info li {
+            margin-bottom: 5px;
+        }
+    </style>
+    <script>
+        function adjustFontSize() {
+            const qrItems = document.querySelectorAll('.qr-code-item');
+            
+            qrItems.forEach(item => {
+                const h6 = item.querySelector('h6');
+                const p = item.querySelector('p');
+                
+                if (h6) {
+                    const textLength = h6.textContent.length;
+                    if (textLength > 25) {
+                        h6.style.fontSize = '6px';
+                        h6.style.lineHeight = '1.0';
+                    } else if (textLength > 20) {
+                        h6.style.fontSize = '7px';
+                        h6.style.lineHeight = '1.0';
+                    } else if (textLength > 15) {
+                        h6.style.fontSize = '8px';
+                        h6.style.lineHeight = '1.1';
+                    }
+                }
+                
+                if (p) {
+                    const textLength = p.textContent.length;
+                    if (textLength > 20) {
+                        p.style.fontSize = '6px';
+                        p.style.lineHeight = '1.0';
+                    } else if (textLength > 15) {
+                        p.style.fontSize = '7px';
+                        p.style.lineHeight = '1.0';
+                    }
+                }
+            });
+        }
+        
+        // Run on page load
+        window.addEventListener('load', adjustFontSize);
+        
+        // Run before print
+        window.addEventListener('beforeprint', adjustFontSize);
+    </script>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+                    <h2><i class="fas fa-qrcode me-2"></i>QR Codes - Multiple Products</h2>
+                    <div>
+                        <button onclick="window.print()" class="btn btn-primary">
+                            <i class="fas fa-print me-2"></i>Print QR Codes
+                        </button>
+                        <button onclick="window.location.href = '/produk-saya'" class="btn btn-secondary ms-2">
+                            <i class="fas fa-arrow-left me-2"></i>Kembali ke Produk Saya
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- DEBUG INFO -->
+                <div class="alert alert-warning no-print">
+                    <h4 style="color: red;">DEBUG INFO</h4>
+                    <p><strong>Total QR Codes:</strong> {{ qr_codes|length }}</p>
+                    <p><strong>QR Codes Variable Exists:</strong> {{ qr_codes is defined }}</p>
+                    <p><strong>QR Codes Content:</strong> {{ qr_codes }}</p>
+                </div>
+                
+                {% if qr_codes %}
+                <div class="print-preview-info no-print">
+                    <h6><i class="fas fa-info-circle me-2"></i>Thermal Label Print Information (40x30mm)</h6>
+                    <ul>
+                        <li>Menampilkan {{ qr_codes|length }} QR Code(s)</li>
+
+                        <li>Setiap QR Code akan dicetak di 1 label thermal terpisah (151x113 pixels)</li>
+                        <li>QR Code berukuran 75x75px (20mm) dengan text kecil di bawahnya</li>
+                        <li>Sesuai untuk printer thermal dan label sticker</li>
+                        <li><strong>Cara Print:</strong> Klik "Print QR Codes" → Set margins ke "None" atau "Custom: 0"</li>
+                        <li><strong>Print Preview:</strong> Akan menampilkan {{ qr_codes|length }} halaman kecil (ukuran thermal label)</li>
+                        <li><strong>Alternatif:</strong> Jika ukuran masih belum pas, save as PDF untuk print manual</li>
+                    </ul>
+                </div>
+                
+                <div class="qr-codes-container">
+                    {% for qr_data in qr_codes %}
+                    <div class="qr-code-item">
+                        <div class="alert alert-info no-print" style="margin-bottom: 10px;">
+                            <strong>DEBUG QR #{{ loop.index }}:</strong> {{ qr_data.name }} ({{ qr_data.sku }})
+                        </div>
+                        <img src="data:image/png;base64,{{ qr_data.qr_code }}" 
+                             alt="QR Code for {{ qr_data.sku }}">
+                        <h6>{{ qr_data.name }}</h6>
+                        <p><strong>SKU:</strong> {{ qr_data.sku }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Tidak ada QR Code yang dapat ditampilkan.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</body>
+</html>

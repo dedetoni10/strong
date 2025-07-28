@@ -1,0 +1,254 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Packing Mode - Strong Order Management{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-0">Validasi Packing</h1>
+        <p class="text-muted">Sistem scanning untuk validasi packing order</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                            <i class="fas fa-box text-success"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ stats.packing_orders or 0 }}</h3>
+                        <p class="text-muted mb-0">Orders Packing</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                            <i class="fas fa-clipboard-check text-warning"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ stats.validated_today or 0 }}</h3>
+                        <p class="text-muted mb-0">Validated Today</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Packing Interface -->
+<div class="card">
+    <div class="card-header bg-success">
+        <h5 class="mb-0" style="color: #ffffff; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); font-weight: 600;">
+            <i class="fas fa-box me-2"></i>Packing Validator
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="packing-form">
+                    <div class="form-group mb-3">
+                        <label class="form-label">Order ID / Tracking Number</label>
+                        <input type="text" id="packingOrderInput" class="form-control modern-input" placeholder="Scan atau ketik order ID / tracking number..." autofocus>
+                    </div>
+                    
+                    <button class="btn btn-success w-100 modern-btn" onclick="startPackingValidation()">
+                        <i class="fas fa-check me-2"></i>Validasi Packing
+                    </button>
+                </div>
+                
+                <div id="packingResult" class="mt-4"></div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="packing-info">
+                    <h6 class="mb-3">Informasi Packing</h6>
+                    <div class="info-item">
+                        <span class="info-label">Status:</span>
+                        <span class="badge bg-success">Ready</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Mode:</span>
+                        <span class="info-value">Packing Validation</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Scanner:</span>
+                        <span class="info-value">Online</span>
+                    </div>
+                </div>
+                
+                <div class="packing-tips mt-4">
+                    <h6>Tips Packing:</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success me-2"></i>Pastikan semua item sudah dipick</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Periksa kualitas produk</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Validasi alamat pengiriman</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.modern-input {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.modern-input:focus {
+    border-color: #198754;
+    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+}
+
+.modern-btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.modern-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.packing-info {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.info-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.info-value {
+    font-weight: 600;
+    color: #212529;
+}
+
+.packing-tips {
+    background: #e8f5e8;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #198754;
+}
+
+.packing-tips h6 {
+    color: #146c43;
+    margin-bottom: 10px;
+}
+
+.packing-tips ul li {
+    margin-bottom: 5px;
+    color: #666;
+}
+</style>
+
+<script>
+function startPackingValidation() {
+    const input = document.getElementById('packingOrderInput');
+    const value = input.value.trim();
+    
+    if (!value) {
+        showPackingResult('Silakan masukkan Order ID atau Tracking Number', 'error');
+        input.focus();
+        return;
+    }
+    
+    // Show loading state
+    const button = document.querySelector('.modern-btn');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+    button.disabled = true;
+    
+    // Call the proper packing validation API
+    fetch('/scan/packing_validation', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `barcode=${encodeURIComponent(value)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Reset button
+        button.innerHTML = originalText;
+        button.disabled = false;
+        
+        if (data.success) {
+            showPackingResult(`Order ${data.order_number} berhasil dimulai untuk validasi packing`, 'success');
+            // Redirect to packing validation interface
+            setTimeout(() => {
+                window.location.href = data.redirect;
+            }, 1000);
+        } else {
+            showPackingResult(data.error || 'Terjadi kesalahan', 'error');
+        }
+    })
+    .catch(error => {
+        // Reset button
+        button.innerHTML = originalText;
+        button.disabled = false;
+        
+        console.error('Error:', error);
+        showPackingResult('Terjadi kesalahan saat memproses', 'error');
+    });
+}
+
+function showPackingResult(message, type = 'success') {
+    const resultDiv = document.getElementById('packingResult');
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    
+    resultDiv.innerHTML = `
+        <div class="alert ${alertClass}" role="alert">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
+            ${message}
+        </div>
+    `;
+    
+    // Clear result after 5 seconds
+    setTimeout(() => {
+        resultDiv.innerHTML = '';
+    }, 5000);
+}
+
+// Add Enter key support
+document.addEventListener('DOMContentLoaded', function() {
+    const packingInput = document.getElementById('packingOrderInput');
+    if (packingInput) {
+        packingInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                startPackingValidation();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

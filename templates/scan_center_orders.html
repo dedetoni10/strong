@@ -1,0 +1,120 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}{{ title }} - Scan Center{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-0">{{ title }}</h1>
+                <p class="text-muted">{{ order_count }} pesanan ditemukan</p>
+            </div>
+            <div>
+                <a href="{{ url_for('scan_center') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i> Kembali ke Scan Center
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Orders List -->
+<div class="card">
+    <div class="card-header bg-purple text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-list"></i> Daftar Pesanan
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if orders %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>No Pesanan</th>
+                            <th>Pelanggan</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Tanggal</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('order_detail', order_id=order.id) }}" 
+                                   class="text-decoration-none fw-bold text-primary"
+                                   target="_blank">
+                                    {{ order.order_number }}
+                                </a>
+                            </td>
+                            <td>{{ order.customer_name }}</td>
+                            <td>Rp {{ "{:,.0f}".format(order.total_amount) }}</td>
+                            <td>
+                                {% if order.status == 'perlu_dikirim' %}
+                                    <span class="badge bg-warning">Perlu Picking</span>
+                                {% elif order.status == 'packing' %}
+                                    <span class="badge bg-info">Sedang Packing</span>
+                                {% elif order.status == 'siap_dikirim' %}
+                                    <span class="badge bg-success">Siap Pickup</span>
+                                {% elif order.status == 'dikirim' %}
+                                    <span class="badge bg-primary">Dikirim</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ order.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ order.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    {% if order.status == 'perlu_dikirim' %}
+                                        <a href="{{ url_for('picking_interface', order_id=order.id) }}" 
+                                           class="btn btn-sm btn-warning">
+                                            <i class="fas fa-clipboard-check"></i> Picking
+                                        </a>
+                                    {% elif order.status == 'packing' %}
+                                        <a href="{{ url_for('packing_validation_interface', order_id=order.id) }}" 
+                                           class="btn btn-sm btn-info">
+                                            <i class="fas fa-box"></i> Packing
+                                        </a>
+                                    {% elif order.status == 'siap_dikirim' %}
+                                        <button class="btn btn-sm btn-success" 
+                                                onclick="openReadyPickupScan('{{ order.order_number }}')">
+                                            <i class="fas fa-truck"></i> Ready Pickup
+                                        </button>
+                                    {% endif %}
+                                    <a href="{{ url_for('order_detail', order_id=order.id) }}" 
+                                       class="btn btn-sm btn-outline-primary" target="_blank">
+                                        <i class="fas fa-eye"></i> Detail
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Tidak ada pesanan ditemukan</h5>
+                <p class="text-muted">Belum ada pesanan dengan status {{ status }}</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function openReadyPickupScan(orderNumber) {
+    // Redirect to ready pickup scan with order number
+    window.location.href = '/ready-pickup-mode?order=' + orderNumber;
+}
+</script>
+
+<style>
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+</style>
+{% endblock %}

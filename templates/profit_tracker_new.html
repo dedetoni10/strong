@@ -1,0 +1,102 @@
+{% extends "base_sidebar.html" %}
+
+{% block content %}
+<div class="content-header">
+    <h1><i class="fas fa-calculator"></i> Keuangan</h1>
+    <p>Ringkasan profit harian per toko</p>
+</div>
+
+<!-- Statistics Cards -->
+<div class="stats-cards">
+    <div class="stat-card">
+        <div class="icon blue">
+            <i class="fas fa-coins"></i>
+        </div>
+        <h3>Rp {{ "{:,.0f}".format(profit_stats.total_revenue) }}</h3>
+        <p>Omzet Hari Ini</p>
+    </div>
+    <div class="stat-card">
+        <div class="icon green">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <h3>Rp {{ "{:,.0f}".format(profit_stats.total_profit) }}</h3>
+        <p>Profit Hari Ini</p>
+    </div>
+    <div class="stat-card">
+        <div class="icon orange">
+            <i class="fas fa-percentage"></i>
+        </div>
+        <h3>{{ "{:.1f}".format(profit_stats.margin_percentage) }}%</h3>
+        <p>Margin</p>
+    </div>
+    <div class="stat-card">
+        <div class="icon cyan">
+            <i class="fas fa-shopping-cart"></i>
+        </div>
+        <h3>{{ profit_stats.total_orders }}</h3>
+        <p>Total Order</p>
+    </div>
+</div>
+
+<!-- Simple Store Profit Summary -->
+<div class="content-card">
+    <div class="content-card-header">
+        <h5><i class="fas fa-store"></i> Ringkasan Profit Toko</h5>
+    </div>
+    <div class="content-card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Toko</th>
+                        <th>Omzet</th>
+                        <th>Profit</th>
+                        <th>Margin</th>
+                        <th>Orders</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for store_data in store_profits %}
+                    <tr>
+                        <td><strong>{{ store_data.store_name }}</strong><br><small class="text-muted">{{ store_data.sku_code }}</small></td>
+                        <td>Rp {{ "{:,.0f}".format(store_data.revenue) }}</td>
+                        <td>Rp {{ "{:,.0f}".format(store_data.profit) }}</td>
+                        <td>{{ "{:.1f}".format(store_data.margin) }}%</td>
+                        <td>{{ store_data.orders }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+<style>
+/* Simple and elegant styles */
+.content-card-header {
+    background: linear-gradient(135deg, #6f42c1, #8b5cf6) !important;
+}
+
+.stat-card .icon.blue { background-color: #3498db; }
+.stat-card .icon.green { background-color: #27ae60; }
+.stat-card .icon.orange { background-color: #f39c12; }
+.stat-card .icon.cyan { background-color: #17a2b8; }
+
+.table th {
+    background-color: #f8f9fa;
+    border-top: none;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.table td {
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: #f8f9fa;
+}
+</style>

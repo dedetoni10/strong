@@ -1,0 +1,1024 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Management Biaya Lokasi {{ location.location_name }} - Strong Order Management{% endblock %}
+
+{% block content %}
+    <style>
+        .modern-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .modern-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+        
+        .stats-card {
+            border: none;
+            border-radius: 20px;
+            color: white;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .stats-card:hover::before {
+            opacity: 1;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-5px) scale(1.02);
+        }
+        
+        .warehouse-card {
+            border: none;
+            border-radius: 15px;
+            background: white;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.06);
+            transition: all 0.3s ease;
+            border-left: 4px solid #8B5CF6;
+        }
+        
+        .warehouse-card:hover {
+            box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .input-group-modern {
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .btn-modern {
+            border-radius: 12px;
+            padding: 12px 30px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .table-modern {
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.06);
+        }
+        
+        .table-modern thead th {
+            background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+            color: white;
+            border: none;
+            font-weight: 600;
+            padding: 15px;
+        }
+        
+        .table-modern tbody tr:hover {
+            background: rgba(139, 92, 246, 0.05);
+        }
+        
+        .badge-modern {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.6s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .period-selector {
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8e9ff 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+    </style>
+
+    <div class="main-content">
+        <div class="container-fluid">
+            <!-- Header -->
+            <div class="row mb-4 fade-in">
+                <div class="col">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <div class="me-4">
+                                <i class="fas fa-calculator" style="font-size: 3rem; color: #8B5CF6;"></i>
+                            </div>
+                            <div>
+                                <h1 class="mb-1 fw-bold" style="background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                                    Management Biaya Lokasi {{ location.location_name }}
+                                </h1>
+                                <p class="text-muted mb-0 fs-5">Manajemen biaya operasional dan sewa gudang berdasarkan lokasi</p>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn btn-modern" style="background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%); color: white;" data-bs-toggle="modal" data-bs-target="#addRentModal">
+                                <i class="fas fa-plus me-2"></i>Buat Kontrak Sewa
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Period Selector -->
+            <div class="period-selector fade-in">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5 class="mb-0 text-primary fw-bold">
+                            <i class="fas fa-calendar-alt me-2"></i>
+                            Filter Periode
+                        </h5>
+                        <p class="text-muted mb-0">Pilih periode untuk melihat rincian biaya sewa gudang</p>
+                    </div>
+                    <div class="col-md-4">
+                        <select class="form-select" id="periodSelector" onchange="updatePeriod()">
+                            <option value="today">Hari Ini</option>
+                            <option value="week">Minggu Ini</option>
+                            <option value="month" selected>Bulan Ini</option>
+                            <option value="year">Tahun Ini</option>
+                            <option value="all">Semua Waktu</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Statistics -->
+            <div class="row mb-4 fade-in">
+                <div class="col-md-3 mb-3">
+                    <div class="stats-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <div class="card-body text-center py-4">
+                            <i class="fas fa-calendar-day fa-3x mb-3" style="color: rgba(255,255,255,0.9);"></i>
+                            <h2 class="fw-bold" id="dailyTotal">Rp 0</h2>
+                            <p class="mb-0 opacity-75">Per Hari</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="stats-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                        <div class="card-body text-center py-4">
+                            <i class="fas fa-calendar-week fa-3x mb-3" style="color: rgba(255,255,255,0.9);"></i>
+                            <h2 class="fw-bold" id="monthlyTotal">Rp 0</h2>
+                            <p class="mb-0 opacity-75">Per Bulan</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="stats-card" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);">
+                        <div class="card-body text-center py-4">
+                            <i class="fas fa-calendar-alt fa-3x mb-3" style="color: rgba(255,255,255,0.9);"></i>
+                            <h2 class="fw-bold" id="yearlyTotal">Rp 0</h2>
+                            <p class="mb-0 opacity-75">Per Tahun</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="stats-card" style="background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);">
+                        <div class="card-body text-center py-4">
+                            <i class="fas fa-warehouse fa-3x mb-3" style="color: rgba(255,255,255,0.9);"></i>
+                            <h2 class="fw-bold" id="totalLocations">{{ warehouse_locations|length }}</h2>
+                            <p class="mb-0 opacity-75">Lokasi Gudang</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Biaya Operasional Section -->
+            <div class="row mb-4 fade-in">
+                <div class="col-12">
+                    <div class="modern-card">
+                        <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0 fw-bold">
+                                    <i class="fas fa-coins me-2"></i>
+                                    Biaya Operasional
+                                </h5>
+                                <button class="btn btn-sm text-white" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
+                                    <i class="fas fa-plus me-2"></i>Tambah Pengeluaran Baru
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <div class="card h-100" style="border: none; border-radius: 15px; box-shadow: 0 4px 15px rgba(255, 193, 7, 0.15);">
+                                        <div class="card-body text-center py-4">
+                                            <div class="mb-3">
+                                                <i class="fas fa-box" style="font-size: 2.5rem; color: #FFC107;"></i>
+                                            </div>
+                                            <h5 class="fw-bold mb-2">Packaging</h5>
+                                            <p class="text-muted mb-2 small">July 2025</p>
+                                            <h4 class="fw-bold text-primary mb-0" id="packagingTotal">Rp {{ "{:,.0f}".format(packaging_total) }}</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="card h-100" style="border: none; border-radius: 15px; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.15);">
+                                        <div class="card-body text-center py-4">
+                                            <div class="mb-3">
+                                                <i class="fas fa-lightbulb" style="font-size: 2.5rem; color: #28A745;"></i>
+                                            </div>
+                                            <h5 class="fw-bold mb-2">Listrik & PAM</h5>
+                                            <p class="text-muted mb-2 small">July 2025</p>
+                                            <h4 class="fw-bold text-primary mb-0" id="electricTotal">Rp {{ "{:,.0f}".format(electric_total) }}</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="card h-100" style="border: none; border-radius: 15px; box-shadow: 0 4px 15px rgba(23, 162, 184, 0.15);">
+                                        <div class="card-body text-center py-4">
+                                            <div class="mb-3">
+                                                <i class="fas fa-wifi" style="font-size: 2.5rem; color: #17A2B8;"></i>
+                                            </div>
+                                            <h5 class="fw-bold mb-2">Internet</h5>
+                                            <p class="text-muted mb-2 small">July 2025</p>
+                                            <h4 class="fw-bold text-primary mb-0" id="internetTotal">Rp {{ "{:,.0f}".format(internet_total) }}</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="card h-100" style="border: none; border-radius: 15px; box-shadow: 0 4px 15px rgba(220, 53, 69, 0.15);">
+                                        <div class="card-body text-center py-4">
+                                            <div class="mb-3">
+                                                <i class="fas fa-truck" style="font-size: 2.5rem; color: #DC3545;"></i>
+                                            </div>
+                                            <h5 class="fw-bold mb-2">Ekspedisi</h5>
+                                            <p class="text-muted mb-2 small">July 2025</p>
+                                            <h4 class="fw-bold text-primary mb-0" id="expeditionTotal">Rp {{ "{:,.0f}".format(expedition_total) }}</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daftar Pengeluaran Table -->
+            <div class="row mb-4 fade-in">
+                <div class="col-12">
+                    <div class="modern-card">
+                        <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);">
+                            <h5 class="mb-0 fw-bold">
+                                <i class="fas fa-list me-2"></i>
+                                Daftar Pengeluaran
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-modern mb-0">
+                                    <thead style="background: #f8f9fa;">
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Tanggal</th>
+                                            <th>Kategori</th>
+                                            <th>Keterangan</th>
+                                            <th>Jumlah</th>
+                                            <th>Vendor</th>
+                                            <th>Periode Sewa</th>
+                                            <th>Harian</th>
+                                            <th>Dokumentasi</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="expenseTableBody">
+                                        {% if operational_expenses %}
+                                            {% for expense in operational_expenses %}
+                                            <tr>
+                                                <td>{{ loop.index }}</td>
+                                                <td>{{ expense.expense_date }}</td>
+                                                <td>
+                                                    {% if expense.category == 'packaging' %}
+                                                        <span class="badge" style="background-color: #FFC107; color: black;">
+                                                            <i class="fas fa-box me-1"></i>Packaging
+                                                        </span>
+                                                    {% elif expense.category == 'electric' %}
+                                                        <span class="badge" style="background-color: #28A745;">
+                                                            <i class="fas fa-lightbulb me-1"></i>Listrik & PAM
+                                                        </span>
+                                                    {% elif expense.category == 'internet' %}
+                                                        <span class="badge" style="background-color: #17A2B8;">
+                                                            <i class="fas fa-wifi me-1"></i>Internet
+                                                        </span>
+                                                    {% elif expense.category == 'expedition' %}
+                                                        <span class="badge" style="background-color: #DC3545;">
+                                                            <i class="fas fa-truck me-1"></i>Ekspedisi
+                                                        </span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ expense.description }}</td>
+                                                <td class="fw-bold text-success">Rp {{ "{:,.0f}".format(expense.amount) }}</td>
+                                                <td>{{ expense.vendor or '-' }}</td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td>
+                                                    {% if expense.receipt_filename %}
+                                                        <i class="fas fa-file-image text-success" title="Ada bukti transfer"></i>
+                                                    {% else %}
+                                                        <i class="fas fa-minus text-muted"></i>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-warning" title="Edit">
+                                                        <i class="fas fa-pencil-alt"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-danger" title="Hapus">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="10" class="text-center py-4 text-muted">
+                                                    <i class="fas fa-inbox fa-2x mb-2"></i><br>
+                                                    Belum ada data pengeluaran
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sewa Gudang Section -->
+            <div class="row mb-4 fade-in">
+                <div class="col-12">
+                    <div class="modern-card">
+                        <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0 fw-bold">
+                                    <i class="fas fa-warehouse me-2"></i>
+                                    Kontrak Sewa Gudang
+                                </h5>
+                                <button class="btn btn-sm text-white" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);" data-bs-toggle="modal" data-bs-target="#addRentModal">
+                                    <i class="fas fa-plus me-2"></i>Buat Kontrak Sewa
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <!-- Rent Contracts Table -->
+                            <div class="table-responsive">
+                                <table class="table table-modern mb-0">
+                                    <thead style="background: #f8f9fa;">
+                                        <tr>
+                                            <th>Nama Gudang</th>
+                                            <th>Alamat</th>
+                                            <th>Periode Kontrak</th>
+                                            <th>Biaya Tahunan</th>
+                                            <th>Per Bulan</th>
+                                            <th>Per Hari</th>
+                                            <th>Status</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="contractsTableBody">
+                                        {% if rent_contracts %}
+                                            {% for contract in rent_contracts %}
+                                            <tr>
+                                                <td class="fw-bold">{{ contract.warehouse_name }}</td>
+                                                <td>{{ contract.address }}</td>
+                                                <td>
+                                                    <small class="text-muted">
+                                                        {{ contract.start_date.strftime('%d/%m/%Y') if contract.start_date else '' }} - 
+                                                        {{ contract.end_date.strftime('%d/%m/%Y') if contract.end_date else '' }}
+                                                    </small>
+                                                </td>
+                                                <td class="fw-bold text-primary">Rp {{ "{:,.0f}".format(contract.yearly_cost) }}</td>
+                                                <td class="text-success">Rp {{ "{:,.0f}".format(contract.monthly_cost) }}</td>
+                                                <td class="text-info">Rp {{ "{:,.0f}".format(contract.daily_cost) }}</td>
+                                                <td>
+                                                    <span class="badge badge-modern 
+                                                        {% if contract.status == 'active' %}bg-success
+                                                        {% elif contract.status == 'inactive' %}bg-secondary
+                                                        {% else %}bg-warning{% endif %}">
+                                                        {{ contract.status|title }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-warning me-1" onclick="editContract({{ loop.index0 }})" title="Edit Kontrak">
+                                                        <i class="fas fa-pencil-alt"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-danger" onclick="deleteContract({{ loop.index0 }})" title="Hapus Kontrak">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="8" class="text-center py-4 text-muted">
+                                                    <i class="fas fa-warehouse fa-2x mb-2"></i><br>
+                                                    Belum ada kontrak sewa gudang
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Warehouse Locations -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="modern-card">
+                        <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);">
+                            <h5 class="mb-0 fw-bold">
+                                <i class="fas fa-map-marker-alt me-2"></i>
+                                Lokasi Gudang di {{ location.location_name }}
+                            </h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row" id="warehouseLocations">
+                                {% if warehouse_locations %}
+                                    {% for warehouse in warehouse_locations %}
+                                    <div class="col-md-6 col-lg-4 mb-3">
+                                        <div class="warehouse-card">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                                    <div>
+                                                        <h6 class="fw-bold text-primary">{{ warehouse.warehouse_name }}</h6>
+                                                        <p class="text-muted mb-0">
+                                                            <i class="fas fa-map-pin me-1"></i>
+                                                            {{ warehouse.address }}
+                                                        </p>
+                                                    </div>
+                                                    <span class="badge badge-modern bg-success">Aktif</span>
+                                                </div>
+                                                <div class="row text-center">
+                                                    <div class="col-6">
+                                                        <small class="text-muted">Biaya/Bulan</small>
+                                                        <p class="fw-bold text-success mb-0">Rp {{ "{:,.0f}".format(warehouse.monthly_rent) }}</p>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <small class="text-muted">Luas</small>
+                                                        <p class="fw-bold text-info mb-0">{{ warehouse.size_sqm }} m²</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="col-12">
+                                        <div class="text-center py-5">
+                                            <i class="fas fa-warehouse fa-3x text-muted mb-3"></i>
+                                            <h5 class="text-muted">Belum Ada Gudang</h5>
+                                            <p class="text-muted mb-4">Belum ada data gudang untuk lokasi {{ location.location_name }}. Tambahkan kontrak sewa gudang untuk memulai.</p>
+                                            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addRentModal">
+                                                <i class="fas fa-plus me-2"></i>Tambah Kontrak Pertama
+                                            </button>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Payments History -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="modern-card">
+                        <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);">
+                            <h5 class="mb-0 fw-bold">
+                                <i class="fas fa-file-contract me-2"></i>
+                                Kontrak Sewa Gudang Aktif
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-modern mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Periode</th>
+                                            <th>Gudang</th>
+                                            <th>Durasi Kontrak</th>
+                                            <th>Biaya/Bulan</th>
+                                            <th>Biaya/Hari</th>
+                                            <th>Status</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="contractsTable">
+                                        {% if rent_contracts %}
+                                            {% for contract in rent_contracts %}
+                                            <tr>
+                                                <td class="fw-bold">
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="fas fa-calendar-alt text-primary me-2"></i>
+                                                        <div>
+                                                            <div>{{ contract.start_date.strftime('%b %Y') }} - {{ contract.end_date.strftime('%b %Y') }}</div>
+                                                            <small class="text-muted">{{ contract.start_date.strftime('%d/%m/%Y') }} - {{ contract.end_date.strftime('%d/%m/%Y') }}</small>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="fas fa-warehouse text-primary me-2"></i>
+                                                        {{ contract.warehouse_name }}
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge badge-modern bg-info">
+                                                        <i class="fas fa-clock me-1"></i>{{ contract.duration_months }} Bulan
+                                                    </span>
+                                                </td>
+                                                <td class="fw-bold text-success">Rp {{ "{:,.0f}".format(contract.monthly_cost) }}</td>
+                                                <td class="fw-bold text-warning">Rp {{ "{:,.0f}".format(contract.daily_cost) }}</td>
+                                                <td>
+                                                    {% if contract.status == 'active' %}
+                                                    <span class="badge badge-modern bg-success">
+                                                        <i class="fas fa-check-circle me-1"></i>Aktif
+                                                    </span>
+                                                    {% elif contract.status == 'expired' %}
+                                                    <span class="badge badge-modern bg-danger">
+                                                        <i class="fas fa-times-circle me-1"></i>Berakhir
+                                                    </span>
+                                                    {% else %}
+                                                    <span class="badge badge-modern bg-warning">
+                                                        <i class="fas fa-clock me-1"></i>Akan Datang
+                                                    </span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-outline-info" onclick="viewContractPeriods({{ contract.id }})">
+                                                        <i class="fas fa-list"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-primary" onclick="viewContractDetail({{ contract.id }})">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-warning" onclick="editContract({{ contract.id }})">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteContract({{ contract.id }})">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="7" class="text-center py-5">
+                                                    <div class="d-flex flex-column align-items-center">
+                                                        <i class="fas fa-file-contract fa-3x text-muted mb-3"></i>
+                                                        <h5 class="text-muted">Belum Ada Kontrak Sewa</h5>
+                                                        <p class="text-muted mb-4">Belum ada kontrak sewa gudang untuk lokasi {{ location.location_name }}.</p>
+                                                        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addRentModal">
+                                                            <i class="fas fa-plus me-2"></i>Buat Kontrak Pertama
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Rent Contract Modal -->
+    <div class="modal fade" id="addRentModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="border-radius: 15px; border: none;">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%); border-radius: 15px 15px 0 0;">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fas fa-plus me-2"></i>
+                        Tambah Kontrak Sewa Gudang (1 Tahun)
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="addRentForm" method="POST" action="{{ url_for('add_warehouse_rent', location_name=location.location_name) }}">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Nama Gudang</label>
+                                <input type="text" class="form-control" name="warehouse_name" placeholder="Contoh: Gudang Utama Tangerang" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Alamat Gudang</label>
+                                <input type="text" class="form-control" name="warehouse_address" placeholder="Contoh: Jl. Industri No. 123" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Tanggal Mulai Kontrak</label>
+                                <input type="date" class="form-control" name="contract_start_date" id="contractStartDate" onchange="calculateEndDate()" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Tanggal Berakhir Kontrak</label>
+                                <input type="date" class="form-control" name="contract_end_date" id="contractEndDate" readonly style="background-color: #f8f9fa;">
+                                <small class="text-muted">Otomatis 1 tahun dari tanggal mulai</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Total Biaya Kontrak (1 Tahun)</label>
+                                <div class="input-group input-group-modern">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" class="form-control" name="total_annual_cost" id="totalAnnualCost" onchange="calculateMonthlyCost()" placeholder="0" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Biaya Per Bulan</label>
+                                <div class="input-group input-group-modern">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="text" class="form-control" id="monthlyCost" readonly style="background-color: #f8f9fa;">
+                                </div>
+                                <small class="text-muted">Otomatis dihitung dari total biaya ÷ 12</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Biaya Per Hari</label>
+                                <div class="input-group input-group-modern">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="text" class="form-control" id="dailyCost" readonly style="background-color: #f8f9fa;">
+                                </div>
+                                <small class="text-muted">Otomatis dihitung dari biaya bulanan ÷ 30</small>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label fw-bold">Keterangan</label>
+                                <textarea class="form-control" name="notes" rows="3" placeholder="Keterangan kontrak (opsional)"></textarea>
+                            </div>
+                            
+                            <!-- Contract Summary Preview -->
+                            <div class="col-12">
+                                <div class="alert alert-info" style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border: none; border-radius: 10px;">
+                                    <h6 class="fw-bold mb-2"><i class="fas fa-info-circle me-2"></i>Ringkasan Kontrak</h6>
+                                    <div id="contractSummary">
+                                        <p class="mb-1">• Durasi: <span id="contractDuration">- bulan</span></p>
+                                        <p class="mb-1">• Periode: <span id="contractPeriod">-</span></p>
+                                        <p class="mb-0">• Sistem akan generate 12 periode pembayaran bulanan otomatis</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" form="addRentForm" class="btn btn-modern" style="background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%); color: white;">
+                        <i class="fas fa-save me-2"></i>Buat Kontrak Sewa
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Rent Contract Modal -->
+    <div class="modal fade" id="editRentModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="border-radius: 15px; border: none;">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #FF6B35 0%, #FF8E53 100%); border-radius: 15px 15px 0 0;">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fas fa-edit me-2"></i>Edit Kontrak Sewa Gudang
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="/expense/{{ location.location_name }}/warehouse-rent/edit" method="POST">
+                    <div class="modal-body p-4">
+                        <input type="hidden" id="editContractId" name="contract_id">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-warehouse text-primary me-2"></i>Nama Gudang
+                                </label>
+                                <input type="text" class="form-control" id="editWarehouseName" name="warehouse_name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-map-marker-alt text-primary me-2"></i>Alamat Gudang
+                                </label>
+                                <input type="text" class="form-control" id="editWarehouseAddress" name="warehouse_address" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-calendar-plus text-primary me-2"></i>Tanggal Mulai Kontrak
+                                </label>
+                                <input type="date" class="form-control" id="editContractStartDate" name="contract_start_date" required onchange="updateEditEndDate()">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-calendar-minus text-primary me-2"></i>Tanggal Berakhir (Otomatis +1 Tahun)
+                                </label>
+                                <input type="date" class="form-control" id="editContractEndDate" name="contract_end_date" required readonly>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-money-bill-wave text-primary me-2"></i>Total Biaya Per Tahun
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" class="form-control" id="editTotalAnnualCost" name="total_annual_cost" required onchange="updateEditCostBreakdown()">
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-info-circle text-primary me-2"></i>Catatan (Opsional)
+                                </label>
+                                <textarea class="form-control" id="editNotes" name="notes" rows="2"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Cost Breakdown Preview -->
+                        <div class="row" id="editCostBreakdown" style="display: none;">
+                            <div class="col-12 mb-3">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="fw-bold text-primary">
+                                            <i class="fas fa-calculator me-2"></i>Rincian Biaya (Preview)
+                                        </h6>
+                                        <div class="row text-center">
+                                            <div class="col-4">
+                                                <div class="border-end">
+                                                    <div class="fw-bold text-success" id="editMonthlyPreview">Rp 0</div>
+                                                    <small class="text-muted">Per Bulan</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="border-end">
+                                                    <div class="fw-bold text-warning" id="editDailyPreview">Rp 0</div>
+                                                    <small class="text-muted">Per Hari</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="fw-bold text-info" id="editDurationPreview">12 Bulan</div>
+                                                <small class="text-muted">Durasi</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Batal
+                        </button>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save me-2"></i>Update Kontrak
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Expense Modal -->
+    <div class="modal fade" id="addExpenseModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="border-radius: 15px; border: none;">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%); border-radius: 15px 15px 0 0;">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fas fa-plus me-2"></i>
+                        Tambah Pengeluaran Baru
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="addExpenseForm" method="POST" action="{{ url_for('add_operational_expense', location_name=location.location_name) }}" enctype="multipart/form-data">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Tanggal</label>
+                                <input type="date" class="form-control" name="expense_date" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Kategori</label>
+                                <select class="form-select" name="category" required>
+                                    <option value="">Pilih kategori</option>
+                                    <option value="packaging">Packaging</option>
+                                    <option value="electric">Listrik & PAM</option>
+                                    <option value="internet">Internet</option>
+                                    <option value="expedition">Ekspedisi</option>
+                                </select>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label fw-bold">Keterangan</label>
+                                <input type="text" class="form-control" name="description" placeholder="Ball plastik, bayar listrik, dll" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Jumlah</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="number" class="form-control" name="amount" placeholder="50000" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Vendor</label>
+                                <input type="text" class="form-control" name="vendor" placeholder="Nama toko/supplier">
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label fw-bold">Upload Nota</label>
+                                <input type="file" class="form-control" name="receipt_file" accept=".jpg,.jpeg,.png,.pdf">
+                                <small class="text-muted">Upload bukti transfer</small>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label fw-bold">Catatan Tambahan</label>
+                                <textarea class="form-control" name="notes" rows="2" placeholder="Catatan opsional"></textarea>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Batal
+                    </button>
+                    <button type="submit" form="addExpenseForm" class="btn text-white" style="background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);">
+                        <i class="fas fa-save me-2"></i>Tambah
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-fill today's date when expense modal opens
+        document.addEventListener('DOMContentLoaded', function() {
+            const addExpenseModal = document.getElementById('addExpenseModal');
+            if (addExpenseModal) {
+                addExpenseModal.addEventListener('show.bs.modal', function() {
+                    const today = new Date().toISOString().split('T')[0];
+                    document.querySelector('input[name="expense_date"]').value = today;
+                });
+            }
+        });
+
+        // Sample data for calculations
+        const rentData = {
+            daily: {{ daily_total | default(0) }},
+            monthly: {{ monthly_total | default(0) }},
+            yearly: {{ yearly_total | default(0) }}
+        };
+
+        function updatePeriod() {
+            const period = document.getElementById('periodSelector').value;
+            // Update statistics based on selected period
+            // This would typically make an AJAX call to fetch new data
+            console.log('Period changed to:', period);
+        }
+
+        function calculateEndDate() {
+            const startDate = document.getElementById('contractStartDate').value;
+            if (startDate) {
+                const start = new Date(startDate);
+                const end = new Date(start.getFullYear() + 1, start.getMonth(), start.getDate());
+                document.getElementById('contractEndDate').value = end.toISOString().split('T')[0];
+                updateContractSummary();
+            }
+        }
+
+        function calculateMonthlyCost() {
+            const totalCost = parseFloat(document.getElementById('totalAnnualCost').value) || 0;
+            const monthlyCost = totalCost / 12;
+            const dailyCost = monthlyCost / 30;
+            
+            document.getElementById('monthlyCost').value = monthlyCost.toLocaleString('id-ID');
+            document.getElementById('dailyCost').value = dailyCost.toLocaleString('id-ID');
+            updateContractSummary();
+        }
+
+        function updateContractSummary() {
+            const startDate = document.getElementById('contractStartDate').value;
+            const endDate = document.getElementById('contractEndDate').value;
+            
+            if (startDate && endDate) {
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                const diffTime = Math.abs(end - start);
+                const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30));
+                
+                document.getElementById('contractDuration').textContent = diffMonths + ' bulan';
+                document.getElementById('contractPeriod').textContent = 
+                    start.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) + 
+                    ' - ' + 
+                    end.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+            }
+        }
+
+        function viewContractPeriods(contractId) {
+            // Implement view contract periods breakdown
+            console.log('View contract periods:', contractId);
+            // This would open a modal showing all 12 monthly periods
+        }
+
+        function viewContractDetail(contractId) {
+            // Implement view contract detail
+            console.log('View contract:', contractId);
+        }
+
+        function editContract(contractId) {
+            // Get contract data from the session
+            fetch(`/expense/{{ location.location_name }}/warehouse-rent/get/${contractId}`)
+                .then(response => response.json())
+                .then(contract => {
+                    if (contract.error) {
+                        alert('Kontrak tidak ditemukan');
+                        return;
+                    }
+                    
+                    // Fill edit form with existing data
+                    document.getElementById('editContractId').value = contractId;
+                    document.getElementById('editWarehouseName').value = contract.warehouse_name;
+                    document.getElementById('editWarehouseAddress').value = contract.warehouse_address;
+                    document.getElementById('editContractStartDate').value = contract.start_date;
+                    document.getElementById('editContractEndDate').value = contract.end_date;
+                    document.getElementById('editTotalAnnualCost').value = contract.total_annual_cost;
+                    document.getElementById('editNotes').value = contract.notes || '';
+                    
+                    // Show edit modal
+                    const editModal = new bootstrap.Modal(document.getElementById('editRentModal'));
+                    editModal.show();
+                })
+                .catch(error => {
+                    console.error('Error fetching contract:', error);
+                    alert('Gagal memuat data kontrak');
+                });
+        }
+
+        function updateEditEndDate() {
+            const startDate = document.getElementById('editContractStartDate').value;
+            if (startDate) {
+                const start = new Date(startDate);
+                const end = new Date(start.getFullYear() + 1, start.getMonth(), start.getDate());
+                document.getElementById('editContractEndDate').value = end.toISOString().split('T')[0];
+                updateEditCostBreakdown();
+            }
+        }
+
+        function updateEditCostBreakdown() {
+            const totalCost = parseFloat(document.getElementById('editTotalAnnualCost').value) || 0;
+            const monthlyCost = totalCost / 12;
+            const dailyCost = monthlyCost / 30;
+            
+            if (totalCost > 0) {
+                document.getElementById('editMonthlyPreview').textContent = 'Rp ' + monthlyCost.toLocaleString('id-ID');
+                document.getElementById('editDailyPreview').textContent = 'Rp ' + dailyCost.toLocaleString('id-ID');
+                document.getElementById('editCostBreakdown').style.display = 'block';
+            } else {
+                document.getElementById('editCostBreakdown').style.display = 'none';
+            }
+        }
+
+        function deleteContract(contractId) {
+            if (confirm('Apakah Anda yakin ingin menghapus kontrak ini? Semua data periode akan terhapus.')) {
+                // Implement delete contract
+                console.log('Delete contract:', contractId);
+            }
+        }
+
+        // Initialize counter animations
+        document.addEventListener('DOMContentLoaded', function() {
+            animateCounter('dailyTotal', 'Rp ' + rentData.daily.toLocaleString('id-ID'));
+            animateCounter('monthlyTotal', 'Rp ' + rentData.monthly.toLocaleString('id-ID'));
+            animateCounter('yearlyTotal', 'Rp ' + rentData.yearly.toLocaleString('id-ID'));
+        });
+
+        function animateCounter(elementId, finalValue) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            element.style.opacity = '0';
+            setTimeout(() => {
+                element.textContent = finalValue;
+                element.style.opacity = '1';
+            }, 200);
+        }
+    </script>
+{% endblock %}

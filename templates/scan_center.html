@@ -1,0 +1,811 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Scan Center - Strong Order Management{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-0">Scan Center</h1>
+        <p class="text-muted">Integrated dashboard sistem order management</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card shadow-sm stat-card" onclick="window.location.href='/scan-center/orders/picking'" style="cursor: pointer;">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                            <i class="fas fa-shopping-cart text-primary"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ stats.picking_orders or 0 }}</h3>
+                        <p class="text-muted mb-0">Picking Orders</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                            <i class="fas fa-box text-success"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ stats.packing_orders or 0 }}</h3>
+                        <p class="text-muted mb-0">Packing Orders</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                            <i class="fas fa-truck text-warning"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ stats.ready_pickup_orders or 0 }}</h3>
+                        <p class="text-muted mb-0">Ready Pickup</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex">
+                    <div class="flex-shrink-0">
+                        <div class="rounded-circle bg-info bg-opacity-10 p-3">
+                            <i class="fas fa-chart-line text-info"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h3>{{ stats.total_orders or 0 }}</h3>
+                        <p class="text-muted mb-0">Total Orders</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Scan Interface -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header bg-purple">
+                <h5 class="mb-0 text-white"><i class="fas fa-qrcode me-2"></i>SCAN CENTER</h5>
+            </div>
+            <div class="card-body">
+                <div id="scanInterface">
+                    {% if mode %}
+                        <!-- Auto-load mode based on URL parameter -->
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                loadScanInterface('{{ mode }}');
+                            });
+                        </script>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <div class="simple-icon mb-3">
+                                <i class="fas fa-hand-pointer"></i>
+                            </div>
+                            <h5 class="text-muted">Pilih Mode Scanning</h5>
+                            <p class="text-muted small mb-0">Silakan pilih mode scanning dari menu sidebar</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Modern Picking Interface -->
+        <div class="card modern-picking-card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-box-open me-2"></i>Picking
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="picking-info mb-3">
+                    <div class="info-item">
+                        <span class="info-label">Status:</span>
+                        <span class="badge bg-success">Ready</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Total Orders:</span>
+                        <span class="info-value">{{ stats.picking_orders or 0 }}</span>
+                    </div>
+                </div>
+                
+                <div class="picking-form">
+                    <div class="form-group mb-3">
+                        <label class="form-label">Order ID / Tracking Number</label>
+                        <input type="text" id="pickingOrderInput" class="form-control modern-input" placeholder="Scan atau ketik disini..." autofocus>
+                    </div>
+                    
+                    <button class="btn btn-primary w-100 modern-btn" onclick="startPicking()">
+                        <i class="fas fa-play me-2"></i>Mulai Picking
+                    </button>
+                </div>
+                
+                <div class="picking-stats mt-4">
+                    <div class="stat-item">
+                        <div class="stat-icon bg-primary">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-title">Waktu Rata-rata</div>
+                            <div class="stat-value">3.2 menit</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <div class="stat-icon bg-success">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-title">Success Rate</div>
+                            <div class="stat-value">98.5%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Scan History -->
+<div class="card">
+    <div class="card-header bg-purple text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-history me-2"></i>Recent Scan History
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Time</th>
+                        <th>Barcode</th>
+                        <th>Status</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for scan in history %}
+                    <tr>
+                        <td>{{ scan.scanned_at.strftime('%H:%M:%S') }}</td>
+                        <td>{{ scan.barcode }}</td>
+                        <td>
+                            {% if scan.success %}
+                            <span class="badge bg-success">Success</span>
+                            {% else %}
+                            <span class="badge bg-danger">Failed</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ scan.message }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+
+/* Scan Center Styles */
+.simple-icon {
+    width: 60px;
+    height: 60px;
+    background: #e9ecef;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    color: #6c757d;
+    font-size: 24px;
+}
+
+.clean-input-group {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.clean-input-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #212529;
+    font-size: 14px;
+}
+
+.clean-input-group input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.clean-input-group input:focus {
+    border-color: #8B5CF6;
+    box-shadow: 0 0 0 0.2rem rgba(139, 92, 246, 0.25);
+    outline: none;
+}
+
+.clean-scan-btn {
+    width: 100%;
+    padding: 12px;
+    margin-top: 15px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.clean-scan-btn.picking {
+    background: #0d6efd;
+    color: white;
+}
+
+.clean-scan-btn.packing {
+    background: #198754;
+    color: white;
+}
+
+.clean-scan-btn.pickup {
+    background: #fd7e14;
+    color: white;
+}
+
+.clean-scan-btn:hover {
+    opacity: 0.9;
+}
+
+.clean-scan-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.clean-mode-title {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #212529;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+/* Modern Picking Interface Styles */
+.modern-picking-card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.modern-picking-card .card-header {
+    border-bottom: none;
+    padding: 20px;
+    font-weight: 600;
+}
+
+.picking-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.info-item:last-child {
+    margin-bottom: 0;
+}
+
+.info-label {
+    font-weight: 500;
+    color: #495057;
+    font-size: 14px;
+}
+
+.info-value {
+    font-weight: 600;
+    color: #212529;
+    font-size: 14px;
+}
+
+.modern-input {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.modern-input:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.modern-btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.modern-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.picking-stats {
+    border-top: 1px solid #e9ecef;
+    padding-top: 20px;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.stat-item:last-child {
+    margin-bottom: 0;
+}
+
+.stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    color: white;
+    font-size: 16px;
+}
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-title {
+    font-size: 12px;
+    color: #6c757d;
+    margin-bottom: 2px;
+}
+
+.stat-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #212529;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+/* Pickup Mode Specific Styles */
+.pickup-info {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.info-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.info-value {
+    font-weight: 600;
+    color: #212529;
+}
+
+.pickup-tips {
+    background: #e8f4f8;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #17a2b8;
+}
+
+.pickup-tips h6 {
+    color: #17a2b8;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.pickup-tips ul li {
+    margin-bottom: 5px;
+    color: #495057;
+    font-size: 14px;
+}
+
+/* Enhanced Alert Styles */
+.alert {
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+    border-left: 4px solid #28a745;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-left: 4px solid #dc3545;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border-left: 4px solid #17a2b8;
+}
+</style>
+
+<script>
+let currentScanMode = 'none';
+
+// Function to switch mode (called from sidebar)
+function switchScanMode(mode) {
+    // Load scan interface for selected mode
+    loadScanInterface(mode);
+};
+
+// Functions are now defined globally in base_sidebar.html
+// This ensures consistent behavior across all pages
+
+function testAudio() {
+    // Test audio functionality
+    const audio = new Audio('/static/success.wav');
+    audio.play().catch(e => {
+        alert('Audio test failed: ' + e.message);
+    });
+}
+
+function startPicking() {
+    const input = document.getElementById('pickingOrderInput');
+    const value = input.value.trim();
+    
+    if (!value) {
+        alert('Silakan masukkan Order ID atau Tracking Number');
+        input.focus();
+        return;
+    }
+    
+    // Redirect to picking interface
+    window.location.href = `/scan_picking_api?barcode=${encodeURIComponent(value)}`;
+}
+
+// Function to process ready pickup (for mode=pickup)
+function processReadyPickup() {
+    const input = document.getElementById('pickupInput');
+    const trackingNumber = input.value.trim();
+    
+    if (!trackingNumber) {
+        showResult('Silakan masukkan tracking number', 'danger');
+        input.focus();
+        return;
+    }
+    
+    // Show processing message
+    showResult('Scan...', 'info');
+    
+    // Send AJAX request to scan_ready_pickup endpoint
+    console.log('Sending scan request for:', trackingNumber);
+    fetch('/scan_ready_pickup', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            tracking_number: trackingNumber
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Response received:', data);
+        if (data.success) {
+            showResult(data.message || 'Scan berhasil! Order siap dikirim.', 'success');
+            // Play success sound
+            playSuccessSound();
+            // Clear input
+            input.value = '';
+            // Refresh scan history
+            refreshScanHistory();
+        } else {
+            // Show specific error messages
+            let errorMsg = data.message || 'Scan gagal - tidak ada informasi error';
+            console.log('Original error message:', errorMsg);
+            
+            // Check for specific error types and create user-friendly messages
+            if (errorMsg.includes('tidak ditemukan') || errorMsg.includes('not found') || errorMsg.includes('No order found')) {
+                errorMsg = `Data tidak ditemukan untuk tracking number: ${trackingNumber}`;
+            } else if (errorMsg.includes('duplikat') || errorMsg.includes('duplicate') || errorMsg.includes('sudah pernah discan')) {
+                errorMsg = `Resi duplikat - ${trackingNumber} sudah pernah discan sebelumnya`;
+            } else if (errorMsg.includes('belum dipacking') || errorMsg.includes('not packed') || errorMsg.includes('packed')) {
+                errorMsg = `Order ${trackingNumber} belum melewati proses validasi packing`;
+            } else if (errorMsg.includes('status') && errorMsg.includes('perlu_dikirim')) {
+                errorMsg = `Order ${trackingNumber} masih dalam status 'perlu_dikirim', belum siap pickup`;
+            } else if (errorMsg.includes('Invalid') || errorMsg.includes('format')) {
+                errorMsg = `Format tracking number tidak valid: ${trackingNumber}`;
+            }
+            
+            showResult(errorMsg, 'danger');
+            // Play error sound
+            playErrorSound();
+        }
+        // Auto-focus input for next scan
+        setTimeout(() => input.focus(), 100);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        let errorMsg = 'Koneksi error saat scan';
+        if (error.message.includes('HTTP error')) {
+            errorMsg = `🔗 Server error: ${error.message}`;
+        } else if (error.message.includes('Failed to fetch')) {
+            errorMsg = '🌐 Koneksi terputus, coba lagi';
+        }
+        showResult(errorMsg, 'danger');
+        playErrorSound();
+        setTimeout(() => input.focus(), 100);
+    });
+}
+
+// Function to show scan result
+function showResult(message, type) {
+    const resultDiv = document.getElementById('pickupResult');
+    if (!resultDiv) return;
+    
+    const alertClass = type === 'success' ? 'alert-success' : 
+                     type === 'danger' ? 'alert-danger' : 'alert-info';
+    
+    const icon = type === 'success' ? 'fa-check-circle' : 
+                type === 'danger' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+    
+    resultDiv.innerHTML = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert" style="font-size: 14px; font-weight: 500;">
+            <i class="fas ${icon} me-2"></i>
+            <strong style="display: block; margin-bottom: 5px;">
+                ${type === 'success' ? 'BERHASIL' : type === 'danger' ? 'GAGAL' : 'INFO'}
+            </strong>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    
+    // Auto-hide after 5 seconds for better readability
+    setTimeout(() => {
+        const alert = resultDiv.querySelector('.alert');
+        if (alert) {
+            alert.classList.remove('show');
+            setTimeout(() => {
+                resultDiv.innerHTML = '';
+            }, 150);
+        }
+    }, 5000);
+}
+
+// Audio functions
+function playSuccessSound() {
+    const audio = new Audio('/static/sounds/success.wav');
+    audio.play().catch(e => console.log('Success audio failed:', e));
+}
+
+function playErrorSound() {
+    const audio = new Audio('/static/sounds/error.wav');
+    audio.play().catch(e => console.log('Error audio failed:', e));
+}
+
+function testSuccessSound() {
+    playSuccessSound();
+}
+
+function testErrorSound() {
+    playErrorSound();
+}
+
+// Function to refresh scan history
+function refreshScanHistory() {
+    // This would be implemented to refresh the scan history table
+    // For now, we'll just reload the page section
+    console.log('Refreshing scan history...');
+}
+
+// Add cursor pointer style for menu items
+document.addEventListener('DOMContentLoaded', function() {
+    const style = document.createElement('style');
+    style.textContent = `
+        .cursor-pointer {
+            cursor: pointer;
+        }
+        .scan-menu-item:hover {
+            background-color: #f8f9fa;
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Add Enter key support for picking input
+    const pickingInput = document.getElementById('pickingOrderInput');
+    if (pickingInput) {
+        pickingInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                startPicking();
+            }
+        });
+    }
+    
+    // Add Enter key support for pickup input
+    const pickupInput = document.getElementById('pickupInput');
+    if (pickupInput) {
+        pickupInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                processReadyPickup();
+            }
+        });
+    }
+});
+
+// Function to load scan interface based on mode
+function loadScanInterface(mode) {
+    const scanInterface = document.getElementById('scanInterface');
+    if (!scanInterface) return;
+    
+    currentScanMode = mode;
+    
+    if (mode === 'pickup') {
+        scanInterface.innerHTML = `
+            <div class="clean-mode-title">Ready Pick Up Mode</div>
+            
+            <!-- Ready Pickup Interface -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="pickup-form">
+                        <div class="clean-input-group">
+                            <label>Tracking Number</label>
+                            <input type="text" id="pickupInput" class="form-control" placeholder="Scan atau ketik tracking number..." autofocus>
+                        </div>
+                        
+                        <button class="clean-scan-btn pickup" onclick="processReadyPickup()">
+                            <i class="fas fa-truck me-2"></i>Ready Pick Up
+                        </button>
+                    </div>
+                    
+                    <div id="pickupResult" class="mt-4"></div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="pickup-info">
+                        <h6 class="mb-3">Informasi Ready Pickup</h6>
+                        <div class="info-item">
+                            <span class="info-label">Status:</span>
+                            <span class="badge bg-success">Ready</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Mode:</span>
+                            <span class="info-value">Ready Pickup</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Scanner:</span>
+                            <span class="info-value">Online</span>
+                        </div>
+                        
+                        <!-- Audio Test Buttons -->
+                        <div class="mt-4 pt-3 border-top">
+                            <h6 class="mb-3">Test Audio</h6>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-success btn-sm" onclick="testSuccessSound()">
+                                    <i class="fas fa-check me-2"></i>Test Suara Berhasil
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="testErrorSound()">
+                                    <i class="fas fa-times me-2"></i>Test Suara Gagal
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="pickup-tips mt-4">
+                        <h6>Tips Ready Pickup:</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success me-2"></i>Scan tracking number dengan benar</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Pastikan order sudah dipacking</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Siapkan untuk pengiriman</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add Enter key support for new pickup input
+        setTimeout(() => {
+            const newPickupInput = document.getElementById('pickupInput');
+            if (newPickupInput) {
+                newPickupInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        processReadyPickup();
+                    }
+                });
+                newPickupInput.focus();
+            }
+        }, 100);
+    }
+    else if (mode === 'picking') {
+        scanInterface.innerHTML = `
+            <div class="clean-mode-title">Picking Mode</div>
+            <div class="clean-input-group">
+                <label>Order ID / Tracking Number</label>
+                <input type="text" id="scanInput" class="form-control" placeholder="Scan atau ketik disini..." autofocus>
+            </div>
+            <button class="clean-scan-btn picking" onclick="startPickingFromScan()">
+                <i class="fas fa-play me-2"></i>Mulai Picking
+            </button>
+        `;
+    }
+    else if (mode === 'packing') {
+        scanInterface.innerHTML = `
+            <div class="clean-mode-title">Packing Mode</div>
+            <div class="clean-input-group">
+                <label>Order ID / Tracking Number</label>
+                <input type="text" id="scanInput" class="form-control" placeholder="Scan atau ketik disini..." autofocus>
+            </div>
+            <button class="clean-scan-btn packing" onclick="startPackingFromScan()">
+                <i class="fas fa-box me-2"></i>Validasi Packing
+            </button>
+        `;
+    }
+}
+</script>
+{% endblock %}

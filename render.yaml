@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: strong
+    runtime: python
+    buildCommand: poetry install
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PORT
+        value: 10000
+    region: oregon
+    plan: free

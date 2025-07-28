@@ -1,0 +1,392 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Validasi Packing - {{ order.order_number }}{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Cache-busting: v2.0 ULTRA SMALL IMAGES FOR MOBILE */
+/* GLOBAL IMAGE SIZE LIMIT - ALL PRODUCT IMAGES MUST BE TINY */
+img {
+    max-width: 15px !important;
+    max-height: 15px !important;
+    width: 15px !important;
+    height: 15px !important;
+    object-fit: cover !important;
+    border-radius: 2px !important;
+}
+
+/* Mobile specific - even smaller */
+@media (max-width: 768px) {
+    img {
+        max-width: 12px !important;
+        max-height: 12px !important;
+        width: 12px !important;
+        height: 12px !important;
+    }
+    
+    .product-image-container {
+        width: 12px !important;
+        height: 12px !important;
+    }
+}
+
+.product-image-container {
+    width: 15px !important;
+    height: 15px !important;
+    max-width: 15px !important;
+    max-height: 15px !important;
+    border-radius: 1px;
+    overflow: hidden;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.product-image {
+    width: 15px !important;
+    height: 15px !important;
+    max-width: 15px !important;
+    max-height: 15px !important;
+    object-fit: cover !important;
+    border-radius: 2px !important;
+}
+
+.table-striped > tbody > tr > td,
+.table-striped > thead > tr > th,
+.table-striped > tfoot > tr > td {
+    padding: 2px 3px;
+    vertical-align: middle;
+    line-height: 1.2;
+}
+
+.table-striped {
+    font-size: 8px;
+}
+
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+
+.items-table th {
+    background: #4a5568;
+    color: white;
+    border: none;
+    padding: 12px;
+    font-weight: 500;
+}
+
+.items-table td {
+    background: #2d3748;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-bottom: 1px solid #4a5568;
+}
+
+.items-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.checklist-card {
+    background: #f39c12;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    color: white;
+}
+
+.completion-card {
+    background: #2d3748;
+    border: 2px solid #00b894;
+    border-radius: 8px;
+    color: white;
+}
+
+.qty-badge {
+    background: #00b894;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.total-row {
+    background: #f39c12 !important;
+    color: #2d3748 !important;
+    font-weight: bold;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 5px !important;
+    }
+    
+    .card {
+        margin-bottom: 10px !important;
+    }
+    
+    .card-body {
+        padding: 10px !important;
+    }
+    
+    .table-responsive {
+        font-size: 7px !important;
+    }
+    
+    .table td, .table th {
+        padding: 2px !important;
+        font-size: 7px !important;
+    }
+    
+    .btn {
+        font-size: 12px !important;
+        padding: 8px 12px !important;
+    }
+    
+    .btn-lg {
+        font-size: 14px !important;
+        padding: 10px 16px !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Informasi Pesanan -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-purple text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Informasi Pesanan</h5>
+                </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>No. Pesanan:</strong> {{ order.order_number }}</p>
+                                <p><strong>No. Resi:</strong> {{ order.tracking_number or '-' }}</p>
+                                <p><strong>Customer:</strong> {{ order.customer_name }}</p>
+                                <p><strong>Phone:</strong> {{ order.customer_phone or '-' }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Total Amount:</strong> Rp {{ "{:,.0f}".format(order.total_amount) }}</p>
+                                <p><strong>Picking Started:</strong> {{ order.picking_started_at.strftime('%H:%M:%S') if order.picking_started_at else '-' }}</p>
+                                <p><strong>Picking Completed:</strong> {{ order.picking_completed_at.strftime('%H:%M:%S') if order.picking_completed_at else '-' }}</p>
+                                <p><strong>Packing Started:</strong> {{ order.packing_started_at.strftime('%H:%M:%S') if order.packing_started_at else '-' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-check-circle"></i> Status</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <h3>{{ order.status|title }}</h3>
+                        <p class="mb-0">Siap untuk packing</p>
+                        <div class="mt-3">
+                            <i class="fas fa-box fa-3x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Items yang Sudah Dipick -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-list"></i> Items yang Sudah Dipick</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 120px; font-size: 14px;">Gambar</th>
+                                        <th style="width: 120px; font-size: 14px;">SKU</th>
+                                        <th style="font-size: 14px;">Produk</th>
+                                        <th style="width: 80px; font-size: 14px; text-align: center;">Qty</th>
+                                        <th style="width: 100px; font-size: 14px; text-align: right;">Harga</th>
+                                        <th style="width: 100px; font-size: 14px; text-align: right;">Subtotal</th>
+                                        <th style="width: 80px; font-size: 14px; text-align: center;">Waktu</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in picked_items %}
+                                    <tr>
+                                        <td>
+                                            <div class="product-image-container">
+                                                <img src="{{ item.product_image if item.product_image else '/static/img/no-image.svg' }}" 
+                                                     alt="{{ item.product_name }}" 
+                                                     class="product-image"
+                                                     style="width: 100px !important; height: 100px !important; max-width: 100px !important; max-height: 100px !important; object-fit: cover !important; border-radius: 8px !important;"
+                                                     onerror="this.src='/static/img/no-image.svg'">
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span style="color: #6c757d; font-size: 14px; font-family: monospace;">{{ item.sku|clean_sku }}</span>
+                                        </td>
+                                        <td style="font-size: 14px;">{{ item.product_name }}</td>
+                                        <td class="text-center">
+                                            <span class="badge bg-success" style="font-size: 14px; padding: 4px 8px;">{{ item.picked_quantity }}</span>
+                                        </td>
+                                        <td class="text-end" style="font-size: 14px;">Rp {{ "{:,.0f}".format(item.price) }}</td>
+                                        <td class="text-end" style="font-size: 14px;">Rp {{ "{:,.0f}".format(item.price * item.picked_quantity) }}</td>
+                                        <td class="text-center" style="font-size: 14px;">{{ item.picked_at.strftime('%H:%M:%S') if item.picked_at else '-' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-warning">
+                                        <td colspan="5" style="font-size: 14px;"><strong>Total:</strong></td>
+                                        <td class="text-end" style="font-size: 14px;"><strong>Rp {{ "{:,.0f}".format(order.total_amount) }}</strong></td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tampilkan Produk Button -->
+        <div class="text-center mb-3">
+            <a href="{{ url_for('product_display', order_id=order.id) }}" target="_blank" class="btn btn-info btn-lg">
+                <i class="fas fa-eye me-2"></i>Tampilkan Produk
+            </a>
+        </div>
+
+        <!-- Packing Checklist -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-clipboard-check"></i> Packing Checklist</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="verifikasi_item" required>
+                            <label class="form-check-label" for="verifikasi_item">
+                                Verifikasi semua item sudah lengkap
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Selesaikan Packing -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-check-double"></i> Selesaikan Packing</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-center mb-3">Pastikan semua checklist sudah dicentang sebelum menyelesaikan packing</p>
+                        
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="konfirmasi_packing" required>
+                            <label class="form-check-label" for="konfirmasi_packing">
+                                Saya konfirmasi bahwa packing sudah selesai dan siap untuk pengiriman
+                            </label>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                            <button type="button" class="btn btn-success btn-lg" id="selesai_packing_btn" disabled>
+                                <i class="fas fa-check"></i> Validasi Packing Selesai
+                            </button>
+                            <button type="button" class="btn btn-primary btn-lg" id="scan_ready_pickup_btn" disabled style="display: none;">
+                                <i class="fas fa-qrcode"></i> Scan Ready Pick Up
+                            </button>
+                            <a href="{{ url_for('fulfillment_dashboard') }}" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-arrow-left"></i> Kembali ke Dashboard
+                            </a>
+                        </div>
+                        
+                        <!-- Success indicator -->
+                        <div id="packing_success_indicator" style="display: none; text-align: center; margin-top: 20px;">
+                            <div class="alert alert-success" style="display: inline-block;">
+                                <i class="fas fa-check-circle" style="font-size: 24px; color: #28a745;"></i>
+                                <span style="margin-left: 10px; font-size: 16px;">Validasi Packing Berhasil!</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const verifikasiCheck = document.getElementById('verifikasi_item');
+    const konfirmasiCheck = document.getElementById('konfirmasi_packing');
+    const selesaiBtn = document.getElementById('selesai_packing_btn');
+
+    // Enable/disable button based on checkboxes
+    function updateButton() {
+        selesaiBtn.disabled = !(verifikasiCheck.checked && konfirmasiCheck.checked);
+    }
+    
+    // Auto-enable button if all items are picked
+    if ({{ 'true' if all_items_picked else 'false' }}) {
+        selesaiBtn.disabled = false;
+        selesaiBtn.classList.remove('btn-success');
+        selesaiBtn.classList.add('btn-primary');
+        selesaiBtn.innerHTML = '<i class="fas fa-check"></i> Validasi Packing Selesai (Siap!)';
+    }
+
+    verifikasiCheck.addEventListener('change', updateButton);
+    konfirmasiCheck.addEventListener('change', updateButton);
+
+    // Handle validasi packing selesai
+    selesaiBtn.addEventListener('click', function() {
+        if (confirm('Apakah Anda yakin ingin menyelesaikan validasi packing untuk order ini?')) {
+            // AJAX request to complete packing validation
+            fetch('/complete_packing_validation/{{ order.id }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success indicator with checkmark
+                    document.getElementById('packing_success_indicator').style.display = 'block';
+                    
+                    // Hide validasi packing button
+                    selesaiBtn.style.display = 'none';
+                    
+                    // Auto redirect to ready pickup mode after 1.5 seconds
+                    setTimeout(function() {
+                        window.location.href = '/ready-pickup-mode';
+                    }, 1500);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Terjadi error saat memproses validasi packing');
+            });
+        }
+    });
+
+    // Handle scan ready pickup
+    document.getElementById('scan_ready_pickup_btn').addEventListener('click', function() {
+        window.location.href = '/scan_center?mode=pickup';
+    });
+});
+</script>
+{% endblock %}

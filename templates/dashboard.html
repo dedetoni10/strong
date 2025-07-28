@@ -1,0 +1,133 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Dashboard - Strong Order Management{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <h1><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h1>
+    <p>Ringkasan keseluruhan sistem order management</p>
+</div>
+
+<!-- Status menu removed - only available in Pesanan Saya page -->
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('monitoring') }}" class="btn btn-primary w-100">
+                            <i class="fas fa-shopping-cart me-2"></i>Kelola Pesanan
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('import_orders') }}" class="btn btn-success w-100">
+                            <i class="fas fa-upload me-2"></i>Import Orders
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('warehouse') }}" class="btn btn-info w-100">
+                            <i class="fas fa-boxes me-2"></i>Kelola Produk
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('scan_center') }}" class="btn btn-primary w-100">
+                            <i class="fas fa-qrcode me-2"></i>Scan Center
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history me-2"></i>Recent Orders
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Order Number</th>
+                                    <th>Customer</th>
+                                    <th>Status</th>
+                                    <th>Total</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in recent_orders %}
+                                <tr>
+                                    <td>{{ order.order_number }}</td>
+                                    <td>{{ order.customer_name }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if order.status == 'completed' %}bg-success
+                                            {% elif order.status == 'pending' %}bg-warning
+                                            {% elif order.status == 'perlu_dikirim' %}bg-info
+                                            {% elif order.status == 'siap_dikirim' %}bg-primary
+                                            {% else %}bg-secondary
+                                            {% endif %}">
+                                            {{ order.status|title }}
+                                        </span>
+                                    </td>
+                                    <td>Rp {{ "{:,.0f}".format(order.total_amount) }}</td>
+                                    <td>{{ order.created_at.strftime('%d/%m/%Y') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Belum ada pesanan terbaru</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-circle me-2"></i>Low Stock Alert
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if low_stock_products %}
+                    {% for product in low_stock_products %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <strong>{{ product.name }}</strong><br>
+                                <small class="text-muted">{{ product.sku }}</small>
+                            </div>
+                            <span class="badge bg-danger">{{ product.quantity }}</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <p class="text-muted">Semua produk stok aman</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

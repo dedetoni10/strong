@@ -1,0 +1,683 @@
+{% extends "base_sidebar.html" %}
+
+{% block title %}Generator QR Code Karyawan{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-primary h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-3">
+                        <div class="bg-primary rounded-circle p-3 me-3">
+                            <i class="fas fa-users text-white"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0" id="totalEmployees">0</h3>
+                            <p class="text-muted mb-0">Total Karyawan</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-success h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-3">
+                        <div class="bg-success rounded-circle p-3 me-3">
+                            <i class="fas fa-qrcode text-white"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0" id="barcodeGenerated">0</h3>
+                            <p class="text-muted mb-0">Barcode Generated</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-warning h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-3">
+                        <div class="bg-warning rounded-circle p-3 me-3">
+                            <i class="fas fa-check-circle text-white"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0" id="selectedCount">0</h3>
+                            <p class="text-muted mb-0">Karyawan Terpilih</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-info h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-3">
+                        <div class="bg-info rounded-circle p-3 me-3">
+                            <i class="fas fa-print text-white"></i>
+                        </div>
+                        <div>
+                            <h3 class="mb-0">4</h3>
+                            <p class="text-muted mb-0">Jenis Barcode</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-purple text-white">
+                    <h5 class="mb-0"><i class="fas fa-search me-2"></i>Pencarian & Filter</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="searchEmployee" class="form-label">Cari Karyawan:</label>
+                            <input type="text" class="form-control" id="searchEmployee" placeholder="Ketik nama karyawan..." onkeyup="searchEmployees()">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="branchFilter" class="form-label">Branch:</label>
+                            <select class="form-select" id="branchFilter" onchange="filterEmployees()">
+                                <option value="">Semua Branch</option>
+                                <option value="Lampung">Lampung</option>
+                                <option value="Tangerang">Tangerang</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="statusFilter" class="form-label">Status:</label>
+                            <select class="form-select" id="statusFilter" onchange="filterEmployees()">
+                                <option value="">Semua Status</option>
+                                <option value="active" selected>Aktif</option>
+                                <option value="inactive">Tidak Aktif</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Selection Controls -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-purple text-white">
+                    <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Pilihan Cepat</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <button type="button" class="btn btn-outline-primary me-2 mb-2" onclick="selectAllCurrentPage()">
+                                <i class="fas fa-check-square me-1"></i>Pilih Semua Halaman
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary me-2 mb-2" onclick="selectNone()">
+                                <i class="fas fa-square me-1"></i>Batal Pilih
+                            </button>
+                            <button type="button" class="btn btn-outline-success me-2 mb-2" onclick="selectByBranch('Lampung')">
+                                <i class="fas fa-map-marker-alt me-1"></i>Pilih Lampung
+                            </button>
+                            <button type="button" class="btn btn-outline-info me-2 mb-2" onclick="selectByBranch('Tangerang')">
+                                <i class="fas fa-map-marker-alt me-1"></i>Pilih Tangerang
+                            </button>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button type="button" class="btn btn-success btn-lg" id="generateBtn" onclick="generateSelectedBarcodes()" disabled>
+                                <i class="fas fa-qrcode me-2"></i>Generate & Print QR
+                                <span class="badge bg-light text-dark ms-2" id="generateCount">0</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Employee Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-purple text-white">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>Daftar Karyawan</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th width="50">
+                                        <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
+                                    </th>
+                                    <th width="50">#</th>
+                                    <th>Nama Karyawan</th>
+                                    <th>Branch</th>
+                                    <th>Posisi</th>
+                                    <th>Status</th>
+                                    <th>Barcode Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employeeTableBody">
+                                <!-- Employee data will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <span class="me-3">Tampilkan:</span>
+                                <select class="form-select form-select-sm w-auto" id="itemsPerPage" onchange="changeItemsPerPage()">
+                                    <option value="10">10</option>
+                                    <option value="15" selected>15</option>
+                                    <option value="20">20</option>
+                                    <option value="25">25</option>
+                                </select>
+                                <span class="ms-3" id="paginationInfo">Menampilkan 0 dari 0 karyawan</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <nav aria-label="Employee pagination">
+                                <ul class="pagination pagination-sm justify-content-end mb-0" id="paginationNav">
+                                    <!-- Pagination buttons will be generated here -->
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print Modal -->
+<div class="modal fade" id="printModal" tabindex="-1" aria-labelledby="printModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="printModalLabel">
+                    <i class="fas fa-qrcode me-2"></i>QR Codes Siap Print
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="printModalBody">
+                <!-- Generated QR codes will be displayed here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Tutup
+                </button>
+                <button type="button" class="btn btn-primary" onclick="printQRCodes()">
+                    <i class="fas fa-print me-1"></i>Print Sekarang
+                </button>
+                <button type="button" class="btn btn-success" onclick="downloadQRCodes()">
+                    <i class="fas fa-download me-1"></i>Download PDF
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let employeeData = [];
+let filteredData = [];
+let selectedEmployees = [];
+let currentPage = 1;
+let itemsPerPage = 15;
+
+// Load initial data
+document.addEventListener('DOMContentLoaded', function() {
+    loadEmployeeData();
+    loadStatistics();
+});
+
+// Load employee data from backend
+async function loadEmployeeData() {
+    try {
+        const searchTerm = document.getElementById('searchEmployee').value || '';
+        const branchFilter = document.getElementById('branchFilter').value || '';
+        
+        const params = new URLSearchParams({
+            page: currentPage,
+            per_page: itemsPerPage,
+            search: searchTerm,
+            branch: branchFilter
+        });
+        
+        const response = await fetch(`/attendance/employees?${params}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            employeeData = data.employees;
+            displayEmployeeTable();
+            updatePagination(data.pagination);
+        } else {
+            alert('Gagal memuat data karyawan: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error loading employee data:', error);
+        alert('Terjadi kesalahan saat memuat data karyawan');
+    }
+}
+
+// Load statistics
+function loadStatistics() {
+    fetch('/attendance/qr_stats')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const stats = data.stats;
+                document.getElementById('totalEmployees').textContent = stats.total_employees;
+                document.getElementById('qrGenerated').textContent = stats.qr_generated;
+                document.getElementById('qrPrinted').textContent = stats.qr_printed;
+                document.getElementById('qrExpires').textContent = stats.qr_expires + ' hari';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading statistics:', error);
+        });
+}
+
+// Search employees
+function searchEmployees() {
+    currentPage = 1;
+    loadEmployeeData();
+}
+
+// Filter employees by branch
+function filterEmployees() {
+    currentPage = 1;
+    loadEmployeeData();
+}
+
+// Display employee table with pagination
+function displayEmployeeTable() {
+    const tbody = document.getElementById('employeeTableBody');
+    tbody.innerHTML = '';
+    
+    employeeData.forEach((employee, index) => {
+        const globalIndex = index + 1;
+        const isSelected = selectedEmployees.includes(employee.id);
+        
+        const row = `
+            <tr>
+                <td>
+                    <input type="checkbox" class="employee-checkbox" 
+                           value="${employee.id}" 
+                           ${isSelected ? 'checked' : ''}
+                           onchange="toggleEmployeeSelection(${employee.id})">
+                </td>
+                <td>${globalIndex}</td>
+                <td><strong>${employee.full_name}</strong></td>
+                <td>
+                    <span class="badge ${employee.branch_location === 'Lampung' ? 'bg-success' : 'bg-info'}">
+                        ${employee.branch_location}
+                    </span>
+                </td>
+                <td>${employee.position || '-'}</td>
+                <td>
+                    <span class="badge bg-success">Aktif</span>
+                </td>
+                <td>
+                    <span class="badge bg-warning">Belum Generate</span>
+                </td>
+            </tr>
+        `;
+        tbody.innerHTML += row;
+    });
+    
+    updateSelectionUI();
+}
+
+// Update pagination based on server response
+function updatePagination(pagination) {
+    if (!pagination) return;
+    
+    const startItem = (pagination.page - 1) * pagination.per_page + 1;
+    const endItem = Math.min(pagination.page * pagination.per_page, pagination.total);
+    
+    // Update pagination info
+    document.getElementById('paginationInfo').textContent = 
+        `Menampilkan ${startItem}-${endItem} dari ${pagination.total} karyawan`;
+    
+    // Generate pagination buttons
+    const paginationNav = document.getElementById('paginationNav');
+    paginationNav.innerHTML = '';
+    
+    if (pagination.total_pages <= 1) return;
+    
+    // Previous button
+    const prevDisabled = !pagination.has_prev ? 'disabled' : '';
+    paginationNav.innerHTML += `
+        <li class="page-item ${prevDisabled}">
+            <a class="page-link" href="#" onclick="changePage(${pagination.page - 1})">‹</a>
+        </li>
+    `;
+    
+    // Page numbers
+    const startPage = Math.max(1, pagination.page - 2);
+    const endPage = Math.min(pagination.total_pages, pagination.page + 2);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const activeClass = i === pagination.page ? 'active' : '';
+        paginationNav.innerHTML += `
+            <li class="page-item ${activeClass}">
+                <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+            </li>
+        `;
+    }
+    
+    // Next button
+    const nextDisabled = !pagination.has_next ? 'disabled' : '';
+    paginationNav.innerHTML += `
+        <li class="page-item ${nextDisabled}">
+            <a class="page-link" href="#" onclick="changePage(${pagination.page + 1})">›</a>
+        </li>
+    `;
+}
+
+// Change page
+function changePage(page) {
+    if (page >= 1) {
+        currentPage = page;
+        loadEmployeeData();
+    }
+}
+
+// Change items per page
+function changeItemsPerPage() {
+    itemsPerPage = parseInt(document.getElementById('itemsPerPage').value);
+    currentPage = 1;
+    loadEmployeeData();
+}
+
+// Toggle individual employee selection
+function toggleEmployeeSelection(employeeId) {
+    const index = selectedEmployees.indexOf(employeeId);
+    if (index > -1) {
+        selectedEmployees.splice(index, 1);
+    } else {
+        selectedEmployees.push(employeeId);
+    }
+    updateSelectionUI();
+}
+
+// Toggle select all checkbox
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const currentPageEmployees = getCurrentPageEmployees();
+    
+    if (selectAllCheckbox.checked) {
+        currentPageEmployees.forEach(emp => {
+            if (!selectedEmployees.includes(emp.id)) {
+                selectedEmployees.push(emp.id);
+            }
+        });
+    } else {
+        currentPageEmployees.forEach(emp => {
+            const index = selectedEmployees.indexOf(emp.id);
+            if (index > -1) {
+                selectedEmployees.splice(index, 1);
+            }
+        });
+    }
+    
+    displayEmployeeTable();
+}
+
+// Get current page employees
+function getCurrentPageEmployees() {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredData.slice(startIndex, endIndex);
+}
+
+// Select all current page
+function selectAllCurrentPage() {
+    const currentPageEmployees = getCurrentPageEmployees();
+    currentPageEmployees.forEach(emp => {
+        if (!selectedEmployees.includes(emp.id)) {
+            selectedEmployees.push(emp.id);
+        }
+    });
+    displayEmployeeTable();
+}
+
+// Select none
+function selectNone() {
+    selectedEmployees = [];
+    displayEmployeeTable();
+}
+
+// Select by branch
+function selectByBranch(branch) {
+    selectedEmployees = [];
+    employeeData.forEach(emp => {
+        if (emp.branch_location === branch && emp.is_active) {
+            selectedEmployees.push(emp.id);
+        }
+    });
+    displayEmployeeTable();
+}
+
+// Update selection UI
+function updateSelectionUI() {
+    const selectedCount = selectedEmployees.length;
+    document.getElementById('selectedCount').textContent = selectedCount;
+    document.getElementById('generateCount').textContent = selectedCount;
+    
+    const generateBtn = document.getElementById('generateBtn');
+    generateBtn.disabled = selectedCount === 0;
+    
+    if (selectedCount > 0) {
+        generateBtn.classList.remove('btn-success');
+        generateBtn.classList.add('btn-primary');
+    } else {
+        generateBtn.classList.remove('btn-primary');
+        generateBtn.classList.add('btn-success');
+    }
+}
+
+// Update statistics
+function updateStatistics() {
+    document.getElementById('totalEmployees').textContent = filteredData.length;
+}
+
+// Generate selected barcodes
+function generateSelectedBarcodes() {
+    if (selectedEmployees.length === 0) {
+        alert('Pilih minimal 1 karyawan untuk generate barcode');
+        return;
+    }
+    
+    if (selectedEmployees.length > 15) {
+        alert('Maksimal 15 karyawan per generate untuk performa optimal');
+        return;
+    }
+    
+    // Show loading
+    const generateBtn = document.getElementById('generateBtn');
+    const originalText = generateBtn.innerHTML;
+    generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating...';
+    generateBtn.disabled = true;
+    
+    // Send request to backend
+    fetch('/attendance/generate_selected_qr_new', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            employee_ids: selectedEmployees
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayPrintModal(data.qr_codes);
+            loadStatistics(); // Refresh statistics
+        } else {
+            alert('Gagal generate barcode: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error generating barcodes:', error);
+        alert('Terjadi kesalahan saat generate barcode');
+    })
+    .finally(() => {
+        generateBtn.innerHTML = originalText;
+        generateBtn.disabled = selectedEmployees.length === 0;
+    });
+}
+
+// Display print modal
+function displayPrintModal(qrCodes) {
+    const modalBody = document.getElementById('printModalBody');
+    modalBody.innerHTML = '';
+    
+    // Group QR codes by employee
+    const employeeGroups = {};
+    qrCodes.forEach(qr => {
+        if (!employeeGroups[qr.employee_name]) {
+            employeeGroups[qr.employee_name] = [];
+        }
+        employeeGroups[qr.employee_name].push(qr);
+    });
+    
+    // Display each employee's QR codes
+    Object.keys(employeeGroups).forEach(employeeName => {
+        const employeeQRs = employeeGroups[employeeName];
+        
+        const employeeSection = `
+            <div class="mb-4 print-section">
+                <h5 class="border-bottom pb-2 mb-3">
+                    <i class="fas fa-user me-2"></i>${employeeName}
+                    <span class="badge bg-primary ms-2">${employeeQRs.length} QR Codes</span>
+                </h5>
+                <div class="row">
+                    ${employeeQRs.map(qr => `
+                        <div class="col-md-3 col-sm-6 mb-3 text-center">
+                            <div class="border p-3 qr-card">
+                                <h6 class="text-primary">${formatBarcodeType(qr.type)}</h6>
+                                <img src="${qr.qr_image}" alt="${qr.type}" class="img-fluid mb-2" style="max-width: 120px;">
+                                <p class="small text-dark fw-bold">${qr.employee_name}</p>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        modalBody.innerHTML += employeeSection;
+    });
+    
+    // Show modal
+    const printModal = new bootstrap.Modal(document.getElementById('printModal'));
+    printModal.show();
+}
+
+// Format barcode type for display
+function formatBarcodeType(type) {
+    const types = {
+        'masuk': 'Masuk Kerja',
+        'keluar': 'Keluar Kerja', 
+        'lembur_masuk': 'Lembur Masuk',
+        'lembur_keluar': 'Lembur Keluar'
+    };
+    return types[type] || type;
+}
+
+// Print QR codes
+function printQRCodes() {
+    const printContents = document.getElementById('printModalBody').innerHTML;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>QR Codes - Attendance Barcodes</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+            <style>
+                @media print {
+                    .print-section { page-break-inside: avoid; }
+                    .qr-card { border: 1px solid #ccc !important; }
+                }
+                body { font-family: Arial, sans-serif; }
+                .qr-card { background: #f8f9fa; }
+            </style>
+        </head>
+        <body>
+            <div class="container-fluid">
+                <h2 class="text-center mb-4">QR Codes Absensi Karyawan</h2>
+                ${printContents}
+            </div>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+}
+
+// Download QR codes as PDF (placeholder)
+function downloadQRCodes() {
+    alert('Fitur download PDF akan segera tersedia');
+}
+</script>
+
+<style>
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+
+.table th {
+    border-top: none;
+}
+
+.employee-checkbox {
+    width: 18px;
+    height: 18px;
+}
+
+.qr-card {
+    border-radius: 8px;
+    transition: box-shadow 0.2s;
+}
+
+.qr-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.pagination .page-link {
+    color: #8B5CF6;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #8B5CF6;
+    border-color: #8B5CF6;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-success:hover,
+.btn-outline-info:hover,
+.btn-outline-secondary:hover {
+    color: white;
+}
+
+@media print {
+    .print-section {
+        page-break-inside: avoid;
+    }
+    
+    .qr-card {
+        border: 1px solid #ccc !important;
+        margin-bottom: 10px;
+    }
+}
+</style>
+{% endblock %}
